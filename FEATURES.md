@@ -1,0 +1,159 @@
+# ManasluFlux — Feature List
+
+A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
+
+> **This document is the single source of truth for everything the addon adds.**
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.9**.
+
+> Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
+
+Current version: see [`gradle/libs.versions.toml`](gradle/libs.versions.toml) (`mod-version`).
+Build output: `build/libs/manasluflux-<version>.jar`.
+
+---
+
+## Modules (35)
+
+### Category: Manaslu Flux (main)
+
+| Module | ID | What it does |
+|---|---|---|
+| Auto Eat | `auto-eat` | Automatically eats food from your hotbar when hungry. |
+| Auto Fish | `auto-fish` | Automatically throws the rod, reels in fish, looks up and recasts. |
+| Auto Log | `auto-log` | Automatically disconnects when your health drops below a threshold. |
+| Auto Walk Hold | `auto-walk-hold` | Holds a configurable key (default **2**) down while enabled — keeps it pressed even after screens open or window focus changes. |
+| Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
+| Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
+| Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
+| Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. |
+| Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. |
+| Mute | `mute` | Hides chat messages from muted players or containing muted phrases (client-side). |
+| Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
+| Pearl Phase | `pearl-phase` | Ported from BlackOut's Auto Pearl — one-shot pearl throw at your own block (yaw +180°, steep pitch) to clip inside walls. Tick-based: rotates, throws on the next tick so the server sees the rotation, restores your view and hotbar, auto-toggles off. Settings: pitch, switch mode (Normal/Silent hotbar swap), instant rotation (direct rotation packet), keep rotation. |
+| Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
+| Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
+| Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
+| World Origin | `world-origin` | Example module that highlights the center of the world. |
+
+### Category: Manaslu Flux Client Side
+
+| Module | ID | What it does |
+|---|---|---|
+| Add Text | `add-text` | Local-only chat lines added with `.mfaddtext`, optionally kept across relogs. |
+| Auto Login | `auto-login` | Sends `/<command> <password>` (default `/login 12345678`) automatically after joining a server — or when chat shows a trigger word like "register". Settings: command, password, mode (Always/Trigger), triggers, delay, repeat-on-trigger, cooldown. The password is stored in plain text in the Meteor config — don't reuse an important one. |
+| Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
+| Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
+| Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
+
+### Category: Manaslu Flux Combat
+
+| Module | ID | What it does |
+|---|---|---|
+| Auto Totem | `auto-totem` | Instantly refills a totem of undying into your offhand whenever it is used or pops. |
+| Crystal Aura | `crystal-aura` | **Port of Meteor Client's CrystalAura** — simulates the crystal explosion for every obsidian/bedrock base in range and places/pops only the most damaging one. Settings: target-range, predict-movement, min-damage, max-self-damage, anti-suicide, silent rotate; **Place** (place, place-delay, place-range, place-walls-range, support-blocks + support-delay); **Face Place** (face-place, health, durability, missing-armor); **Break** (break, break-delay, break-range, break-walls-range, attack-frequency); **Pause** (pause-on-mine, pause-on-eat). All silent: server-side hotbar swaps and look packets — no visible rotation or hotbar movement. |
+| Silent Aura | `silent-aura` | Attacks the nearest player without rotating or swinging your visible hand — **silent aim** (server-side-only look rotation at the target, body or head) plus a silent weapon switch. **Pause** group: `pause-on-mine` and `pause-on-eat` temporarily stop the aura while you mine or eat/drink. |
+| TNT Placer | `tnt-placer` | Traps the nearest player in (crying) obsidian, buries them in TNT and ignites it — non-stop. |
+
+### Category: Manaslu Flux Rewrite
+
+Meteor built-ins rewritten for ManasluFlux (MC 26.2, own ClickGUI category). Note: module IDs that collide with Meteor's built-ins are prefixed/renamed (`mf-auto-respawn`, `mf-click-tp`, `sound-muter`) — an ID collision makes Meteor's internal mixin crash the game.
+
+| Module | ID | What it does |
+|---|---|---|
+| Auto Respawn | `mf-auto-respawn` | Auto-clicks respawn on the death screen, then optionally runs commands/chat lines (one per tick) after respawning. |
+| Auto Responder | `auto-responder` | Replies to chat automatically via trigger=response pairs (random pick on multiple matches), with an anti-loop cooldown. |
+| Chat Logger | `chat-logger` | Logs incoming and outgoing chat (including commands) to a file, new log per game join, path with %date%/%time%/%player%/%server% placeholders. |
+| Click TP | `mf-click-tp` | Hold use while looking at a block to teleport there in configurable steps, with max distance, step size, delay and an optional safe-landing check. |
+| Clicker | `clicker` | Left/right auto clicker with Nothing/Hold/Click modes and per-action tick delays. |
+| Death Commands | `death-commands` | Sends a random message/command from a list when you die, with delay range and chance settings. |
+| Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |
+| Sound Muter | `sound-muter` | Mutes specific sounds picked from a sound list, client-side. |
+| Tab Complete Privacy | `tab-complete-privacy` | Cancels tab-complete suggestion packets that would leak private commands: block-all, blocked prefixes, blocked words or symbols. |
+| Tab Logger | `tab-logger` | Keeps a per-server history file of every tab-list player (uuid, name, ping history), written on a background thread. |
+
+---
+
+## HUD Elements (3)
+
+All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
+
+| Element | ID | What it does |
+|---|---|---|
+| Image | `image` | Displays an image file (png, jpg, bmp, first frame of a gif) from an absolute path or relative to `.minecraft`. Settings: file path, scale, opacity, smooth/nearest filtering. Shows a "Missing image" placeholder in the HUD editor. |
+| GIF | `gif` | Displays an animated GIF file — decodes all frames, respects each frame's real delay, animates in sync with render delta, only re-uploads a frame when it changes. Same settings as Image. |
+| Example | `example` | Template example: renders "ManasluFlux" text on a gray quad. |
+
+---
+
+## Commands (23)
+
+All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
+
+| Command | What it does |
+|---|---|
+| `.mfaddtext` | Local chat: `mfaddtext <text>` shows text only for you, nothing is sent to the server. |
+| `.mfautoeat` | Configures the AutoEat module: `mfautoeat <food threshold>` \| `mfautoeat off`. |
+| `.mfautofish` | Toggles the AutoFish module: `mfautofish on\|off\|status`. |
+| `.mfautolog` | Configures the AutoLog module: `mfautolog <health%>` \| `mfautolog off`. |
+| `.mfcoords` | Copies your coordinates to the clipboard and prints them. |
+| `.mfday` | Displays the current in-game day and time of day. |
+| `.mfdurability` | Shows durability of the item in your main hand. |
+| `.mfeffects` | Lists your active potion effects. |
+| `.mfenchant` | Toggles a fake enchant glow on the held item (visual only). |
+| `.mffps` | Shows the current client FPS. |
+| `.mfheal` | Shows how much food and health you are missing (client-side info only). |
+| `.mfjavascript` | Asks a yes/no question in a vanilla confirmation dialog (`mfjavascript [question]`). **YES** deliberately crashes the game (with a proper crash report), **NO** rains multicolored confetti particles around you for a few seconds, then nothing. |
+| `.mfmute` | Client-side chat filter: `mfmute add\|remove\|list\|clear [player]`, `mfmute phrase add\|remove\|list\|clear [phrase]`. |
+| `.mfpath` | Points a beacon line to a target position: `mfpath <x> <y> <z>` \| `mfpath off`. |
+| `.mfping` | Shows your current latency to the server. |
+| `.mfrename` | Renames the item in your hand (client-side only). |
+| `.mfserver` | Shows info about the server you are connected to. |
+| `.mfskin` | Prints the current skin texture for the local player. |
+| `.mfsm` | Situation module switcher: `.mfsm <module> [on\|off\|toggle]` — tab suggestions included. |
+| `.mfstat` | Shows a few of your tracked stats (level, XP progress, play time, deaths). |
+| `.mftrash` | Confirms dropping your entire inventory. Run `mftrash confirm` to actually drop. |
+| `.mfuuid` | Shows your in-game UUID. |
+| `.mfwaypoint` | Adds, lists or clears waypoints for the Waypoint module (tracers/render). |
+
+---
+
+## Module categories registered
+
+- **Manaslu Flux** — general/utility modules (main category)
+- **Manaslu Flux Client Side** — purely client-side/visual modules
+- **Manaslu Flux Combat** — combat modules
+- **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux
+- **Manaslu Flux** HUD group — HUD elements
+
+## Chat/GUI features summary
+
+- **Chat features**: local-only chat lines (Add Text), client-side muting by player or phrase (Mute + `.mfmute`), `&` color codes (Universal Colored Chat), death coordinates messages, module feedback messages.
+- **GUI features**: all modules/elements appear in Meteor's ClickGUI and HUD editor under the categories above, each with their own settings groups; tab-completion suggestions for `.mfsm`.
+- **Render features**: waypoint beams, path line, world origin box highlight.
+
+## Build / versioning conventions
+
+- `mod-version` in [`gradle/libs.versions.toml`](gradle/libs.versions.toml) is bumped on **every** change — one version per build.
+- Build with: `JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-25-amd64-windows.2 ./gradlew build` (Loom 1.17 needs JDK 21+, system JAVA_HOME points to 17).
+- Output: `build/libs/manasluflux-<version>.jar`.
+- The website folder (`../manaslu/`) is a git repository tracking [`piolunson/ManasluFluxMeteorWebsite`](https://github.com/piolunson/ManasluFluxMeteorWebsite) — after every website sync it is committed and **pushed to `main`** (standing instruction from piolunson; credentials are stored in Windows Credential Manager, and the GitHub MCP server is available for repo API calls).
+- This file (`FEATURES.md`) is updated in the same change whenever anything user-facing is added, changed or removed.
+
+## Version history
+
+| Version | Changes |
+|---|---|
+| 0.3.9 | Universal Flight gained the **always-fly** option (default ON = previous behavior). With it OFF the module only grants the flight permission + speed and lets vanilla's double-jump toggle flying on and off, exactly like creative mode. |
+| 0.3.8 | **Auto Login** module added to Manaslu Flux Client Side: automatically sends `/login <password>` (both configurable, default `/login 12345678`) after joining, or on chat triggers like "register" — with delay, cooldown and repeat options. |
+| 0.3.7 | **New module category "Manaslu Flux Rewrite"** for the 10 rewritten Meteor-style modules (Auto Respawn, Auto Responder, Death Commands, Chat Logger, Tab Logger, Tab Complete Privacy, Click TP, Clicker, Sound Muter, Packet Limiter). **Crash fix**: `sound-blocker` collided with Meteor's built-in SoundBlocker module ID, which NPE'd Meteor's SoundEngine mixin at startup — renamed to `sound-muter` (`click-tp` and `auto-respawn` also collided and are now `mf-click-tp` / `mf-auto-respawn`). |
+| 0.3.6 | **10 modules ported from RyanWare (by SmilerRyan)** into the Manaslu Flux category: Auto Respawn, Auto Responder, Death Commands, Chat Logger, Tab Logger, Tab Complete Privacy, Click TP, Clicker, Sound Blocker and Packet Limiter — all rewritten for MC 26.2 mappings and the addon's conventions. |
+| 0.3.5 | Website: background image switched from `assets/bg.png` (4.9 MB) to `assets/bg.webp` (89 KB, 55× smaller) for much faster page loads; site is now also auto-pushed to the GitHub website repo on every build. Addon code unchanged. |
+| 0.3.4 | Crystal Aura completely reworked as a port of Meteor Client's CrystalAura: real explosion damage simulation (`min-damage` / `max-self-damage` / `anti-suicide`), face place (low health, broken armor, missing armor), optional obsidian support blocks in air, separate place/break ranges, walls ranges, delays and an attack frequency limit, silent server-side rotation before placing/breaking. Old crude settings (single range/delay, self-damage-guard, min-self-distance) replaced. |
+| 0.3.3 | Auto-pause added to Crystal Aura and Silent Aura: new **Pause** settings group with `pause-on-mine` (stops the aura while you are mining a block) and `pause-on-eat` (stops it while you are eating or drinking) — both on by default. |
+| 0.3.2 | Website (`manaslu/`) synced to current state: v0.3.2 chip and download jar, `.mfjavascript` in the command list, updated Pearl Phase description, changelog entries for 0.3.0–0.3.2. Website is now updated on every build. |
+| 0.3.0 | Pearl Phase completely reworked to actually function: tick-based rotation-then-throw with server-visible rotation, clean hotbar swap (no raw carried-item packets — fixes eaten blocks and hotbar desync), rotation restore, clearer errors when no pearl is in the hotbar. CC bypass removed (was broken). |
+| 0.2.9 | Pearl Phase rewritten as a port of BlackOut's Auto Pearl (own-block clip, CC bypass, switch modes, instant rotation); Silent Aura gained silent aim (server-side look rotation, body/head toggle); Instant TNT gained click-through-walls ignition. |
+| 0.2.8 | Pearl Phase module added (initial implementation, later replaced in 0.2.9). |
+| 0.2.7 | Version bump of the Image/GIF/Auto Walk build. |
+| 0.2.6 | Image + GIF HUD elements and Auto Walk Hold module added. |
+| ≤ 0.2.5 | Base addon: modules, commands and HUD listed above (see git history for details). |
