@@ -1,139 +1,73 @@
-# Meteor Addon Template
+# ManasluFlux
 
-A template to allow easy usage of the Meteor Addon API.
+A [Meteor Client](https://meteorclient.com) addon for **Minecraft 26.2 (Fabric)** by **piolunson**.
 
-### How to use
+🌐 **Website & downloads:** [github.com/piolunson/ManasluFluxMeteorWebsite](https://github.com/piolunson/ManasluFluxMeteorWebsite)
 
-#### Use GitHub Template (Recommended)
+## About
 
-- Click the green `Use this template` button in the top right corner of this page.  
-  This will create a new repository with this template and a clean history.
+ManasluFlux adds **35 modules**, **23 commands** and **3 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
 
-#### Clone Manually
+- **Manaslu Flux** — general/utility modules
+- **Manaslu Flux Client Side** — purely client-side/visual modules
+- **Manaslu Flux Combat** — combat modules
+- **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux
 
-- Alternatively, clone this repository using these commands for a clean history:
-  ```bash
-  git clone --depth 1 https://github.com/MeteorDevelopment/meteor-addon-template your-addon-name
-  cd your-addon-name
-  rm -rf .git
-  git init
-  git add .
-  git commit -m "Initial commit from template"
-  ```
+Highlights:
 
-#### Development
+- **Crystal Aura** — full explosion damage simulation: every obsidian/bedrock base in range is evaluated with `min-damage` / `max-self-damage` / `anti-suicide` gating, face place, obsidian support blocks, silent server-side rotations and hotbar swaps.
+- **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.
+- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls).
+- **Pearl Phase** — one-shot pearl throw at your own block to phase into walls.
+- **Auto Login** — sends `/login <password>` automatically after joining.
+- **Image / GIF HUD** — display images and animated GIFs directly on your HUD.
 
-- Use this template to add custom modules, commands, HUDs, and other features to Meteor Client.
-- To test, run the `Minecraft Client` configuration in your IDE.
-  This will start a Minecraft client with the Meteor Client mod and your addon loaded.
-- To build, run the gradle `build` task. This will create a JAR file in the `build/libs` folder.
-    - Move the JAR file to the `mods` folder of your Minecraft installation, alongside the Meteor Client mod and run the
-      game.
+The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
-### Updating to newer Minecraft versions
+## Modules
 
-To update this template to a newer Minecraft version, follow these steps:
+<details>
+<summary>Full module list (35)</summary>
 
-1. Ensure a Meteor Client snapshot is available for the new Minecraft version.
-2. Update `gradle/libs.versions.toml` (the versions catalog):
-    - Set the version entries to the new versions. Common keys to update are:
-        - `versions.minecraft` - Minecraft version
-        - `versions.fabric-loader` - Fabric loader version
-        - `versions.meteor` - Meteor Client snapshot version
-    - If your addon depends on other libraries listed under the `[libraries]` section, update their versions there as
-      needed.
-    - After editing, refresh Gradle dependencies and rebuild your project in the IDE.
-3. Update Loom:
-    - Change the `loom` version in `gradle/libs.versions.toml` (the `versions.loom` entry) to the latest version
-      compatible with the new Minecraft version.
-4. Update the Gradle wrapper:
-    - Run the wrapper update command for your platform. Examples:
-      - Unix / macOS / Windows (Powershell): `./gradlew wrapper --gradle-version <version> && ./gradlew wrapper`
-      - Windows (cmd.exe): `gradlew.bat wrapper --gradle-version <version> && gradlew.bat wrapper`
-    - This updates and regenerates the Gradle Wrapper scripts (`gradlew`, `gradlew.bat`, etc.) for the specified version.
-5. Update your source code:
-    - Adjust for Minecraft source changes: method names, imports, mixins, etc.
-    - Check for Meteor Client API changes that may affect your addon by comparing against the
-      [master branch](https://github.com/MeteorDevelopment/meteor-client/tree/master).
-6. Build and test:
-    - Run the gradle `build` task.
-    - Confirm the build succeeds and your addon works with the new Minecraft version.
+**Manaslu Flux:** Auto Eat, Auto Fish, Auto Log, Auto Walk Hold, Block Replacer, Boat Flight, Death Coords, Elytra Flight, Instant TNT, Mute, Path, Pearl Phase, Universal Flight, Waypoint, Whitelist Fast Use, World Origin
 
-### Project structure
+**Manaslu Flux Client Side:** Add Text, Auto Login, Client-Side Night Vision, Toggle Tab, Universal Colored Chat
 
-```text
-.
-│── .github
-│   ╰── workflows
-│       │── dev_build.yml
-│       ╰── pull_request.yml
-│── gradle
-│   │── libs.versions.toml
-│   ╰── wrapper
-│       │── gradle-wrapper.jar
-│       ╰── gradle-wrapper.properties
-│── src
-│   ╰── main
-│       │── java
-│       │   ╰── com
-│       │       ╰── example
-│       │           ╰── addon
-│       │               │── commands
-│       │               │   ╰── CommandExample
-│       │               │── hud
-│       │               │   ╰── HudExample
-│       │               │── modules
-│       │               │   ╰── ModuleExample
-│       │               ╰── AddonTemplate
-│       ╰── resources
-│           │── assets
-│           │   ╰── template
-│           │       ╰── icon.png
-│           │── addon-template.mixins.json
-│           ╰── fabric.mod.json
-│── .editorconfig
-│── .gitignore
-│── build.gradle.kts
-│── gradle.properties
-│── gradlew
-│── gradlew.bat
-│── LICENSE
-│── README.md
-╰── settings.gradle.kts
+**Manaslu Flux Combat:** Auto Totem, Crystal Aura, Silent Aura, TNT Placer
+
+**Manaslu Flux Rewrite:** Auto Respawn, Auto Responder, Chat Logger, Click TP, Clicker, Death Commands, Packet Limiter, Sound Muter, Tab Complete Privacy, Tab Logger
+
+</details>
+
+## Building
+
+Requirements: **JDK 21+** (built with JDK 25) and internet access for Gradle dependencies.
+
+```bash
+./gradlew build
 ```
 
-This is the default project structure. Each folder/file has a specific purpose.  
-Here is a brief explanation of the ones you might need to modify:
+The jar appears in `build/libs/manasluflux-<version>.jar`.
 
-- `.github/workflows`: Contains the GitHub Actions configuration files.
-- `gradle`: Contains the Gradle wrapper files and the versions catalog.  
-  - `libs.versions.toml`: Defines version numbers for Minecraft, Loom, Meteor, and other dependencies.
-  - `wrapper`: Contains the Gradle wrapper executable files.  
-    To update the Gradle wrapper executable itself, run the wrapper update command (examples are shown above).
-- `src/main/java/com/example/addon`: Contains the main class of the addon.  
-  Here you can register your custom commands, modules, and HUDs.  
-  Edit the `getPackage` method to reflect the package of your addon.
-- `src/main/resources`: Contains the resources of the addon.
-    - `assets`: Contains the assets of the addon.  
-      You can add your own assets here, separated in subfolders.
-        - `template`: Contains the assets of the template.  
-          You can replace the `icon.png` file with your own addon icon.  
-          Also, rename this folder to reflect the name of your addon.
-    - `addon-template.mixins.json`: Contains the Mixin configuration for the addon.  
-      You can add your own mixins in the `client` array.
-    - `fabric.mod.json`: Contains the metadata of the addon.  
-      Edit the various fields to reflect the metadata of your addon.
-- `build.gradle.kts`: Contains the Gradle build script.  
-  You can manage the dependencies of the addon here.  
-  Remember to keep the `fabric-loom` version up-to-date.
-- `gradle.properties`: Contains additional build properties used by the build script
-  (for example `maven_group` and `archives_base_name`).  
-  Dependency and platform version numbers are stored in `gradle/libs.versions.toml`.
-- `LICENSE`: Contains the license of the addon.  
-  You can edit this file to change the license of your addon.
-- `README.md`: Contains the documentation of the addon.  
-  You can edit this file to reflect the documentation of your addon, and showcase its features.
+> On Windows with an older system JDK, point Gradle at a newer one:
+> `JAVA_HOME=<path-to-jdk-21+> ./gradlew build`
+
+## Installing
+
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 26.2.
+2. Drop [Meteor Client](https://meteorclient.com) and `manasluflux-<version>.jar` into your `mods` folder.
+3. Launch the game — the new categories appear in Meteor's ClickGUI (Right Shift).
+
+## Version history
+
+See [FEATURES.md](FEATURES.md) for the complete changelog — the addon version is bumped on every change, and the website is rebuilt and published with every release.
 
 ## License
 
-This template is available under the CC0 license. Feel free to use it for your own projects.
+This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE), consistent with Meteor Client's licensing.
+
+Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare); all code in this repository is a clean-room rewrite for Minecraft 26.2 and this addon's conventions.
+
+## Disclaimer
+
+Use of this addon on servers you don't own may violate their rules. Use responsibly and at your own risk.
