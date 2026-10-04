@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.10**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.11**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -119,10 +119,10 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 ## Module categories registered
 
-- **Manaslu Flux** — general/utility modules (main category)
-- **Manaslu Flux Client Side** — purely client-side/visual modules
-- **Manaslu Flux Combat** — combat modules
-- **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux
+- **Manaslu Flux** — general/utility modules (main category, nether star icon)
+- **Manaslu Flux Client Side** — purely client-side/visual modules (oak sign icon)
+- **Manaslu Flux Combat** — combat modules (end crystal icon)
+- **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux (enchanted book icon)
 - **Manaslu Flux** HUD group — HUD elements
 
 ## Chat/GUI features summary
@@ -143,6 +143,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 | Version | Changes |
 |---|---|
+| 0.3.11 | All four ManasluFlux categories now have **item icons in Meteor's GUI**: nether star for Manaslu Flux, oak sign for Manaslu Flux Client Side, end crystal for Manaslu Flux Combat and enchanted book for Manaslu Flux Rewrite — using Meteor 26.2's `Category(name, icon)` constructor. |
 | 0.3.10 | Elytra Flight gained a toggleable **auto-forward** option (default OFF). With it on, the module constantly thrusts forward in your look direction as before; with it off, you only thrust while holding the forward key (W), so you can glide and steer yourself — jump = up and sneak = down still work either way. |
 | 0.3.9 | Universal Flight gained the **always-fly** option (default ON = previous behavior). With it OFF the module only grants the flight permission + speed and lets vanilla's double-jump toggle flying on and off, exactly like creative mode. |
 | 0.3.8 | **Auto Login** module added to Manaslu Flux Client Side: automatically sends `/login <password>` (both configurable, default `/login 12345678`) after joining, or on chat triggers like "register" — with delay, cooldown and repeat options. |

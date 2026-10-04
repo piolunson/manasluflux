@@ -69,15 +69,17 @@ import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.hud.HudGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.slf4j.Logger;
 
 public class AddonTemplate extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
-    public static final Category CATEGORY = new Category("Manaslu Flux");
+    public static final Category CATEGORY = new Category("Manaslu Flux", () -> new ItemStack(Items.NETHER_STAR));
     public static final HudGroup HUD_GROUP = new HudGroup("Manaslu Flux");
-    public static final Category CLIENT_SIDE_CATEGORY = new Category("Manaslu Flux Client Side");
-    public static final Category COMBAT_CATEGORY = new Category("Manaslu Flux Combat");
-    public static final Category REWRITE_CATEGORY = new Category("Manaslu Flux Rewrite");
+    public static final Category CLIENT_SIDE_CATEGORY = new Category("Manaslu Flux Client Side", () -> new ItemStack(Items.OAK_SIGN));
+    public static final Category COMBAT_CATEGORY = new Category("Manaslu Flux Combat", () -> new ItemStack(Items.END_CRYSTAL));
+    public static final Category REWRITE_CATEGORY = new Category("Manaslu Flux Rewrite", () -> new ItemStack(Items.ENCHANTED_BOOK));
 
     @Override
     public void onInitialize() {
