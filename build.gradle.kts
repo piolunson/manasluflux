@@ -27,6 +27,11 @@ dependencies {
     minecraft(libs.minecraft)
     implementation(libs.fabric.loader)
 
+    // Fabric API (compile-only): on MC 26.2 MinecraftServer gets fabric's DataResourceStore
+    // interface-injected, so addon code touching IntegratedServer/MinecraftServer needs this
+    // on the compile classpath. Meteor ships the real fabric-api at runtime.
+    compileOnly("net.fabricmc.fabric-api:fabric-resource-loader-v1:2.0.13+9edec1269e")
+
     // Meteor
     implementation(libs.meteor.client)
 }

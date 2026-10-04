@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.15**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.16**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -26,7 +26,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
 | Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
 | Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
-| Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. |
+| Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. **Redstone Block** (default on): when no igniter is in the inventory, silently places a redstone block next to the TNT instead — redstone power primes TNT. |
 | Mute | `mute` | Hides chat messages from muted players or containing muted phrases (client-side). |
 | Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
 | Pearl Phase | `pearl-phase` | Ported from BlackOut's Auto Pearl — one-shot pearl throw at your own block (yaw +180°, steep pitch) to clip inside walls. Tick-based: rotates, throws on the next tick so the server sees the rotation, restores your view and hotbar, auto-toggles off. Settings: pitch, switch mode (Normal/Silent hotbar swap), instant rotation (direct rotation packet), keep rotation. |
@@ -88,7 +88,7 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
 ---
 
-## Commands (23)
+## Commands (24)
 
 All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
 
@@ -106,6 +106,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 | `.mffps` | Shows the current client FPS. |
 | `.mfheal` | Shows how much food and health you are missing (client-side info only). |
 | `.mfjavascript` | Asks a yes/no question in a vanilla confirmation dialog (`mfjavascript [question]`). **YES** deliberately crashes the game (with a proper crash report), **NO** rains multicolored confetti particles around you for a few seconds, then nothing. |
+| `.mfkill` | Kills your own player: `mfkill` warns first, `mfkill confirm` dies. In singleplayer it kills the server-side player instantly (real `/kill` damage); on servers it sends `/suicide` (works wherever self-kill is allowed, e.g. Essentials). |
 | `.mfmute` | Client-side chat filter: `mfmute add\|remove\|list\|clear [player]`, `mfmute phrase add\|remove\|list\|clear [phrase]`. |
 | `.mfpath` | Points a beacon line to a target position: `mfpath <x> <y> <z>` \| `mfpath off`. |
 | `.mfping` | Shows your current latency to the server. |
@@ -154,6 +155,7 @@ ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official
 
 | Version | Changes |
 |---|---|
+| 0.3.16 | New **Kill** command (`.mfkill`) with a confirm step: in singleplayer it kills you instantly with real `/kill` damage (through the integrated server); on servers it sends `/suicide`, which works wherever self-kill is allowed. **Instant TNT** gained a **redstone-block fallback** (default on): with no flint & steel or fire charge in the inventory, it silently places a redstone block next to the TNT to prime it. Also added a compile-only Fabric API resource-loader dependency so addon code can safely touch the integrated server on MC 26.2. |
 | 0.3.15 | New **Ping Spoofer** module (Manaslu Flux) with three modes: **Real** (nothing changed), **More** (your keep-alive/pong replies are actually delayed, so the server-side latency genuinely grows by the configured amount, with random jitter) and **Spoof** (replies stay instant, the tab-list ping is patched to the fake value). Includes a debug readout of real vs displayed ping. |
 | 0.3.14 | **Baritone is now built in**: the official Baritone v1.19.0 Fabric build for Minecraft 26.2 is bundled jar-in-jar and loads automatically — every `#` command (`#goto`, `#mine`, `#follow`, …) and Meteor's Baritone integration work with no separate download. Addon code unchanged. |
 | 0.3.13 | New **Placer** module (Manaslu Flux): places whitelisted blocks everywhere around you — fills nearby air with the selected blocks from your inventory, nearest first. Radius, blocks-per-tick, silent rotation and entity checks are configurable. |

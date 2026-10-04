@@ -8,6 +8,9 @@ import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.player.FindItemResult;
+import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,6 +31,9 @@ import net.minecraft.world.phys.Vec3;
  *
  * Click Through Walls: ignores line of sight - ignites any TNT in reach even if walls
  * or other blocks are between you and it, by sending the use packet directly.
+ *
+ * Redstone Block: when no igniter is in the inventory, silently places a redstone block
+ * next to the TNT instead - redstone power primes TNT in vanilla.
  */
 public class InstantTnt extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -65,11 +71,19 @@ public class InstantTnt extends Module {
         .build()
     );
 
+    private final Setting<Boolean> redstoneBlock = sgGeneral.add(new BoolSetting.Builder()
+        .name("redstone-block")
+        .description("When no flint & steel or fire charge is in the inventory, silently places a redstone block next to the TNT instead - redstone power primes TNT.")
+        .defaultValue(true)
+        .build()
+    );
+
     private int cooldownTicks;
     private boolean warnedNoIgniter;
+    private boolean warnedNoRedstone;
 
     public InstantTnt() {
-        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel.");
+        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, or a redstone block fallback.");
     }
 
     private boolean isIgniter(Item item) {
@@ -130,6 +144,13 @@ public class InstantTnt extends Module {
         int igniterSlot = findIgniterSlot();
 
         if (igniterSlot == -1) {
+            if (redstoneBlock.get()) {
+                if (igniteWithRedstone(hit.getBlockPos())) {
+                    cooldownTicks = cooldown.get();
+                }
+                return;
+            }
+
             if (!warnedNoIgniter) {
                 warning("No flint & steel or fire charge in the hotbar.");
                 warnedNoIgniter = true;
@@ -137,6 +158,7 @@ public class InstantTnt extends Module {
             return;
         }
         warnedNoIgniter = false;
+        warnedNoRedstone = false;
 
         boolean swap = silentSwitch.get() && igniterSlot != realSlot;
         if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(igniterSlot));
@@ -148,6 +170,34 @@ public class InstantTnt extends Module {
         if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(realSlot));
 
         cooldownTicks = cooldown.get();
+    }
+
+    /**
+     * Places a redstone block next to the TNT - redstone power primes TNT, no igniter needed.
+     */
+    private boolean igniteWithRedstone(BlockPos tnt) {
+        FindItemResult item = InvUtils.find(Items.REDSTONE_BLOCK);
+        if (!item.found()) {
+            if (!warnedNoRedstone) {
+                warning("No flint & steel, fire charge or redstone block found.");
+                warnedNoRedstone = true;
+            }
+            return false;
+        }
+
+        for (Direction direction : Direction.values()) {
+            BlockPos pos = tnt.relative(direction);
+            if (!mc.level.getBlockState(pos).canBeReplaced()) continue;
+            if (!mc.player.isWithinBlockInteractionRange(pos, mc.player.blockInteractionRange())) continue;
+
+            if (BlockUtils.place(pos, item, false, 0, true, true, true)) return true;
+        }
+
+        if (!warnedNoRedstone) {
+            warning("Could not place a redstone block next to the TNT (no free spot).");
+            warnedNoRedstone = true;
+        }
+        return false;
     }
 
     @EventHandler

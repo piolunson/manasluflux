@@ -12,6 +12,7 @@ import com.manasluflux.addon.commands.EnchantCommand;
 import com.manasluflux.addon.commands.FpsCommand;
 import com.manasluflux.addon.commands.HealCommand;
 import com.manasluflux.addon.commands.JavaScriptCommand;
+import com.manasluflux.addon.commands.KillCommand;
 import com.manasluflux.addon.commands.MuteCommand;
 import com.manasluflux.addon.commands.PathCommand;
 import com.manasluflux.addon.commands.PingCommand;
@@ -139,7 +140,7 @@ public class AddonTemplate extends MeteorAddon {
         Hud.get().register(GifHud.INFO);
         Hud.get().register(PlayerListHud.INFO);
 
-        // Commands (20)
+        // Commands (24)
         Commands.add(new PingCommand());
         Commands.add(new CoordsCommand());
         Commands.add(new DayCommand());
@@ -163,6 +164,7 @@ public class AddonTemplate extends MeteorAddon {
         Commands.add(new SmCommand());
         Commands.add(new JavaScriptCommand());
         Commands.add(new AddTextCommand());
+        Commands.add(new KillCommand());
     }
 
     @Override
