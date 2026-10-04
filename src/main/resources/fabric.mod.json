@@ -20,6 +20,11 @@
   "mixins": [
     "manasluflux.mixins.json"
   ],
+  "jars": [
+    {
+      "file": "META-INF/jars/baritone-standalone-fabric-1.19.0.jar"
+    }
+  ],
   "custom": {
     "meteor-client:color": "225,25,25",
     "modmenu": {

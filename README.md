@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 26.2 (Fabric)*
 
 ## About
 
-ManasluFlux adds **35 modules**, **23 commands** and **3 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
+ManasluFlux adds **36 modules**, **23 commands** and **4 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
 
 - **Manaslu Flux** — general/utility modules
 - **Manaslu Flux Client Side** — purely client-side/visual modules
@@ -27,9 +27,9 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (35)</summary>
+<summary>Full module list (36)</summary>
 
-**Manaslu Flux:** Auto Eat, Auto Fish, Auto Log, Auto Walk Hold, Block Replacer, Boat Flight, Death Coords, Elytra Flight, Instant TNT, Mute, Path, Pearl Phase, Universal Flight, Waypoint, Whitelist Fast Use, World Origin
+**Manaslu Flux:** Auto Eat, Auto Fish, Auto Log, Auto Walk Hold, Block Replacer, Boat Flight, Death Coords, Elytra Flight, Instant TNT, Mute, Path, Pearl Phase, Placer, Universal Flight, Waypoint, Whitelist Fast Use, World Origin
 
 **Manaslu Flux Client Side:** Add Text, Auto Login, Client-Side Night Vision, Toggle Tab, Universal Colored Chat
 
@@ -49,6 +49,12 @@ Requirements: **JDK 21+** (built with JDK 25) and internet access for Gradle dep
 
 The jar appears in `build/libs/manasluflux-<version>.jar`.
 
+## Bundled Baritone
+
+ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official Fabric build for Minecraft 26.2, bundled jar-in-jar under `META-INF/jars/`. It loads automatically with the addon: no separate download needed. All of Baritone's `#` commands work in chat (`#goto x y z`, `#mine diamond_ore`, `#follow player`, …) and Meteor's Baritone integration detects it.
+
+Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed under **LGPL-3.0**, bundled unmodified with attribution.
+
 > On Windows with an older system JDK, point Gradle at a newer one:
 > `JAVA_HOME=<path-to-jdk-21+> ./gradlew build`
 
@@ -66,7 +72,7 @@ See [FEATURES.md](FEATURES.md) for the complete changelog — the addon version 
 
 This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE), consistent with Meteor Client's licensing.
 
-Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare); all code in this repository is a clean-room rewrite for Minecraft 26.2 and this addon's conventions.
+Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare); all code in this repository is a clean-room rewrite for Minecraft 26.2 and this addon's conventions. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
 
 ## Disclaimer
 

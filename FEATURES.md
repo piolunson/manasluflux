@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.13**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.14**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -127,6 +127,14 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 - **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux (enchanted book icon)
 - **Manaslu Flux** HUD group — HUD elements
 
+## Bundled Baritone
+
+ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official Fabric build for Minecraft 26.2, bundled jar-in-jar (`META-INF/jars/`) and declared in `fabric.mod.json`. It loads automatically with the addon: no separate download needed.
+
+- All of Baritone's `#` commands work in chat: `#goto x y z`, `#mine <block>`, `#follow player`, `#build`, `#farm`, etc.
+- Meteor's own Baritone integration detects it automatically.
+- Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed **LGPL-3.0**, bundled unmodified with attribution.
+
 ## Chat/GUI features summary
 
 - **Chat features**: local-only chat lines (Add Text), client-side muting by player or phrase (Mute + `.mfmute`), `&` color codes (Universal Colored Chat), death coordinates messages, module feedback messages.
@@ -145,6 +153,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 | Version | Changes |
 |---|---|
+| 0.3.14 | **Baritone is now built in**: the official Baritone v1.19.0 Fabric build for Minecraft 26.2 is bundled jar-in-jar and loads automatically — every `#` command (`#goto`, `#mine`, `#follow`, …) and Meteor's Baritone integration work with no separate download. Addon code unchanged. |
 | 0.3.13 | New **Placer** module (Manaslu Flux): places whitelisted blocks everywhere around you — fills nearby air with the selected blocks from your inventory, nearest first. Radius, blocks-per-tick, silent rotation and entity checks are configurable. |
 | 0.3.12 | New **Player List** HUD element: a box with every other player on the server, sorted by name or ping — color-coded ping (green < 100ms, yellow < 250ms, red above), reverse sort, custom title, show-self toggle and a max-rows cap. Drag/scale it in the HUD editor like any element. |
 | 0.3.11 | All four ManasluFlux categories now have **item icons in Meteor's GUI**: nether star for Manaslu Flux, oak sign for Manaslu Flux Client Side, end crystal for Manaslu Flux Combat and enchanted book for Manaslu Flux Rewrite — using Meteor 26.2's `Category(name, icon)` constructor. |
