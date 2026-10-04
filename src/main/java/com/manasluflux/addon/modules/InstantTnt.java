@@ -14,11 +14,15 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -34,6 +38,9 @@ import net.minecraft.world.phys.Vec3;
  *
  * Redstone Block: when no igniter is in the inventory, silently places a redstone block
  * next to the TNT instead - redstone power primes TNT in vanilla.
+ *
+ * Mine Redstone Block: the placed redstone block is packet-mined again during the TNT's
+ * 4-second fuse with a silent pickaxe swap, so the dust lands back in your inventory.
  */
 public class InstantTnt extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -78,12 +85,34 @@ public class InstantTnt extends Module {
         .build()
     );
 
+    private final Setting<Boolean> mineRedstoneBlock = sgGeneral.add(new BoolSetting.Builder()
+        .name("mine-redstone-block")
+        .description("After igniting with a redstone block, packet-mines that redstone block during the fuse with a silent hotbar-pickaxe swap - the dust lands back in your inventory.")
+        .defaultValue(true)
+        .visible(redstoneBlock::get)
+        .build()
+    );
+
     private int cooldownTicks;
     private boolean warnedNoIgniter;
     private boolean warnedNoRedstone;
+    private boolean warnedNoPickaxe;
+
+    // packet-mine state for the placed redstone block
+    private BlockPos miningPos;
+    private int miningTicks;
+    private int miningRestoreSlot = -1;
+    private int swingCounter;
+    private ItemStack miningPick;
 
     public InstantTnt() {
-        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, or a redstone block fallback.");
+        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, or a redstone block fallback that is mined back during the fuse.");
+    }
+
+    private boolean isPickaxe(Item item) {
+        return item == Items.WOODEN_PICKAXE || item == Items.COPPER_PICKAXE || item == Items.STONE_PICKAXE
+            || item == Items.GOLDEN_PICKAXE || item == Items.IRON_PICKAXE || item == Items.DIAMOND_PICKAXE
+            || item == Items.NETHERITE_PICKAXE;
     }
 
     private boolean isIgniter(Item item) {
@@ -145,8 +174,10 @@ public class InstantTnt extends Module {
 
         if (igniterSlot == -1) {
             if (redstoneBlock.get()) {
-                if (igniteWithRedstone(hit.getBlockPos())) {
+                BlockPos placed = igniteWithRedstone(hit.getBlockPos());
+                if (placed != null) {
                     cooldownTicks = cooldown.get();
+                    if (mineRedstoneBlock.get()) startMining(placed);
                 }
                 return;
             }
@@ -175,14 +206,14 @@ public class InstantTnt extends Module {
     /**
      * Places a redstone block next to the TNT - redstone power primes TNT, no igniter needed.
      */
-    private boolean igniteWithRedstone(BlockPos tnt) {
+    private BlockPos igniteWithRedstone(BlockPos tnt) {
         FindItemResult item = InvUtils.find(Items.REDSTONE_BLOCK);
         if (!item.found()) {
             if (!warnedNoRedstone) {
                 warning("No flint & steel, fire charge or redstone block found.");
                 warnedNoRedstone = true;
             }
-            return false;
+            return null;
         }
 
         for (Direction direction : Direction.values()) {
@@ -190,19 +221,120 @@ public class InstantTnt extends Module {
             if (!mc.level.getBlockState(pos).canBeReplaced()) continue;
             if (!mc.player.isWithinBlockInteractionRange(pos, mc.player.blockInteractionRange())) continue;
 
-            if (BlockUtils.place(pos, item, false, 0, true, true, true)) return true;
+            if (BlockUtils.place(pos, item, false, 0, true, true, true)) {
+                warnedNoRedstone = false;
+                return pos;
+            }
         }
 
         if (!warnedNoRedstone) {
             warning("Could not place a redstone block next to the TNT (no free spot).");
             warnedNoRedstone = true;
         }
-        return false;
+        return null;
+    }
+
+    /**
+     * Starts a silent packet mine of the redstone block: server-side pickaxe swap,
+     * START_DESTROY_BLOCK, then STOP_DESTROY_BLOCK once the vanilla break time is up.
+     */
+    private void startMining(BlockPos pos) {
+        int pickSlot = findPickaxeSlot();
+        if (pickSlot == -1) {
+            if (!warnedNoPickaxe) {
+                warning("No pickaxe in the hotbar - the redstone block won't be mined back.");
+                warnedNoPickaxe = true;
+            }
+            return;
+        }
+        warnedNoPickaxe = false;
+
+        miningPos = pos;
+        miningTicks = 0;
+        swingCounter = 0;
+        miningPick = mc.player.getInventory().getItem(pickSlot);
+        miningRestoreSlot = mc.player.getInventory().getSelectedSlot();
+
+        mc.player.connection.send(new ServerboundSetCarriedItemPacket(pickSlot));
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP));
+        mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+    }
+
+    private void updateMining() {
+        // Block already gone (server broke it or the explosion took it) - just restore the slot.
+        if (mc.level.getBlockState(miningPos).getBlock() != Blocks.REDSTONE_BLOCK) {
+            finishMining();
+            return;
+        }
+
+        miningTicks++;
+        if (++swingCounter >= 5) {
+            swingCounter = 0;
+            mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+        }
+
+        if (miningTicks >= breakTicks(miningPos)) {
+            mc.player.connection.send(new ServerboundPlayerActionPacket(
+                ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, miningPos, Direction.UP));
+            finishMining();
+        }
+    }
+
+    private void finishMining() {
+        miningPos = null;
+        if (miningRestoreSlot >= 0) {
+            mc.player.connection.send(new ServerboundSetCarriedItemPacket(miningRestoreSlot));
+            miningRestoreSlot = -1;
+        }
+    }
+
+    private void stopMining() {
+        if (miningPos == null) return;
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, miningPos, Direction.UP));
+        finishMining();
+    }
+
+    @Override
+    public void onDeactivate() {
+        stopMining();
+    }
+
+    private int findPickaxeSlot() {
+        for (int i = 0; i < 9; i++) {
+            if (isPickaxe(mc.player.getInventory().getItem(i).getItem())) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Vanilla break time in ticks for the redstone block with the pickaxe we silently
+     * swapped to. A pickaxe is always the correct tool for a redstone block, so the
+     * per-tick progress is speed / hardness / 30 (hardness 1.5 - a wooden pickaxe takes
+     * 23 ticks, iron 8, netherite 5).
+     */
+    private int breakTicks(BlockPos pos) {
+        if (miningPick == null || miningPick.isEmpty()) return 10;
+
+        BlockState state = mc.level.getBlockState(pos);
+        float hardness = state.getDestroySpeed(mc.level, pos);
+        float speed = miningPick.getDestroySpeed(state);
+        if (hardness <= 0 || speed <= 1) return 10;
+
+        return Math.max(1, (int) Math.ceil(hardness * 30 / speed));
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+
+        // progress the silent packet mine first; skip new ignitions while it runs
+        if (miningPos != null) {
+            updateMining();
+            return;
+        }
+
         if (cooldownTicks > 0) {
             cooldownTicks--;
             return;
