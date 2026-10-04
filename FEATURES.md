@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.12**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.13**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (35)
+## Modules (36)
 
 ### Category: Manaslu Flux (main)
 
@@ -30,6 +30,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Mute | `mute` | Hides chat messages from muted players or containing muted phrases (client-side). |
 | Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
 | Pearl Phase | `pearl-phase` | Ported from BlackOut's Auto Pearl — one-shot pearl throw at your own block (yaw +180°, steep pitch) to clip inside walls. Tick-based: rotates, throws on the next tick so the server sees the rotation, restores your view and hotbar, auto-toggles off. Settings: pitch, switch mode (Normal/Silent hotbar swap), instant rotation (direct rotation packet), keep rotation. |
+| Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
 | Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
 | Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
@@ -144,6 +145,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 | Version | Changes |
 |---|---|
+| 0.3.13 | New **Placer** module (Manaslu Flux): places whitelisted blocks everywhere around you — fills nearby air with the selected blocks from your inventory, nearest first. Radius, blocks-per-tick, silent rotation and entity checks are configurable. |
 | 0.3.12 | New **Player List** HUD element: a box with every other player on the server, sorted by name or ping — color-coded ping (green < 100ms, yellow < 250ms, red above), reverse sort, custom title, show-self toggle and a max-rows cap. Drag/scale it in the HUD editor like any element. |
 | 0.3.11 | All four ManasluFlux categories now have **item icons in Meteor's GUI**: nether star for Manaslu Flux, oak sign for Manaslu Flux Client Side, end crystal for Manaslu Flux Combat and enchanted book for Manaslu Flux Rewrite — using Meteor 26.2's `Category(name, icon)` constructor. |
 | 0.3.10 | Elytra Flight gained a toggleable **auto-forward** option (default OFF). With it on, the module constantly thrusts forward in your look direction as before; with it off, you only thrust while holding the forward key (W), so you can glide and steer yourself — jump = up and sneak = down still work either way. |

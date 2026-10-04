@@ -55,6 +55,7 @@ import com.manasluflux.addon.modules.WhitelistFastUse;
 import com.manasluflux.addon.modules.Mute;
 import com.manasluflux.addon.modules.Path;
 import com.manasluflux.addon.modules.PearlPhase;
+import com.manasluflux.addon.modules.Placer;
 import com.manasluflux.addon.modules.SilentAura;
 import com.manasluflux.addon.modules.TntPlacer;
 import com.manasluflux.addon.modules.ToggleTab;
@@ -99,6 +100,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new BoatFlight());
         Modules.get().add(new ElytraFlight());
         Modules.get().add(new BlockReplacer());
+        Modules.get().add(new Placer());
 
         // Rewrite category (Meteor built-ins, rewritten for ManasluFlux)
         Modules.get().add(new AutoRespawn());
