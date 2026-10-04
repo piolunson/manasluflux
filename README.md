@@ -17,7 +17,7 @@ Highlights:
 
 - **Crystal Aura** — full explosion damage simulation: every obsidian/bedrock base in range is evaluated with `min-damage` / `max-self-damage` / `anti-suicide` gating, face place, obsidian support blocks, silent server-side rotations and hotbar swaps.
 - **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.
-- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter — and mines that block straight back during the fuse.
+- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
 - **Pearl Phase** — one-shot pearl throw at your own block to phase into walls.
 - **Auto Login** — sends `/login <password>` automatically after joining.
 - **Image / GIF HUD** — display images and animated GIFs directly on your HUD.

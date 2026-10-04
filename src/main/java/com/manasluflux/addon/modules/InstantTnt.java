@@ -14,14 +14,18 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -41,6 +45,10 @@ import net.minecraft.world.phys.Vec3;
  *
  * Mine Redstone Block: the placed redstone block is packet-mined again during the TNT's
  * 4-second fuse with a silent pickaxe swap, so the dust lands back in your inventory.
+ *
+ * Bow Fallback: with no igniter AND no redstone block either, it silently swaps to a bow
+ * and shoots the TNT - a Flame-enchanted bow (or creative mode) makes flaming arrows that
+ * ignite TNT on contact. One full draw is sent, then the release packet.
  */
 public class InstantTnt extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -93,10 +101,24 @@ public class InstantTnt extends Module {
         .build()
     );
 
+    private final Setting<Boolean> bowFallback = sgGeneral.add(new BoolSetting.Builder()
+        .name("bow-fallback")
+        .description("Last resort when there is no flint & steel, fire charge AND no redstone block: silently swaps to a bow and shoots the TNT. Only works with a Flame bow (or in creative mode) plus an arrow - flaming arrows ignite TNT on contact.")
+        .defaultValue(true)
+        .build()
+    );
+
     private int cooldownTicks;
     private boolean warnedNoIgniter;
     private boolean warnedNoRedstone;
     private boolean warnedNoPickaxe;
+    private boolean warnedNoBow;
+    private boolean warnedBowCtw;
+
+    // bow fallback state: draw for 10 ticks, then send the release packet
+    private boolean bowDrawing;
+    private int bowTicks;
+    private int bowRestoreSlot = -1;
 
     // packet-mine state for the placed redstone block
     private BlockPos miningPos;
@@ -106,7 +128,45 @@ public class InstantTnt extends Module {
     private ItemStack miningPick;
 
     public InstantTnt() {
-        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, or a redstone block fallback that is mined back during the fuse.");
+        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, a self-mining redstone block fallback, or a Flame-bow shot as a last resort.");
+    }
+
+    /**
+     * True if the stack is a bow with the Flame enchantment - or any bow in creative mode,
+     * where shot arrows always burn.
+     */
+    private boolean isFlameBow(ItemStack stack) {
+        if (stack.getItem() != Items.BOW) return false;
+        if (mc.player.getAbilities().instabuild) return true;
+
+        for (Holder<Enchantment> enchantment : stack.getEnchantments().keySet()) {
+            if (enchantment.unwrapKey().filter(key -> key == Enchantments.FLAME).isPresent()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * First hotbar slot with a Flame bow. In creative mode any bow works, since all
+     * shot arrows burn there.
+     */
+    private int findBowSlot() {
+        boolean creative = mc.player.getAbilities().instabuild;
+        int plain = -1;
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
+            if (stack.getItem() != Items.BOW) continue;
+            if (isFlameBow(stack)) return i;
+            if (plain == -1) plain = i;
+        }
+        return creative ? plain : -1;
+    }
+
+    private boolean hasArrow() {
+        if (mc.player.getAbilities().instabuild) return true;
+        for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
+            if (mc.player.getInventory().getItem(i).getItem() == Items.ARROW) return true;
+        }
+        return false;
     }
 
     private boolean isPickaxe(Item item) {
@@ -173,18 +233,32 @@ public class InstantTnt extends Module {
         int igniterSlot = findIgniterSlot();
 
         if (igniterSlot == -1) {
+            boolean ignited = false;
+
             if (redstoneBlock.get()) {
                 BlockPos placed = igniteWithRedstone(hit.getBlockPos());
                 if (placed != null) {
+                    ignited = true;
                     cooldownTicks = cooldown.get();
                     if (mineRedstoneBlock.get()) startMining(placed);
                 }
-                return;
             }
 
-            if (!warnedNoIgniter) {
-                warning("No flint & steel or fire charge in the hotbar.");
-                warnedNoIgniter = true;
+            // still nothing? last resort: draw a (Flame) bow and shoot the TNT
+            if (!ignited) {
+                if (bowFallback.get()) {
+                    // the arrow flies where you actually look, so only shoot when the
+                    // crosshair is really on TNT (click through walls can't aim it)
+                    if (lookingAtTnt() != null) {
+                        if (!bowDrawing) startBowIgnite();
+                    } else if (!warnedBowCtw) {
+                        warning("Bow fallback needs the TNT in your crosshair - arrows can't be aimed through walls.");
+                        warnedBowCtw = true;
+                    }
+                } else if (!warnedNoIgniter) {
+                    warning("No flint & steel or fire charge in the hotbar.");
+                    warnedNoIgniter = true;
+                }
             }
             return;
         }
@@ -296,9 +370,64 @@ public class InstantTnt extends Module {
         finishMining();
     }
 
+    /**
+     * Last-resort ignite with a bow: silently swaps to the first (Flame) bow, sends one
+     * draw packet, and releases after 10 ticks - the arrow flies at the TNT and its
+     * flames ignite it (Flame bow, or any bow in creative). Needs an arrow.
+     */
+    private void startBowIgnite() {
+        int bowSlot = findBowSlot();
+        if (bowSlot == -1 || !hasArrow()) {
+            if (!warnedNoBow) {
+                warning("No usable bow + arrow: needs a Flame bow (or creative mode) and an arrow to ignite TNT.");
+                warnedNoBow = true;
+            }
+            return;
+        }
+        warnedNoBow = false;
+        warnedBowCtw = false;
+
+        bowDrawing = true;
+        bowTicks = 0;
+        bowRestoreSlot = mc.player.getInventory().getSelectedSlot();
+
+        mc.player.connection.send(new ServerboundSetCarriedItemPacket(bowSlot));
+        mc.player.connection.send(new ServerboundUseItemPacket(InteractionHand.MAIN_HAND,
+            0, mc.player.getYRot(), mc.player.getXRot()));
+    }
+
+    private void updateBowDraw() {
+        bowTicks++;
+
+        if (bowTicks >= 10) {
+            mc.player.connection.send(new ServerboundPlayerActionPacket(
+                ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM, BlockPos.ZERO, Direction.UP));
+            finishBowDraw();
+        }
+    }
+
+    private void finishBowDraw() {
+        bowDrawing = false;
+        bowTicks = 0;
+        if (bowRestoreSlot >= 0) {
+            mc.player.connection.send(new ServerboundSetCarriedItemPacket(bowRestoreSlot));
+            bowRestoreSlot = -1;
+        }
+        // one shot per second-ish so we don't machine-gun arrows at primed TNT
+        cooldownTicks = Math.max(cooldownTicks, 20);
+    }
+
+    private void stopBowDraw() {
+        if (!bowDrawing) return;
+        mc.player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM, BlockPos.ZERO, Direction.UP));
+        finishBowDraw();
+    }
+
     @Override
     public void onDeactivate() {
         stopMining();
+        stopBowDraw();
     }
 
     private int findPickaxeSlot() {
@@ -332,6 +461,12 @@ public class InstantTnt extends Module {
         // progress the silent packet mine first; skip new ignitions while it runs
         if (miningPos != null) {
             updateMining();
+            return;
+        }
+
+        // bow draw in progress - wait for the release
+        if (bowDrawing) {
+            updateBowDraw();
             return;
         }
 
