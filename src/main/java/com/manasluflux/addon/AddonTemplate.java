@@ -26,6 +26,7 @@ import com.manasluflux.addon.commands.WaypointCommand;
 import com.manasluflux.addon.hud.GifHud;
 import com.manasluflux.addon.hud.HudExample;
 import com.manasluflux.addon.hud.ImageHud;
+import com.manasluflux.addon.hud.PlayerListHud;
 import com.manasluflux.addon.modules.AddText;
 import com.manasluflux.addon.modules.AutoLogin;
 import com.manasluflux.addon.modules.AutoTotem;
@@ -132,6 +133,7 @@ public class AddonTemplate extends MeteorAddon {
         Hud.get().register(HudExample.INFO);
         Hud.get().register(ImageHud.INFO);
         Hud.get().register(GifHud.INFO);
+        Hud.get().register(PlayerListHud.INFO);
 
         // Commands (20)
         Commands.add(new PingCommand());

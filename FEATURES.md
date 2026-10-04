@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.11**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.12**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -73,7 +73,7 @@ Meteor built-ins rewritten for ManasluFlux (MC 26.2, own ClickGUI category). Not
 
 ---
 
-## HUD Elements (3)
+## HUD Elements (4)
 
 All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
@@ -82,6 +82,7 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 | Image | `image` | Displays an image file (png, jpg, bmp, first frame of a gif) from an absolute path or relative to `.minecraft`. Settings: file path, scale, opacity, smooth/nearest filtering. Shows a "Missing image" placeholder in the HUD editor. |
 | GIF | `gif` | Displays an animated GIF file — decodes all frames, respects each frame's real delay, animates in sync with render delta, only re-uploads a frame when it changes. Same settings as Image. |
 | Example | `example` | Template example: renders "ManasluFlux" text on a gray quad. |
+| Player List | `player-list` | Dark box with all the other players on the server, sorted by name or ping. Settings: custom title (default "Other Players"), sort mode, reverse order, show-self, color-coded ping (green < 100ms, yellow < 250ms, red above), max rows (0 = everyone), background on/off. Drag and scale it in the HUD editor. |
 
 ---
 
@@ -143,6 +144,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 | Version | Changes |
 |---|---|
+| 0.3.12 | New **Player List** HUD element: a box with every other player on the server, sorted by name or ping — color-coded ping (green < 100ms, yellow < 250ms, red above), reverse sort, custom title, show-self toggle and a max-rows cap. Drag/scale it in the HUD editor like any element. |
 | 0.3.11 | All four ManasluFlux categories now have **item icons in Meteor's GUI**: nether star for Manaslu Flux, oak sign for Manaslu Flux Client Side, end crystal for Manaslu Flux Combat and enchanted book for Manaslu Flux Rewrite — using Meteor 26.2's `Category(name, icon)` constructor. |
 | 0.3.10 | Elytra Flight gained a toggleable **auto-forward** option (default OFF). With it on, the module constantly thrusts forward in your look direction as before; with it off, you only thrust while holding the forward key (W), so you can glide and steer yourself — jump = up and sneak = down still work either way. |
 | 0.3.9 | Universal Flight gained the **always-fly** option (default ON = previous behavior). With it OFF the module only grants the flight permission + speed and lets vanilla's double-jump toggle flying on and off, exactly like creative mode. |
