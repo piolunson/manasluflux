@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.9**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.10**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -25,7 +25,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
 | Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
 | Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
-| Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. |
+| Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
 | Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. |
 | Mute | `mute` | Hides chat messages from muted players or containing muted phrases (client-side). |
 | Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
@@ -143,6 +143,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 | Version | Changes |
 |---|---|
+| 0.3.10 | Elytra Flight gained a toggleable **auto-forward** option (default OFF). With it on, the module constantly thrusts forward in your look direction as before; with it off, you only thrust while holding the forward key (W), so you can glide and steer yourself — jump = up and sneak = down still work either way. |
 | 0.3.9 | Universal Flight gained the **always-fly** option (default ON = previous behavior). With it OFF the module only grants the flight permission + speed and lets vanilla's double-jump toggle flying on and off, exactly like creative mode. |
 | 0.3.8 | **Auto Login** module added to Manaslu Flux Client Side: automatically sends `/login <password>` (both configurable, default `/login 12345678`) after joining, or on chat triggers like "register" — with delay, cooldown and repeat options. |
 | 0.3.7 | **New module category "Manaslu Flux Rewrite"** for the 10 rewritten Meteor-style modules (Auto Respawn, Auto Responder, Death Commands, Chat Logger, Tab Logger, Tab Complete Privacy, Click TP, Clicker, Sound Muter, Packet Limiter). **Crash fix**: `sound-blocker` collided with Meteor's built-in SoundBlocker module ID, which NPE'd Meteor's SoundEngine mixin at startup — renamed to `sound-muter` (`click-tp` and `auto-respawn` also collided and are now `mf-click-tp` / `mf-auto-respawn`). |
