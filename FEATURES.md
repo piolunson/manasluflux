@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.3.14**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.3.15**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (36)
+## Modules (37)
 
 ### Category: Manaslu Flux (main)
 
@@ -31,6 +31,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
 | Pearl Phase | `pearl-phase` | Ported from BlackOut's Auto Pearl — one-shot pearl throw at your own block (yaw +180°, steep pitch) to clip inside walls. Tick-based: rotates, throws on the next tick so the server sees the rotation, restores your view and hotbar, auto-toggles off. Settings: pitch, switch mode (Normal/Silent hotbar swap), instant rotation (direct rotation packet), keep rotation. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
+| Ping Spoofer | `ping-spoofer` | Changes your ping with three modes: **Real** (no change), **More** (genuinely adds latency by delaying keep-alive/pong replies, so the server sees real extra ms) or **Spoof** (replies sent instantly, only the tab-list ping is patched). Amount, jitter and a debug readout are configurable. |
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
 | Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
 | Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
@@ -153,6 +154,7 @@ ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official
 
 | Version | Changes |
 |---|---|
+| 0.3.15 | New **Ping Spoofer** module (Manaslu Flux) with three modes: **Real** (nothing changed), **More** (your keep-alive/pong replies are actually delayed, so the server-side latency genuinely grows by the configured amount, with random jitter) and **Spoof** (replies stay instant, the tab-list ping is patched to the fake value). Includes a debug readout of real vs displayed ping. |
 | 0.3.14 | **Baritone is now built in**: the official Baritone v1.19.0 Fabric build for Minecraft 26.2 is bundled jar-in-jar and loads automatically — every `#` command (`#goto`, `#mine`, `#follow`, …) and Meteor's Baritone integration work with no separate download. Addon code unchanged. |
 | 0.3.13 | New **Placer** module (Manaslu Flux): places whitelisted blocks everywhere around you — fills nearby air with the selected blocks from your inventory, nearest first. Radius, blocks-per-tick, silent rotation and entity checks are configurable. |
 | 0.3.12 | New **Player List** HUD element: a box with every other player on the server, sorted by name or ping — color-coded ping (green < 100ms, yellow < 250ms, red above), reverse sort, custom title, show-self toggle and a max-rows cap. Drag/scale it in the HUD editor like any element. |
