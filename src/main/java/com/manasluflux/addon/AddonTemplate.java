@@ -44,6 +44,7 @@ import com.manasluflux.addon.modules.Clicker;
 import com.manasluflux.addon.modules.ClickTp;
 import com.manasluflux.addon.modules.ClientSideNightVision;
 import com.manasluflux.addon.modules.CrystalAura;
+import com.manasluflux.addon.modules.CrystalOptimizer;
 import com.manasluflux.addon.modules.DeathCoords;
 import com.manasluflux.addon.modules.ElytraFlight;
 import com.manasluflux.addon.modules.InstantTnt;
@@ -121,6 +122,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new ClientSideNightVision());
         Modules.get().add(new ToggleTab());
         Modules.get().add(new InstantTnt());
+        Modules.get().add(new CrystalOptimizer());
         Modules.get().add(new UniversalColoredChat());
         Modules.get().add(new DeathCoords());
         Modules.get().add(new WhitelistFastUse());

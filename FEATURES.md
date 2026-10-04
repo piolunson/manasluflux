@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.4.1**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.4.2**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (37)
+## Modules (38)
 
 ### Category: Manaslu Flux (main)
 
@@ -44,6 +44,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Add Text | `add-text` | Local-only chat lines added with `.mfaddtext`, optionally kept across relogs. |
 | Auto Login | `auto-login` | Sends `/<command> <password>` (default `/login 12345678`) automatically after joining a server — or when chat shows a trigger word like "register". Settings: command, password, mode (Always/Trigger), triggers, delay, repeat-on-trigger, cooldown. The password is stored in plain text in the Meteor config — don't reuse an important one. |
 | Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
+| Crystal Optimizer | `crystal-optimizer` | Replaces every end crystal's full animated model (outer cube, inner core, bedrock base, beam) with a single static box — or hides crystals entirely — a big FPS boost with lots of crystals on screen. Purely client-side rendering via a tiny renderer mixin: nothing is sent to the server and crystals behave exactly the same. Settings: mode (simple box / hide), box shape (fill/lines), box color. |
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
 
@@ -155,6 +156,7 @@ ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official
 
 | Version | Changes |
 |---|---|
+| 0.4.2 | New **Crystal Optimizer** module (Client Side): replaces every end crystal's full animated model (outer cube, inner core, bedrock base, beam) with a single static box — or hides crystals entirely — for a big FPS boost with lots of crystals on screen. Purely client-side rendering, implemented with the addon's first mixin (`EndCrystalRendererMixin` cancels the vanilla crystal render, a `Render3DEvent` draws the box): nothing is sent to the server, crystals behave exactly the same. |
 | 0.4.1 | Instant TNT gained a **bow fallback** (`bow-fallback`, default on): with no flint & steel, fire charge AND no redstone block in the inventory, it silently swaps to a bow, draws it server-side and releases after 10 ticks — a **Flame**-enchanted bow (or any bow in creative mode) shoots flaming arrows that ignite TNT on contact. The shot only fires when the TNT is actually in your crosshair (arrows fly where you look, so click-through-walls aiming can't guide them), needs an arrow in the inventory, and has a ~1s shot cooldown. |
 | 0.4.0 | Instant TNT's redstone-block ignition now **mines the redstone block straight back** (new `mine-redstone-block` setting, default on): right after igniting, the module silently swaps to a hotbar pickaxe server-side and packet-mines the placed redstone block (START/STOP destroy packets timed to vanilla break speed with periodic swing packets), so the dust is back in your inventory before the TNT blows — no redstone block consumed per ignition. |
 | 0.3.16 | New **Kill** command (`.mfkill`) with a confirm step: in singleplayer it kills you instantly with real `/kill` damage (through the integrated server); on servers it sends `/suicide`, which works wherever self-kill is allowed. **Instant TNT** gained a **redstone-block fallback** (default on): with no flint & steel or fire charge in the inventory, it silently places a redstone block next to the TNT to prime it. Also added a compile-only Fabric API resource-loader dependency so addon code can safely touch the integrated server on MC 26.2. |
