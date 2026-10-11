@@ -39,6 +39,7 @@ import com.manasluflux.addon.modules.AutoResponder;
 import com.manasluflux.addon.modules.AutoWalk;
 import com.manasluflux.addon.modules.AutoLog;
 import com.manasluflux.addon.modules.AutoMapPart;
+import com.manasluflux.addon.modules.AutoWither;
 import com.manasluflux.addon.modules.BlockReplacer;
 import com.manasluflux.addon.modules.ChatLogger;
 import com.manasluflux.addon.modules.Clicker;
@@ -105,6 +106,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new ElytraFlight());
         Modules.get().add(new BlockReplacer());
         Modules.get().add(new AutoMapPart());
+        Modules.get().add(new AutoWither());
         Modules.get().add(new Placer());
         Modules.get().add(new PingSpoofer());
 
