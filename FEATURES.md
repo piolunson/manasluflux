@@ -77,7 +77,7 @@ Meteor built-ins rewritten for ManasluFlux (MC 26.2, own ClickGUI category). Not
 
 ---
 
-## HUD Elements (4)
+## HUD Elements (7)
 
 All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
@@ -87,6 +87,9 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 | GIF | `gif` | Displays an animated GIF file — decodes all frames, respects each frame's real delay, animates in sync with render delta, only re-uploads a frame when it changes. Same settings as Image. |
 | Example | `example` | Template example: renders "ManasluFlux" text on a gray quad. |
 | Player List | `player-list` | Dark box with all the other players on the server, sorted by name or ping. Settings: custom title (default "Other Players"), sort mode, reverse order, show-self, color-coded ping (green < 100ms, yellow < 250ms, red above), max rows (0 = everyone), background on/off. Drag and scale it in the HUD editor. |
+| Server Info | `server-info` | Small info box for your session: server name and address ("Singleplayer"/"localhost" alone), online player count, and your live latency color-coded (green < 100ms, yellow < 250ms, red above). Settings: show address, show ping, background. |
+| Session Info | `session-info` | World session box: in-game **day number**, **clock time** (HH:MM, same overworld-clock math as `.mfday`), **weather** (Clear/Rain/Thunder) and the **biome** you are standing in. Rows toggle individually, dark background option. |
+| Kill Counter | `kill-counter` | Session combat tracker: **kills** (players and/or hostile mobs, friends excluded), **deaths** and computed **K/D**. Resets automatically when you join a different world or dimension. Settings: count players, count mobs, show deaths + K/D, background. |
 
 ---
 
@@ -157,7 +160,7 @@ ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official
 
 | Version | Changes |
 |---|---|
-| 0.4.7 | Auto Wither: new **range** setting (default 4.5, up to 20) — the aimed build spot must be within this distance from you, otherwise no preview appears and right-click does nothing. |
+| 0.4.8 | Three new HUD elements in the "Manaslu Flux" HUD group, all not covered by Meteor's built-ins: **Server Info** (`server-info` — server name/address, online players, color-coded live ping), **Session Info** (`session-info` — in-game day, HH:MM clock, weather, current biome) and **Kill Counter** (`kill-counter` — session kills/deaths/K-D with mob/player selection, friend-safe, auto-reset on world change). HUD count goes 4 → 7. | Auto Wither: new **range** setting (default 4.5, up to 20) — the aimed build spot must be within this distance from you, otherwise no preview appears and right-click does nothing. |
 | 0.4.6 | Auto Wither **reworked as a straight port from Trouser-Streak**: aim anywhere and right-click to build (2 soul sand columns + 3 skulls, center skull optional), air place, rotation lock, live ghost preview with colors, silent hotbar swaps for placement, delay between blocks (0 = one tick), optional automatic nametag of the spawned wither (creative renames the tag client-side). |
 | 0.4.5 | New **Auto Wither** module (Manaslu Flux), **ported from Trouser-Streak** (etianl, originally by Germanminer): aim at a spot, see the live ghost preview of the wither skeleton, right-click and the full wither is placed — 2 soul sand columns plus the middle block with 3 skulls on top (center skull optional), placement goes through silent hotbar swaps so your visible slot is untouched. **Air place** works, rotation can be **locked** to a cardinal direction, and delay between blocks is configurable (0 = everything in one tick). Optionally **nametags** the spawned wither automatically: creative mode renames the tag client-side to your configured name, survival uses an already anvil-renamed tag; nametag delay configurable (0 = instant). Replaces the previous auto-wither implementation with the proven Trouser-Streak one. |
 | 0.4.4 | Auto Map Part: new **delay** setting (0–20 ticks, default **0 = instant**) — the map is placed into the frame the same tick it spawns; frames detected instantly are claimed before anything else can fill them, delayed frames count down per-tick and are dropped if they despawn or get filled meanwhile. Silent hotbar swap unchanged. |

@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 26.2 (Fabric)*
 
 ## About
 
-ManasluFlux adds **40 modules**, **24 commands** and **4 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
+ManasluFlux adds **40 modules**, **24 commands** and **7 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
 
 - **Manaslu Flux** — general/utility modules
 - **Manaslu Flux Client Side** — purely client-side/visual modules
@@ -21,6 +21,7 @@ Highlights:
 - **Pearl Phase** — one-shot pearl throw at your own block to phase into walls.
 - **Auto Login** — sends `/login <password>` automatically after joining.
 - **Image / GIF HUD** — display images and animated GIFs directly on your HUD.
+- **Server Info / Session Info / Kill Counter HUD** — server address + live ping, in-game day/time/weather/biome, and a session combat tracker.
 
 The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
