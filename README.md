@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 26.2 (Fabric)*
 
 ## About
 
-ManasluFlux adds **38 modules**, **24 commands** and **4 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
+ManasluFlux adds **39 modules**, **24 commands** and **4 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
 
 - **Manaslu Flux** — general/utility modules
 - **Manaslu Flux Client Side** — purely client-side/visual modules
@@ -29,7 +29,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 <details>
 <summary>Full module list (38)</summary>
 
-**Manaslu Flux:** Auto Eat, Auto Fish, Auto Log, Auto Walk Hold, Block Replacer, Boat Flight, Death Coords, Elytra Flight, Instant TNT, Mute, Path, Pearl Phase, Ping Spoofer, Placer, Universal Flight, Waypoint, Whitelist Fast Use, World Origin
+**Manaslu Flux:** Auto Eat, Auto Fish, Auto Log, Auto Map Part, Auto Walk Hold, Block Replacer, Boat Flight, Death Coords, Elytra Flight, Instant TNT, Mute, Path, Pearl Phase, Ping Spoofer, Placer, Universal Flight, Waypoint, Whitelist Fast Use, World Origin
 
 **Manaslu Flux Client Side:** Add Text, Auto Login, Client-Side Night Vision, Crystal Optimizer, Toggle Tab, Universal Colored Chat
 
