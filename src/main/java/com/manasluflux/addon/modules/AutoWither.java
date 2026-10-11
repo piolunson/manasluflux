@@ -10,6 +10,7 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.ColorSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -54,6 +55,14 @@ public class AutoWither extends Module {
         .defaultValue(0)
         .min(0)
         .sliderMax(10)
+        .build()
+    );
+    private final Setting<Double> range = sgGeneral.add(new DoubleSetting.Builder()
+        .name("range")
+        .description("How far away you can build: the aimed spot must be within this distance. Server reach is ~4.5 blocks in survival.")
+        .defaultValue(4.5)
+        .min(0.0)
+        .sliderMax(20.0)
         .build()
     );
     private final Setting<Boolean> airPlace = sgGeneral.add(new BoolSetting.Builder()
@@ -295,11 +304,13 @@ public class AutoWither extends Module {
     }
 
     private void updatePreviewPos() {
-        if (nametagState == State.IDLE && !building) {
-            // fall through - the preview update also happens below for any state
-        }
         if (mc.hitResult instanceof BlockHitResult hit) {
             BlockPos pos = hit.getBlockPos();
+            // Out of configured range: no preview, nothing can be built there.
+            if (mc.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > range.get() * range.get()) {
+                previewPos = null;
+                return;
+            }
             BlockState state = mc.level.getBlockState(pos);
             if (airPlace.get()) {
                 if (state.isRedstoneConductor(mc.level, pos)) {
