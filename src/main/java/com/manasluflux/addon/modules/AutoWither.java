@@ -1,23 +1,23 @@
+// Ported from Trouser-Streak (etianl) - who skidded it from Germanminer with permission!
+// Original: https://github.com/Germanminer/MeteorServerUtils/blob/master/src/main/java/com/example/addon/modules/AutoWither.java
+// Trouser-Streak source: https://github.com/etianl/Trouser-Streak/blob/master/src/main/java/pwn/noobs/trouserstreak/modules/AutoWither.java
 package com.manasluflux.addon.modules;
 
 import com.manasluflux.addon.AddonTemplate;
+import meteordevelopment.meteorclient.events.meteor.MouseClickEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.ColorSetting;
-import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.StringSetting;
-import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.utils.player.FindItemResult;
-import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,416 +26,499 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Builds a wither where you are aiming: projects the 3x3 skeleton as ghost blocks, then
- * places it block by block out of your inventory (6 soul sand + 3 wither skulls, exactly
- * the vanilla spawn structure). When the server spawns the wither it is nametagged -
- * in creative mode the name tag is renamed to the configured name client-side (creative
- * inventory is authoritative); in survival an already anvil-renamed name tag from the
- * hotbar is used. Block delay, layer delay and nametag delay are each configurable,
- * with 0 = as fast as the server accepts.
- */
+import java.util.ArrayList;
+import java.util.List;
+
 public class AutoWither extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-    private final SettingGroup sgRender = settings.createGroup("Render");
+    private final SettingGroup sgNametag = settings.createGroup("Nametag");
+    private final SettingGroup sgVisuals = settings.createGroup("Visuals");
+    private final SettingGroup sgColors = settings.createGroup("Colors");
 
-    // ---- Settings ----
-    private final Setting<Double> range = sgGeneral.add(new DoubleSetting.Builder()
-        .name("range")
-        .description("How far away the wither can be built (distance to the block you aim at).")
-        .defaultValue(4.5)
-        .min(1.0)
-        .sliderMax(6.0)
-        .build()
-    );
-
-    private final Setting<Integer> blockDelay = sgGeneral.add(new IntSetting.Builder()
-        .name("block-delay")
-        .description("Ticks between placing each block of the wither. 0 = every tick.")
-        .defaultValue(1)
+    private final Setting<Integer> delay = sgGeneral.add(new IntSetting.Builder()
+        .name("delay")
+        .description("Tick delay between placing blocks.")
+        .defaultValue(0)
         .min(0)
-        .sliderMax(20)
+        .sliderMax(10)
         .build()
     );
-
-    private final Setting<Integer> layerDelay = sgGeneral.add(new IntSetting.Builder()
-        .name("layer-delay")
-        .description("Extra ticks added when moving up to the next layer. 0 = none.")
-        .defaultValue(3)
-        .min(0)
-        .sliderMax(40)
-        .build()
-    );
-
-    private final Setting<Boolean> nametag = sgGeneral.add(new BoolSetting.Builder()
-        .name("nametag")
-        .description("Applies a name tag to the spawned wither.")
+    private final Setting<Boolean> airPlace = sgGeneral.add(new BoolSetting.Builder()
+        .name("air-place")
+        .description("Allow air placing.")
         .defaultValue(true)
         .build()
     );
+    private final Setting<Boolean> placeCenterSkull = sgGeneral.add(new BoolSetting.Builder()
+        .name("center-skull")
+        .description("Place the skull in the center of the wither.")
+        .defaultValue(true)
+        .build()
+    );
+    private final Setting<Boolean> lockRotation = sgGeneral.add(new BoolSetting.Builder()
+        .name("lock-rotation")
+        .description("Locks the rotation of the wither.")
+        .defaultValue(false)
+        .build()
+    );
+    private final Setting<CardinalDirection> chosenDirection = sgGeneral.add(new EnumSetting.Builder<CardinalDirection>()
+        .name("direction")
+        .description("The direction to be locked to (North means the wither's arms will be west-east).")
+        .defaultValue(CardinalDirection.North)
+        .visible(lockRotation::get)
+        .build()
+    );
 
-    private final Setting<Integer> nametagDelay = sgGeneral.add(new IntSetting.Builder()
+    private final Setting<Boolean> nametagIt = sgNametag.add(new BoolSetting.Builder()
+        .name("nametag")
+        .description("Right after the wither spawns, silently applies a name tag to it.")
+        .defaultValue(true)
+        .build()
+    );
+    private final Setting<String> witherName = sgNametag.add(new StringSetting.Builder()
+        .name("wither-name")
+        .description("Name written on the used name tag (creative mode renames the tag directly; survival uses an already-renamed tag).")
+        .defaultValue("Wither")
+        .visible(nametagIt::get)
+        .build()
+    );
+    private final Setting<Integer> nametagDelay = sgNametag.add(new IntSetting.Builder()
         .name("nametag-delay")
         .description("Ticks to wait after the wither spawns before the name tag is applied. 0 = instant.")
         .defaultValue(5)
         .min(0)
         .sliderMax(100)
-        .visible(nametag::get)
+        .visible(nametagIt::get)
         .build()
     );
 
-    private final Setting<String> witherName = sgGeneral.add(new StringSetting.Builder()
-        .name("wither-name")
-        .description("Name given to the wither in creative mode (the renamed tag is applied directly). Leave empty to keep the tag's own name.")
-        .defaultValue("Wither")
-        .visible(nametag::get)
-        .build()
-    );
-
-    private final Setting<Boolean> silentSwap = sgGeneral.add(new BoolSetting.Builder()
-        .name("silent-swap")
-        .description("Places blocks and applies the name tag with server-side hotbar swaps so your visible slot never changes.")
+    private final Setting<Boolean> renderPreview = sgVisuals.add(new BoolSetting.Builder()
+        .name("preview")
+        .description("If the blocks should be rendered")
         .defaultValue(true)
         .build()
     );
-
-    private final Setting<Boolean> rotate = sgGeneral.add(new BoolSetting.Builder()
-        .name("rotate")
-        .description("Silently rotates to each placement, like vanilla block placement.")
-        .defaultValue(false)
-        .build()
-    );
-
-    private final Setting<Integer> rearmDelay = sgGeneral.add(new IntSetting.Builder()
-        .name("rearm-delay")
-        .description("Ticks to wait after a finished wither before aiming somewhere new builds another one.")
-        .defaultValue(40)
-        .min(0)
-        .sliderMax(200)
-        .build()
-    );
-
-    private final Setting<Boolean> project = sgRender.add(new BoolSetting.Builder()
-        .name("project")
-        .description("Shows the ghost outline of the wither at the aim spot before/while building.")
+    private final Setting<Boolean> swingHand = sgVisuals.add(new BoolSetting.Builder()
+        .name("swing")
+        .description("Swing hand.")
         .defaultValue(true)
         .build()
     );
-
-    private final Setting<SettingColor> sideColor = sgRender.add(new ColorSetting.Builder()
-        .name("side-color")
-        .description("Fill color of the projected blocks.")
-        .defaultValue(new SettingColor(255, 255, 255, 25))
+    private final Setting<SettingColor> previewColor = sgColors.add(new ColorSetting.Builder()
+        .name("preview-color")
+        .description("fill color for the preview.")
+        .defaultValue(new SettingColor(51, 207, 255, 50))
         .build()
     );
-
-    private final Setting<SettingColor> lineColor = sgRender.add(new ColorSetting.Builder()
-        .name("line-color")
-        .description("Outline color of the projected blocks.")
-        .defaultValue(new SettingColor(255, 255, 255, 140))
+    private final Setting<SettingColor> previewOutlineColor = sgColors.add(new ColorSetting.Builder()
+        .name("preview-outline-color")
+        .description("outline color for the preview.")
+        .defaultValue(new SettingColor(112, 136, 255, 255))
         .build()
     );
-
-    private final Setting<ShapeMode> shapeMode = sgRender.add(new EnumSetting.Builder<ShapeMode>()
-        .name("shape-mode")
-        .description("Fill and/or outline for the projection.")
-        .defaultValue(ShapeMode.Both)
-        .build()
-    );
-
-    // ---- Build plan (vanilla wither structure, 3 wide x 3 tall) ----
-    // Indices 0..5 = soul sand (bottom row, middle row), 6..8 = wither skulls on top.
-    private static final int PLAN_SIZE = 9;
-    private static final int SKULL_START = 6;
-    private final BlockPos[] plan = new BlockPos[PLAN_SIZE];
-
-    // ---- State machine ----
-    private enum State { IDLE, BUILDING, NAMETAG_WAIT, NAMETAG, DONE }
-
-    private State state = State.IDLE;
-    private BlockPos base;            // center of the middle layer
-    private Direction facing;         // horizontal direction the wither faces
-    private int planIndex;            // next plan slot to place
-    private int timer;                // universal countdown for the current pause
-    private int waitTicks;            // nametag wait / rearm countdown
-    private WitherBoss pendingWither;
-    private boolean warnedNoBlocks;
-    private boolean warnedNoTag;
 
     public AutoWither() {
-        super(AddonTemplate.CATEGORY, "auto-wither", "Projects a wither at your aim spot, then places it piece by piece (6 soul sand + 3 wither skulls) and automatically nametags the spawned wither. Block, layer and nametag delays are all configurable with 0 = instant.");
+        super(AddonTemplate.CATEGORY, "auto-wither", "Automatically builds a wither where you look (right-click to place the projected skeleton) and optionally nametags it. Ported from Trouser-Streak.");
     }
 
+    // ===== Nametag tracking =====
+    private enum State { IDLE, NAMETAG_WAIT, NAMETAG, DONE }
+
+    private State nametagState = State.IDLE;
+    private WitherBoss pendingWither;
+    private int nametagTicks;
+    private boolean building = false;
+    private boolean hasMaterials = false;
+    private BlockPos previewPos;
+    private final List<BlockPos> pendingBlocks = new ArrayList<>();
+    private final List<BlockPos> pendingSkulls = new ArrayList<>();
+    private int tickDelay = 0;
+
+    // ===== Materials =====
     @Override
     public void onActivate() {
-        resetBuild();
+        info("Aim at a spot and press the use key (right-click) to build a wither.");
+        hasMaterials = hasWitherMaterials();
+        int withers = countWithersAvailable();
+        info(withers > 0 ? "You can build " + withers + " withers." : "You don't have the required materials for a wither.");
+        building = false;
+        nametagState = State.IDLE;
+        pendingWither = null;
+    }
+
+    private int countWithersAvailable() {
+        int soul = 0, skull = 0;
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
+            if (stack.isEmpty()) continue;
+            Item item = stack.getItem();
+            if (item == Items.SOUL_SAND || item == Items.SOUL_SOIL) soul += stack.getCount();
+            else if (item == Items.WITHER_SKELETON_SKULL) skull += stack.getCount();
+        }
+        return Math.min(soul / 4, skull / 3);
+    }
+
+    private boolean hasWitherMaterials() {
+        int soul = 0, skull = 0;
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getItem(i);
+            if (stack.isEmpty()) continue;
+            Item item = stack.getItem();
+            if (item == Items.SOUL_SAND || item == Items.SOUL_SOIL) soul += stack.getCount();
+            else if (item == Items.WITHER_SKELETON_SKULL) skull += stack.getCount();
+            if (mc.player.hasInfiniteMaterials()) {
+                if (soul >= 1 && skull >= 1) return true;
+            } else {
+                if (soul >= 4 && skull >= 3) return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public void onDeactivate() {
-        resetBuild();
-    }
-
-    private void resetBuild() {
-        state = State.IDLE;
-        base = null;
-        facing = null;
-        planIndex = 0;
-        timer = 0;
-        waitTicks = 0;
+        building = false;
+        nametagState = State.IDLE;
         pendingWither = null;
-        warnedNoBlocks = false;
-        warnedNoTag = false;
     }
 
-    // ---------- Spot finding + plan ----------
+    // ===== Input =====
+    @EventHandler
+    private void onMouseButton(MouseClickEvent event) {
+        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        if (mc.gui.screen() != null) return; // do nothing inside GUIs
+        if (event.click.button() != 1) return; // right mouse button only
+        if (event.action != KeyAction.Press) return;
+        if (building) return;
 
-    private boolean findSpot() {
-        // Anchor = the block you are looking at.
-        var hit = mc.player.pick(range.get() + 4, 0, false);
-        if (!(hit instanceof BlockHitResult bhr)) return false;
+        if (!hasMaterials) {
+            info("You don't have the required materials to build a wither.");
+            return;
+        }
+        if (previewPos != null) {
+            event.setCancelled(true);
+            building = true;
+            placeWither(previewPos);
+            nametagState = State.NAMETAG_WAIT;
+            nametagTicks = 0;
+        }
+    }
 
-        BlockPos anchor = bhr.getBlockPos();
-        // Pick the dominant horizontal axis of the look vector.
-        Vec3 look = mc.player.getLookAngle();
-        Direction dir;
-        if (Math.abs(look.x) >= Math.abs(look.z)) {
-            dir = look.x >= 0 ? Direction.EAST : Direction.WEST;
-        } else {
-            dir = look.z >= 0 ? Direction.SOUTH : Direction.NORTH;
+    // ===== Placement loop =====
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
+        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        hasMaterials = hasWitherMaterials();
+
+        if (!building) return;
+
+        if (tickDelay > 0) {
+            tickDelay--;
+            return;
         }
 
-        // Base center = one block in front of the anchor, on top of it; wither faces you.
-        base = anchor.above().relative(dir);
-        facing = dir.getOpposite();
-        buildPlan();
-        return true;
+        int originalSlot = mc.player.getInventory().getSelectedSlot();
+
+        if (delay.get() == 0) {
+            // Instant: dump everything in one tick.
+            while (!pendingBlocks.isEmpty()) {
+                BlockPos pos = pendingBlocks.remove(0);
+                placeSoulBlock(pos);
+            }
+            while (!pendingSkulls.isEmpty()) {
+                BlockPos pos = pendingSkulls.remove(0);
+                placeBlock(pos, Items.WITHER_SKELETON_SKULL);
+            }
+            mc.player.getInventory().setSelectedSlot(originalSlot);
+            building = false;
+        } else {
+            if (!pendingBlocks.isEmpty()) {
+                BlockPos pos = pendingBlocks.remove(0);
+                placeSoulBlock(pos);
+                mc.player.getInventory().setSelectedSlot(originalSlot);
+                tickDelay = delay.get();
+            } else if (!pendingSkulls.isEmpty()) {
+                BlockPos pos = pendingSkulls.remove(0);
+                placeBlock(pos, Items.WITHER_SKELETON_SKULL);
+                mc.player.getInventory().setSelectedSlot(originalSlot);
+                tickDelay = delay.get();
+            } else {
+                mc.player.getInventory().setSelectedSlot(originalSlot);
+                building = false;
+            }
+        }
     }
 
-    private void buildPlan() {
-        Direction side = facing.getClockWise();
-
-        // Bottom row (soul sand) sits on top of the anchor's level.
-        plan[0] = base.below().relative(side, -1);
-        plan[1] = base.below();
-        plan[2] = base.below().relative(side, 1);
-        // Middle row (soul sand).
-        plan[3] = base.relative(side, -1);
-        plan[4] = base;
-        plan[5] = base.relative(side, 1);
-        // Top row (3 wither skulls, one per column, on top of the middle row).
-        plan[6] = base.above().relative(side, -1);
-        plan[7] = base.above();
-        plan[8] = base.above().relative(side, 1);
-    }
-
-    private boolean isSkullStep(int i) {
-        return i >= SKULL_START;
-    }
-
-    // ---------- Tick logic ----------
-
+    // ===== Nametag =====
     @EventHandler
-    private void onTick(TickEvent.Post event) {
+    private void onTickPost(TickEvent.Post event) {
         if (mc.player == null || mc.level == null || mc.gameMode == null) return;
 
-        switch (state) {
-            case IDLE -> {
-                if (timer > 0) {
-                    timer--;
+        // update preview position from the crosshair.
+        updatePreviewPos();
+        if (!nametagIt.get() || nametagState == State.IDLE) return;
+
+        if (nametagState == State.NAMETAG_WAIT) {
+            WitherBoss wither = findBuiltWither();
+            if (wither != null) {
+                pendingWither = wither;
+                if (nametagDelay.get() > 0 && nametagTicks < nametagDelay.get()) {
+                    nametagTicks++;
                     return;
                 }
-                if (findSpot() && haveMaterials()) {
-                    state = State.BUILDING;
-                    planIndex = 0;
-                    timer = 0;
-                } else {
-                    base = null; // try again next tick
+                nametagState = State.NAMETAG;
+            } else {
+                nametagTicks++;
+                if (nametagTicks > 200) { // give up after ~10s
+                    nametagState = State.IDLE;
                 }
             }
+        }
 
-            case BUILDING -> {
-                if (planIndex >= PLAN_SIZE) {
-                    state = State.NAMETAG_WAIT;
-                    waitTicks = 0;
-                    return;
-                }
-                if (timer > 0) {
-                    timer--;
-                    return;
-                }
-
-                boolean placed = placeStep();
-                if (placed) {
-                    planIndex++;
-                    // Extra pause when moving up a layer.
-                    boolean layerSwitch = planIndex < PLAN_SIZE
-                        && plan[planIndex].getY() != plan[planIndex - 1].getY();
-                    timer = blockDelay.get() + (layerSwitch ? layerDelay.get() : 0);
-                } else {
-                    timer = 5; // out of blocks etc. - retry shortly
-                }
-            }
-
-            case NAMETAG_WAIT -> {
-                WitherBoss wither = findBuiltWither();
-                if (wither != null) {
-                    pendingWither = wither;
-                    if (!nametag.get()) {
-                        finish();
-                        return;
-                    }
-                    if (nametagDelay.get() > 0) {
-                        // Wait out the configured delay first.
-                        if (waitTicks < nametagDelay.get()) {
-                            waitTicks++;
-                            return;
-                        }
-                    }
-                    state = State.NAMETAG;
-                } else {
-                    // Still spawning - give up after ~10s.
-                    waitTicks++;
-                    if (waitTicks > 200) finish();
-                }
-            }
-
-            case NAMETAG -> {
-                applyNametag();
-                finish();
-            }
-
-            case DONE -> {
-                if (timer > 0) {
-                    timer--;
-                    return;
-                }
-                // Rearm: aiming somewhere new starts the next wither.
-                resetBuild();
-            }
+        if (nametagState == State.NAMETAG) {
+            applyNametag();
+            nametagState = State.DONE;
         }
     }
 
-    private void finish() {
-        state = State.DONE;
-        timer = rearmDelay.get();
-        pendingWither = null;
-    }
-
-    private boolean haveMaterials() {
-        FindItemResult sand = InvUtils.find(Items.SOUL_SAND);
-        FindItemResult skull = InvUtils.find(Items.WITHER_SKELETON_SKULL);
-        boolean ok = sand.found() && sand.count() >= 6 && skull.found() && skull.count() >= 3;
-        if (!ok && !warnedNoBlocks) {
-            warning("Need at least 6 soul sand and 3 wither skulls in the inventory.");
-            warnedNoBlocks = true;
+    private void updatePreviewPos() {
+        if (nametagState == State.IDLE && !building) {
+            // fall through - the preview update also happens below for any state
         }
-        if (ok) warnedNoBlocks = false;
-        return ok;
-    }
-
-    private boolean placeStep() {
-        BlockPos pos = plan[planIndex];
-        boolean isSkull = isSkullStep(planIndex);
-
-        // Already there?
-        var st = mc.level.getBlockState(pos);
-        if (isSkull ? st.is(Blocks.WITHER_SKELETON_SKULL) : st.is(Blocks.SOUL_SAND)) return true;
-
-        FindItemResult item = InvUtils.find(isSkull ? Items.WITHER_SKELETON_SKULL : Items.SOUL_SAND);
-        if (!item.found() || !item.isHotbar()) {
-            if (!warnedNoBlocks) {
-                warning("Ran out of %s.", isSkull ? "wither skulls" : "soul sand");
-                warnedNoBlocks = true;
+        if (mc.hitResult instanceof BlockHitResult hit) {
+            BlockPos pos = hit.getBlockPos();
+            BlockState state = mc.level.getBlockState(pos);
+            if (airPlace.get()) {
+                if (state.isRedstoneConductor(mc.level, pos)) {
+                    previewPos = pos.above();
+                } else {
+                    previewPos = pos;
+                }
+            } else {
+                if (state.isRedstoneConductor(mc.level, pos)) {
+                    previewPos = pos.above();
+                } else {
+                    previewPos = null;
+                }
             }
-            return false;
+        } else {
+            previewPos = null;
         }
-
-        return BlockUtils.place(pos, item, rotate.get(), 50);
     }
-
-    // ---------- Nametag ----------
 
     private WitherBoss findBuiltWither() {
-        if (base == null) return null;
-        Vec3 center = Vec3.atCenterOf(base);
-        for (var entity : mc.level.entitiesForRendering()) {
-            if (entity instanceof WitherBoss w && w.position().distanceTo(center) < 6) return w;
+        if (previewPos == null) return null;
+        Vec3 center = Vec3.atCenterOf(previewPos);
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof WitherBoss w && w.position().distanceTo(center) < 12) return w;
         }
         return null;
     }
 
     private void applyNametag() {
         if (pendingWither == null) return;
-
-        FindItemResult tag = InvUtils.find(Items.NAME_TAG);
-        if (!tag.found() || !tag.isHotbar()) {
-            if (!warnedNoTag) {
-                warning("No name tag in the hotbar to name the wither.");
-                warnedNoTag = true;
-            }
+        int tagSlot = findHotbarSlot(Items.NAME_TAG);
+        if (tagSlot == -1) {
+            warning("No name tag in the hotbar to name the wither.");
+            pendingWither = null;
             return;
         }
-        warnedNoTag = false;
 
-        // In creative the client inventory is authoritative: rename the tag directly
-        // and push the edited stack to the server.
-        if (mc.player.isCreative() && !witherName.get().isEmpty()) {
-            var stack = mc.player.getInventory().getItem(tag.slot());
-            stack.set(DataComponents.CUSTOM_NAME, Component.literal(witherName.get()));
-            mc.player.connection.send(new ServerboundSetCreativeModeSlotPacket(tag.slot(), stack));
+        // Creative: write the configured name onto the tag (client inventory is authoritative).
+        if (mc.player.hasInfiniteMaterials() && !witherName.get().isEmpty()) {
+            ItemStack tagStack = mc.player.getInventory().getItem(tagSlot);
+            tagStack.set(DataComponents.CUSTOM_NAME, Component.literal(witherName.get()));
+            mc.player.connection.send(new ServerboundSetCreativeModeSlotPacket(tagSlot, tagStack));
         }
-        // Survival: the tag must already have been renamed in an anvil; use it as-is.
 
-        int realSlot = mc.player.getInventory().getSelectedSlot();
-        if (silentSwap.get()) {
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(tag.slot()));
-            mc.gameMode.interact(mc.player, pendingWither, new EntityHitResult(pendingWither), InteractionHand.MAIN_HAND);
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(realSlot));
-        } else {
-            InvUtils.swap(tag.slot(), false);
-            mc.gameMode.interact(mc.player, pendingWither, new EntityHitResult(pendingWither), InteractionHand.MAIN_HAND);
-            InvUtils.swapBack();
-        }
+        int originalSlot = mc.player.getInventory().getSelectedSlot();
+        mc.player.connection.send(new ServerboundSetCarriedItemPacket(tagSlot));
+        mc.gameMode.interact(mc.player, pendingWither,
+            new EntityHitResult(pendingWither), InteractionHand.MAIN_HAND);
+        mc.player.connection.send(new ServerboundSetCarriedItemPacket(originalSlot));
+        mc.player.getInventory().setSelectedSlot(originalSlot);
         mc.player.swing(InteractionHand.MAIN_HAND);
+
+        pendingWither = null;
     }
 
-    // ---------- Projection render ----------
+    // ===== Build plan =====
+    private void placeWither(BlockPos basePos) {
+        if (!checkWitherBlocks(basePos)) {
+            info("Obstruction prevented the wither from being placed.");
+            nametagState = State.IDLE;
+            return;
+        }
 
+        pendingBlocks.clear();
+        pendingSkulls.clear();
+
+        Direction direction = lockRotation.get() ? chosenDirection.get().toMcDirection() : mc.player.getDirection();
+
+        if (direction == Direction.NORTH || direction == Direction.SOUTH) {
+            pendingBlocks.add(basePos.above().west());
+            pendingBlocks.add(basePos.above().east());
+            pendingSkulls.add(basePos.above().west());
+            pendingSkulls.add(basePos.above().east());
+        } else {
+            pendingBlocks.add(basePos.above().south());
+            pendingBlocks.add(basePos.above().north());
+            pendingSkulls.add(basePos.above().south());
+            pendingSkulls.add(basePos.above().north());
+        }
+        pendingBlocks.add(basePos);
+        pendingBlocks.add(basePos.above());
+        if (placeCenterSkull.get()) {
+            pendingSkulls.add(basePos.above());
+        }
+
+        tickDelay = 0;
+    }
+
+    private boolean checkWitherBlocks(BlockPos basePos) {
+        List<BlockPos> blockPositions = new ArrayList<>();
+        Direction direction = lockRotation.get() ? chosenDirection.get().toMcDirection() : mc.player.getDirection();
+
+        if (direction == Direction.NORTH || direction == Direction.SOUTH) {
+            blockPositions.add(basePos.above().west());
+            blockPositions.add(basePos.above().east());
+            blockPositions.add(basePos.above(2).west());
+            blockPositions.add(basePos.above(2).east());
+            blockPositions.add(basePos.west());
+            blockPositions.add(basePos.east());
+        } else {
+            blockPositions.add(basePos.above().south());
+            blockPositions.add(basePos.above().north());
+            blockPositions.add(basePos.above(2).south());
+            blockPositions.add(basePos.above(2).north());
+            blockPositions.add(basePos.south());
+            blockPositions.add(basePos.north());
+        }
+        blockPositions.add(basePos);
+        blockPositions.add(basePos.above());
+        if (placeCenterSkull.get()) {
+            blockPositions.add(basePos.above(2));
+        }
+
+        for (BlockPos pos : blockPositions) {
+            if (!mc.level.getBlockState(pos).isAir()) return false;
+        }
+        blockPositions.remove(4);
+        blockPositions.remove(5);
+        for (BlockPos pos : blockPositions) {
+            if (!checkBlockForEntity(pos)) return false;
+        }
+        return true;
+    }
+
+    private boolean checkBlockForEntity(BlockPos pos) {
+        List<Entity> entities = mc.level.getEntitiesOfClass(Entity.class,
+            new AABB(pos), e -> !(e instanceof ItemEntity || e instanceof ExperienceOrb));
+        return entities.isEmpty();
+    }
+
+    // ===== Actual block placing =====
+    private void placeSoulBlock(BlockPos pos) {
+        Item soulBlock = hasSoulSandHotbar() ? Items.SOUL_SAND : Items.SOUL_SOIL;
+        placeBlock(pos, soulBlock);
+    }
+
+    private void placeBlock(BlockPos pos, Item item) {
+        int slot = findHotbarSlot(item);
+        if (slot == -1) return;
+        mc.player.getInventory().setSelectedSlot(slot);
+        mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND,
+            new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
+        if (swingHand.get()) mc.player.swing(InteractionHand.MAIN_HAND);
+    }
+
+    private int findHotbarSlot(Item item) {
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getItem(i).getItem() == item) return i;
+        }
+        return -1;
+    }
+
+    private boolean hasSoulSandHotbar() {
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getItem(i).getItem() == Items.SOUL_SAND) return true;
+        }
+        return false;
+    }
+
+    // ===== Render =====
     @EventHandler
-    private void onRender3D(Render3DEvent event) {
-        if (!project.get() || base == null) return;
+    private void onRender3d(Render3DEvent event) {
+        if (!renderPreview.get() || !hasMaterials || previewPos == null) return;
 
-        for (int i = 0; i < PLAN_SIZE; i++) {
-            BlockPos pos = plan[i];
-            var st = mc.level.getBlockState(pos);
-            boolean placed = isSkullStep(i) ? st.is(Blocks.WITHER_SKELETON_SKULL) : st.is(Blocks.SOUL_SAND);
-            if (placed) continue;
+        Direction direction = lockRotation.get() ? chosenDirection.get().toMcDirection() : mc.player.getDirection();
 
-            boolean next = state == State.BUILDING && i == planIndex;
-            SettingColor side = next ? new SettingColor(80, 220, 80, 40) : sideColor.get();
-            SettingColor line = next ? new SettingColor(80, 220, 80, 180) : lineColor.get();
+        event.renderer.box(previewPos, previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+        event.renderer.box(previewPos.above(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+        if (direction == Direction.NORTH || direction == Direction.SOUTH) {
+            event.renderer.box(previewPos.above().west(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            event.renderer.box(previewPos.above().east(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            renderSkull(event, previewPos.above(2).west());
+            renderSkull(event, previewPos.above(2).east());
+        } else {
+            event.renderer.box(previewPos.above().south(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            event.renderer.box(previewPos.above().north(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            renderSkull(event, previewPos.above(2).south());
+            renderSkull(event, previewPos.above(2).north());
+        }
+        if (placeCenterSkull.get()) {
+            renderSkull(event, previewPos.above(2));
+        }
+    }
 
-            event.renderer.box(pos.getX(), pos.getY(), pos.getZ(),
-                pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1,
-                side, line, shapeMode.get(), 0);
+    private void renderSkull(Render3DEvent event, BlockPos pos) {
+        double shrink = 0.23; // how small the skull appears
+        event.renderer.box(
+            pos.getX() + shrink,
+            pos.getY(),
+            pos.getZ() + shrink,
+            pos.getX() + 1 - shrink,
+            pos.getY() + 0.5, // shorter than a full block
+            pos.getZ() + 1 - shrink,
+            previewColor.get(),
+            previewOutlineColor.get(),
+            ShapeMode.Both,
+            0
+        );
+    }
+
+    private enum CardinalDirection {
+        North(Direction.NORTH),
+        South(Direction.SOUTH),
+        East(Direction.EAST),
+        West(Direction.WEST);
+
+        private final Direction mcDirection;
+
+        CardinalDirection(Direction mcDirection) {
+            this.mcDirection = mcDirection;
+        }
+
+        public Direction toMcDirection() {
+            return mcDirection;
         }
     }
 
     @Override
     public String getInfoString() {
-        return switch (state) {
-            case BUILDING -> planIndex + "/" + PLAN_SIZE;
-            case NAMETAG_WAIT, NAMETAG -> "tagging";
-            case DONE -> "done";
-            default -> null;
-        };
+        return building ? "building" : (nametagState == State.NAMETAG_WAIT || nametagState == State.NAMETAG ? "tagging" : null);
     }
 }
