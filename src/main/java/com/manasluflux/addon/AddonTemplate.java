@@ -49,6 +49,7 @@ import com.manasluflux.addon.modules.BlockReplacer;
 import com.manasluflux.addon.modules.ChatLogger;
 import com.manasluflux.addon.modules.Clicker;
 import com.manasluflux.addon.modules.ClickTp;
+import com.manasluflux.addon.modules.ClientBlockEntities;
 import com.manasluflux.addon.modules.ClientSideNightVision;
 import com.manasluflux.addon.modules.CrystalAura;
 import com.manasluflux.addon.modules.CrystalOptimizer;
@@ -135,6 +136,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new PacketLimiter());
 
         // Client-side modules (own ClickGUI category)
+        Modules.get().add(new ClientBlockEntities());
         Modules.get().add(new ClientSideNightVision());
         Modules.get().add(new ToggleTab());
         Modules.get().add(new InstantTnt());
