@@ -1,6 +1,8 @@
 package com.manasluflux.addon;
 
 import com.manasluflux.addon.commands.AddTextCommand;
+import com.manasluflux.addon.gui.NotepadTab;
+import com.manasluflux.addon.gui.ToDoTab;
 import com.manasluflux.addon.commands.AutoEatCommand;
 import com.manasluflux.addon.commands.AutoFishCommand;
 import com.manasluflux.addon.commands.AutoLogCommand;
@@ -94,6 +96,10 @@ public class AddonTemplate extends MeteorAddon {
     @Override
     public void onInitialize() {
         LOG.info("Initializing ManasluFlux by piolunson & various ai providers");
+
+        // GuiNotes backing the Notepad / To Do top-bar tabs (loaded from disk on first screen open)
+        meteordevelopment.meteorclient.gui.tabs.Tabs.add(new NotepadTab());
+        meteordevelopment.meteorclient.gui.tabs.Tabs.add(new ToDoTab());
 
         // Modules (backing some of the commands)
         Modules.get().add(new Waypoint());
