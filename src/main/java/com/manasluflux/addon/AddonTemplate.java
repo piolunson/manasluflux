@@ -37,6 +37,7 @@ import com.manasluflux.addon.modules.AddText;
 import com.manasluflux.addon.modules.AutoLogin;
 import com.manasluflux.addon.modules.AutoTotem;
 import com.manasluflux.addon.modules.BoatFlight;
+import com.manasluflux.addon.modules.AutoChatClear;
 import com.manasluflux.addon.modules.AutoEat;
 import com.manasluflux.addon.modules.AutoFish;
 import com.manasluflux.addon.modules.AutoRespawn;
@@ -127,6 +128,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new AutoRespawn());
         Modules.get().add(new AutoResponder());
         Modules.get().add(new DeathCommands());
+        Modules.get().add(new AutoChatClear());
         Modules.get().add(new ChatLogger());
         Modules.get().add(new TabLogger());
         Modules.get().add(new TabCompletePrivacy());
