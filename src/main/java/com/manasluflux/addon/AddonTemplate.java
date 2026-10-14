@@ -39,6 +39,7 @@ import com.manasluflux.addon.modules.AutoTotem;
 import com.manasluflux.addon.modules.BoatFlight;
 import com.manasluflux.addon.modules.AutoChatClear;
 import com.manasluflux.addon.modules.AutoEat;
+import com.manasluflux.addon.modules.AntiDropLagBack;
 import com.manasluflux.addon.modules.AutoFish;
 import com.manasluflux.addon.modules.AutoRespawn;
 import com.manasluflux.addon.modules.AutoResponder;
@@ -139,6 +140,7 @@ public class AddonTemplate extends MeteorAddon {
 
         // Client-side modules (own ClickGUI category)
         Modules.get().add(new ClientBlockEntities());
+        Modules.get().add(new AntiDropLagBack());
         Modules.get().add(new ClientSideNightVision());
         Modules.get().add(new ToggleTab());
         Modules.get().add(new InstantTnt());
