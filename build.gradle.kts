@@ -45,8 +45,9 @@ fun toMinecraftCompat(version: String): String {
     // 1.21-style versions: depend on the whole minor line
     val legacy = Regex("""^(\d+)\.(\d+)\.(\d+)$""")
     legacy.matchEntire(version)?.let {
-        val (major, minor, _) = it.destructured
-        return ">=1.$major.$minor"
+        // 1.21.11 -> ">=1.21.11" (this addon needs the 1.21.11 APIs, not just "1.21")
+        val (_, minor, patch) = it.destructured
+        return ">=1.$minor.$patch"
     }
 
     return version
