@@ -4,3 +4,13 @@ run/
 *.log
 .idea/
 .vscode/
+
+# Port / scratch artifacts (map conversions, extraction jars, temp scripts)
+.gradle-home-port/
+.tmpjar21/
+.met-src/
+errlist*.txt
+mojmap2yarn.json
+build-map.py
+translate*.py
+.errpairs.txt

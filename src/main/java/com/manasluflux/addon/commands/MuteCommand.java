@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.manasluflux.addon.modules.Mute;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class MuteCommand extends Command {
     public MuteCommand() {
@@ -13,8 +13,8 @@ public class MuteCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
-        builder.then(literal("add").then(argument("player", StringArgumentType.word()).executes(context -> {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+        builder.then(literal("add").then(argument("player", StringArgumentType.string()).executes(context -> {
             String name = StringArgumentType.getString(context, "player");
             Mute module = Modules.get().get(Mute.class);
             if (module.mute(name)) {
@@ -25,7 +25,7 @@ public class MuteCommand extends Command {
             return SINGLE_SUCCESS;
         })));
 
-        builder.then(literal("remove").then(argument("player", StringArgumentType.word()).executes(context -> {
+        builder.then(literal("remove").then(argument("player", StringArgumentType.string()).executes(context -> {
             String name = StringArgumentType.getString(context, "player");
             Mute module = Modules.get().get(Mute.class);
             if (module.unmute(name)) {

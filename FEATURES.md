@@ -1,9 +1,9 @@
 # ManasluFlux — Feature List
 
-A Meteor Client addon for Minecraft 26.2 (Fabric) by piolunson.
+A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.4.2**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.6.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (38)
+## Modules (43)
 
 ### Category: Manaslu Flux (main)
 
@@ -36,7 +36,9 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
 | Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
 | Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
+| Mute | `mute` | Module backing `.mfmute`: client-side chat filter by player name and/or phrase.
 | World Origin | `world-origin` | Example module that highlights the center of the world. |
+| Module Example | `module-example` | Template example module (kept from the addon template). |
 
 ### Category: Manaslu Flux Client Side
 
@@ -45,6 +47,8 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Add Text | `add-text` | Local-only chat lines added with `.mfaddtext`, optionally kept across relogs. |
 | Auto Login | `auto-login` | Sends `/<command> <password>` (default `/login 12345678`) automatically after joining a server — or when chat shows a trigger word like "register". Settings: command, password, mode (Always/Trigger), triggers, delay, repeat-on-trigger, cooldown. The password is stored in plain text in the Meteor config — don't reuse an important one. |
 | Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
+| Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Like Crystal Optimizer but for any block entity. Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
+| Anti Drop Lagback | `anti-drop-lagback` | Watches the server's position-sync teleports and counts "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side. |
 | Crystal Optimizer | `crystal-optimizer` | Replaces every end crystal's full animated model (outer cube, inner core, bedrock base, beam) with a single static box — or hides crystals entirely — a big FPS boost with lots of crystals on screen. Purely client-side rendering via a tiny renderer mixin: nothing is sent to the server and crystals behave exactly the same. Settings: mode (simple box / hide), box shape (fill/lines), box color. |
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
@@ -60,12 +64,13 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ### Category: Manaslu Flux Rewrite
 
-Meteor built-ins rewritten for ManasluFlux (MC 26.2, own ClickGUI category). Note: module IDs that collide with Meteor's built-ins are prefixed/renamed (`mf-auto-respawn`, `mf-click-tp`, `sound-muter`) — an ID collision makes Meteor's internal mixin crash the game.
+Meteor built-ins rewritten for ManasluFlux (MC 1.21.11, own ClickGUI category). Note: module IDs that collide with Meteor's built-ins are prefixed/renamed (`mf-auto-respawn`, `mf-click-tp`, `sound-muter`) — an ID collision makes Meteor's internal mixin crash the game.
 
 | Module | ID | What it does |
 |---|---|---|
 | Auto Respawn | `mf-auto-respawn` | Auto-clicks respawn on the death screen, then optionally runs commands/chat lines (one per tick) after respawning. |
 | Auto Responder | `auto-responder` | Replies to chat automatically via trigger=response pairs (random pick on multiple matches), with an anti-loop cooldown. |
+| Auto Chat Clear | `auto-chat-clear` | Automatically does the vanilla **F3+D chat clear** after every N received messages (default 20, 1–100). By default the visible backlog is emptied but scrollback history is preserved; an optional `clear-recent-history` toggle wipes that too. Own messages can be excluded from the count, and an optional chat line confirms each clear. Purely client-side. |
 | Chat Logger | `chat-logger` | Logs incoming and outgoing chat (including commands) to a file, new log per game join, path with %date%/%time%/%player%/%server% placeholders. |
 | Click TP | `mf-click-tp` | Hold use while looking at a block to teleport there in configurable steps, with max distance, step size, delay and an optional safe-landing check. |
 | Clicker | `clicker` | Left/right auto clicker with Nothing/Hold/Click modes and per-action tick delays. |
@@ -136,7 +141,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 ## Bundled Baritone
 
-ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official Fabric build for Minecraft 26.2, bundled jar-in-jar (`META-INF/jars/`) and declared in `fabric.mod.json`. It loads automatically with the addon: no separate download needed.
+ManasluFlux ships with **Baritone built in** — the unmodified official Fabric build for Minecraft 1.21.11, bundled jar-in-jar (`META-INF/jars/`) and declared in `fabric.mod.json`. It loads automatically with the addon: no separate download needed.
 
 - All of Baritone's `#` commands work in chat: `#goto x y z`, `#mine <block>`, `#follow player`, `#build`, `#farm`, etc.
 - Meteor's own Baritone integration detects it automatically.
@@ -160,6 +165,7 @@ ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official
 
 | Version | Changes |
 |---|---|
+| 0.6.0 | **Full port to Minecraft 1.21.11 + Meteor Client 1.21.11-SNAPSHOT**: every module, command, HUD element and both mixins were re-mapped to the Yarn 1.21.11 mappings (1.21.11+build.3) and Meteor's 1.21.11 API — rendering now uses the resolved Meteor `Renderer2D`/`HudRenderer` calls plus the new blaze3d device texture path behind the Image/GIF HUD elements (async file decoding, linear/nearest filtering), all client packets, enchantment/food data component reads, registry lookups, keybinding and interaction-manager calls were converted to the 1.21.11 names, and the bundled Baritone jar was swapped to the 1.21.11 Fabric build. Settings builder clamp fixes and the HUD texture wrapper were rewritten against the new API. No features were added or removed — beyond 1.21.11 compatibility this is a hardening release: async HUD image loading and per-frame GIF re-upload checks. |
 | 0.5.3 | New **Anti Drop Lagback** module (Client Side, Hazey-style): watches the server's position-sync teleports and count "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side, packets are observed but never modified or cancelled. |
 | 0.5.2 | **Crash fix** in the Client Block Entities mixin: the `tryExtractRenderState` injection's parameter was declared as `Object` where vanilla expects `ModelFeatureRenderer$CrumblingOverlay` (and the return as a raw `Object` instead of `BlockEntityRenderState`), so the mixin failed to apply at startup and crashed the game on launch (0.5.0/0.5.1). Now uses the exact descriptor — the compiled handler signature byte-for-byte matches what the mixin injector expects. |
 | 0.5.1 | New **Auto Chat Clear** module (Rewrite): automatically does the vanilla **F3+D chat clear** after every N received messages (default 20, configurable 1–100). By default it behaves exactly like F3+D — the visible backlog is emptied but scrollback history is preserved — and an optional `clear-recent-history` toggle wipes that too. Own messages can be excluded from the count, and an optional chat line confirms each clear. Purely client-side, nothing is sent to the server. |

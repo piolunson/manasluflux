@@ -6,9 +6,9 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.network.chat.Component;
+import net.minecraft.util.Formatting;
+import net.minecraft.command.CommandSource;
+import net.minecraft.text.Text;
 
 import java.util.Locale;
 
@@ -17,25 +17,25 @@ import java.util.Locale;
  * with tab-completion suggestions (podpowiedzi) showing Polish on/off state in the tooltip.
  */
 public class SmCommand extends Command {
-    private static final SuggestionProvider<ClientSuggestionProvider> MODULE_SUGGESTIONS = (context, suggestions) -> {
+    private static final SuggestionProvider<CommandSource> MODULE_SUGGESTIONS = (context, suggestions) -> {
         String remaining = suggestions.getRemainingLowerCase();
         for (Module module : Modules.get().getAll()) {
             boolean nameMatch = module.name.toLowerCase(Locale.ROOT).startsWith(remaining);
             boolean titleMatch = module.title.toLowerCase(Locale.ROOT).contains(remaining);
             if (remaining.isEmpty() || nameMatch || titleMatch) {
                 String state = module.isActive()
-                    ? ChatFormatting.GREEN + "włączony"
-                    : ChatFormatting.RED + "wyłączony";
-                suggestions.suggest(module.name, Component.literal(module.title + " — " + state));
+                    ? Formatting.GREEN + "włączony"
+                    : Formatting.RED + "wyłączony";
+                suggestions.suggest(module.name, Text.literal(module.title + " — " + state));
             }
         }
         return suggestions.buildFuture();
     };
 
-    private static final SuggestionProvider<ClientSuggestionProvider> STATE_SUGGESTIONS = (context, suggestions) -> {
-        suggestions.suggest("on", Component.literal("włącz (on)"));
-        suggestions.suggest("off", Component.literal("wyłącz (off)"));
-        suggestions.suggest("toggle", Component.literal("przełącz (toggle)"));
+    private static final SuggestionProvider<CommandSource> STATE_SUGGESTIONS = (context, suggestions) -> {
+        suggestions.suggest("on", Text.literal("włącz (on)"));
+        suggestions.suggest("off", Text.literal("wyłącz (off)"));
+        suggestions.suggest("toggle", Text.literal("przełącz (toggle)"));
         return suggestions.buildFuture();
     };
 
@@ -44,7 +44,7 @@ public class SmCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             int active = Modules.get().getActive().size();
             int total = Modules.get().getCount();
@@ -52,7 +52,7 @@ public class SmCommand extends Command {
             return SINGLE_SUCCESS;
         });
 
-        builder.then(argument("module", StringArgumentType.word())
+        builder.then(argument("module", StringArgumentType.string())
             .suggests(MODULE_SUGGESTIONS)
             .executes(context -> {
                 Module module = Modules.get().get(StringArgumentType.getString(context, "module"));
@@ -65,7 +65,7 @@ public class SmCommand extends Command {
                 Msg.info("%s: %s", module.title, module.isActive() ? "włączony (on)" : "wyłączony (off)");
                 return SINGLE_SUCCESS;
             })
-            .then(argument("state", StringArgumentType.word())
+            .then(argument("state", StringArgumentType.string())
                 .suggests(STATE_SUGGESTIONS)
                 .executes(context -> {
                     Module module = Modules.get().get(StringArgumentType.getString(context, "module"));

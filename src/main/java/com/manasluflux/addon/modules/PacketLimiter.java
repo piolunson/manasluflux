@@ -8,8 +8,8 @@ import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
+import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
+import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 
 /**
  * Port of RyanWare's PacketLimiter (SmilerRyan): caps how many packets you send per tick so
@@ -68,7 +68,7 @@ public class PacketLimiter extends Module {
 
     @EventHandler
     private void onSend(PacketEvent.Send event) {
-        if (event.packet instanceof ServerboundKeepAlivePacket || event.packet instanceof ServerboundPongPacket) return;
+        if (event.packet instanceof KeepAliveC2SPacket || event.packet instanceof CommonPongC2SPacket) return;
 
         if (packetsSent >= maxPackets.get()) {
             event.cancel();

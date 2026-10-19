@@ -10,13 +10,13 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ClientboundPingPacket;
-import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.common.KeepAliveS2CPacket;
+import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
+import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
+import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -117,12 +117,12 @@ public class PingSpoofer extends Module {
 
         // The server measures ping as (reply time - request time), so swallowing the
         // request and answering it later genuinely increases the latency it sees.
-        if (event.packet instanceof ClientboundKeepAlivePacket packet) {
+        if (event.packet instanceof KeepAliveS2CPacket packet) {
             event.cancel();
-            schedule(new ServerboundKeepAlivePacket(packet.getId()));
-        } else if (event.packet instanceof ClientboundPingPacket packet) {
+            schedule(new KeepAliveC2SPacket(packet.getId()));
+        } else if (event.packet instanceof CommonPingS2CPacket packet) {
             event.cancel();
-            schedule(new ServerboundPongPacket(packet.getId()));
+            schedule(new CommonPongC2SPacket(packet.getParameter()));
         }
     }
 
@@ -138,7 +138,7 @@ public class PingSpoofer extends Module {
     private void flush(long now) {
         if (pending.isEmpty()) return;
 
-        ClientPacketListener connection = mc.getConnection();
+        ClientPlayNetworkHandler connection = mc.getNetworkHandler();
         if (connection == null) {
             pending.clear();
             return;
@@ -148,7 +148,7 @@ public class PingSpoofer extends Module {
         while (it.hasNext()) {
             Map.Entry<UUID, Pending> entry = it.next();
             if (now >= entry.getValue().dueTime) {
-                connection.send(entry.getValue().packet);
+                connection.sendPacket(entry.getValue().packet);
                 it.remove();
             }
         }
@@ -160,8 +160,8 @@ public class PingSpoofer extends Module {
     }
 
     private int realPing() {
-        if (mc.player == null || mc.getConnection() == null) return 0;
-        PlayerInfo info = mc.getConnection().getPlayerInfo(mc.player.getUUID());
+        if (mc.player == null || mc.getNetworkHandler() == null) return 0;
+        PlayerListEntry info = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
         return info != null ? info.getLatency() : 0;
     }
 }

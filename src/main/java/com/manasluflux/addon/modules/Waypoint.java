@@ -11,9 +11,9 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Box;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class Waypoint extends Module {
     }
 
     public void add(String name, BlockPos pos) {
-        waypoints.put(name, pos.immutable());
+        waypoints.put(name, pos.toImmutable());
     }
 
     public Map<String, BlockPos> all() {
@@ -59,20 +59,20 @@ public class Waypoint extends Module {
 
         for (Map.Entry<String, BlockPos> entry : waypoints.entrySet()) {
             BlockPos pos = entry.getValue();
-            int height = Math.max(pos.getY(), BlockPos.containing(mc.player.position()).getY()) + 64 - pos.getY();
+            int height = Math.max(pos.getY(), BlockPos.ofFloored(mc.player.getEntityPos()).getY()) + 64 - pos.getY();
 
             // Beacon-style vertical beam
-            for (Direction dir : Direction.Plane.HORIZONTAL) {
+            for (Direction dir : Direction.Type.HORIZONTAL) {
                 event.renderer.line(
                     pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                    pos.getX() + 0.5 + dir.getStepX() * 0.4, pos.getY() + height, pos.getZ() + 0.5 + dir.getStepZ() * 0.4,
+                    pos.getX() + 0.5 + dir.getOffsetX() * 0.4, pos.getY() + height, pos.getZ() + 0.5 + dir.getOffsetZ() * 0.4,
                     color.get()
                 );
             }
             event.renderer.line(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
                 pos.getX() + 0.5, pos.getY() + height, pos.getZ() + 0.5, color.get());
 
-            event.renderer.box(new AABB(pos), color.get(), color.get(), ShapeMode.Both, 0);
+            event.renderer.box(new Box(pos), color.get(), color.get(), ShapeMode.Both, 0);
         }
     }
 }

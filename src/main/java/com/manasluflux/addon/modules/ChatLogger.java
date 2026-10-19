@@ -10,8 +10,8 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundChatCommandSignedPacket;
+import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
+import net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -29,7 +29,7 @@ public class ChatLogger extends Module {
 
     private final Setting<String> pathFormat = sgGeneral.add(new StringSetting.Builder()
         .name("path-format")
-        .description("Full log path format. Relative paths are relative to your .minecraft folder.")
+        .description("Full log path format. Relative paths are relative to your .client folder.")
         .defaultValue("manasluflux/chatlogs/%date%_%time%_%player%_%server%.log")
         .build()
     );
@@ -63,8 +63,8 @@ public class ChatLogger extends Module {
 
     @EventHandler
     private void onSendPacket(PacketEvent.Send event) {
-        if (event.packet instanceof ServerboundChatCommandPacket packet) log("[O] /" + packet.command());
-        else if (event.packet instanceof ServerboundChatCommandSignedPacket packet) log("[O] /" + packet.command());
+        if (event.packet instanceof CommandExecutionC2SPacket packet) log("[O] /" + packet.command());
+        else if (event.packet instanceof ChatCommandSignedC2SPacket packet) log("[O] /" + packet.command());
     }
 
     private void startNewSession() {
@@ -80,7 +80,7 @@ public class ChatLogger extends Module {
         if (mc.player != null) player = mc.player.getName().getString();
 
         String server = "singleplayer";
-        if (mc.getCurrentServer() != null) server = mc.getCurrentServer().ip;
+        if (mc.getCurrentServerEntry() != null) server = mc.getCurrentServerEntry().address;
 
         String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         String time = new SimpleDateFormat("HH-mm-ss").format(new Date());
@@ -92,7 +92,7 @@ public class ChatLogger extends Module {
             .replace("%time%", sanitize(time));
 
         if (new File(path).isAbsolute()) logFile = new File(path);
-        else logFile = new File(mc.gameDirectory, path);
+        else logFile = new File(mc.runDirectory, path);
     }
 
     private void log(String text) {

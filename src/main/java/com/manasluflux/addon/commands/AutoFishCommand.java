@@ -4,7 +4,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.manasluflux.addon.modules.AutoFish;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class AutoFishCommand extends Command {
     public AutoFishCommand() {
@@ -12,7 +12,7 @@ public class AutoFishCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(literal("on").executes(context -> {
             AutoFish module = Modules.get().get(AutoFish.class);
             if (!module.isActive()) module.toggle();

@@ -2,7 +2,7 @@ package com.manasluflux.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class DayCommand extends Command {
     public DayCommand() {
@@ -10,14 +10,14 @@ public class DayCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
-            if (mc.level == null) {
+            if (mc.world == null) {
                 Msg.error("Not in a world.");
                 return SINGLE_SUCCESS;
             }
 
-            long dayTime = mc.level.getOverworldClockTime();
+            long dayTime = mc.world.getTime();
             long day = dayTime / 24000L + 1;
             long ticks = dayTime % 24000L;
             int hours = (int) ((ticks / 1000L + 6) % 24);

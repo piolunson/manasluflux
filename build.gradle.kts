@@ -25,15 +25,14 @@ repositories {
 dependencies {
     // Fabric
     minecraft(libs.minecraft)
-    implementation(libs.fabric.loader)
+    mappings(variantOf(libs.yarn) { classifier("v2") })
+    modImplementation(libs.fabric.loader)
 
-    // Fabric API (compile-only): on MC 26.2 MinecraftServer gets fabric's DataResourceStore
-    // interface-injected, so addon code touching IntegratedServer/MinecraftServer needs this
-    // on the compile classpath. Meteor ships the real fabric-api at runtime.
-    compileOnly("net.fabricmc.fabric-api:fabric-resource-loader-v1:2.0.13+9edec1269e")
-
-    // Meteor
-    implementation(libs.meteor.client)
+    // Meteor - must be modImplementation for the 1.21.11 line: that artifact is
+    // intermediary-named on maven.meteordev.org, so loom has to remap it to yarn
+    // for the compile classpath (the 26.x snapshots shipped unobfuscated names,
+    // which is why plain implementation used to work).
+    modImplementation(libs.meteor.client)
 }
 
 java {
@@ -43,21 +42,11 @@ java {
 }
 
 fun toMinecraftCompat(version: String): String {
-    val stable = Regex("""^(\d{2})\.([1-9]\d*)(?:\.(\d+))?$""")
-
-    stable.matchEntire(version)?.let {
-        val (year, drop, _) = it.destructured
-        return "~$year.$drop"
-    }
-
-    val pre = Regex("""^(\d{2})\.([1-9]\d*)-pre[-.](\d+)$""")
-    pre.matchEntire(version)?.let {
-        return version.replace("-pre-", "-pre.")
-    }
-
-    val rc = Regex("""^(\d{2})\.([1-9]\d*)-rc[-.](\d+)$""")
-    rc.matchEntire(version)?.let {
-        return version.replace("-rc-", "-rc.")
+    // 1.21-style versions: depend on the whole minor line
+    val legacy = Regex("""^(\d+)\.(\d+)\.(\d+)$""")
+    legacy.matchEntire(version)?.let {
+        val (major, minor, _) = it.destructured
+        return ">=1.$major.$minor"
     }
 
     return version

@@ -1,8 +1,8 @@
 package com.manasluflux.addon.modules;
 
 import meteordevelopment.meteorclient.systems.friends.Friends;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 
@@ -16,22 +16,22 @@ import java.util.List;
 final class CombatTargets {
     private CombatTargets() {}
 
-    static Player findTarget(double range) {
-        if (mc.player == null || mc.level == null) return null;
+    static PlayerEntity findTarget(double range) {
+        if (mc.player == null || mc.world == null) return null;
 
-        Player best = null;
+        PlayerEntity best = null;
         double bestDist = Double.MAX_VALUE;
 
-        // mc.level.players() misses Meteor fake players (they are added as plain client-side
+        // mc.world.getPlayers() misses Meteor fake players (they are added as plain client-side
         // entities, not through the player registry), so scan the full entity list too.
-        List<Player> candidates = new ArrayList<>(mc.level.players());
-        for (Entity entity : mc.level.entitiesForRendering()) {
-            if (entity instanceof Player player) candidates.add(player);
+        List<PlayerEntity> candidates = new ArrayList<>(mc.world.getPlayers());
+        for (Entity entity : mc.world.getEntities()) {
+            if (entity instanceof PlayerEntity player) candidates.add(player);
         }
 
-        for (Player player : candidates) {
+        for (PlayerEntity player : candidates) {
             if (player == mc.player) continue;
-            if (player.isDeadOrDying() || player.isSpectator() || player.isCreative()) continue;
+            if (player.isDead() || player.isSpectator() || player.isCreative()) continue;
             if (!Friends.get().shouldAttack(player)) continue;
 
             double dist = mc.player.distanceTo(player);

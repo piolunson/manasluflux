@@ -8,7 +8,7 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Controlled elytra flight - thrust in your look direction with jump/sneak as
@@ -47,21 +47,21 @@ public class ElytraFlight extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || !mc.player.isFallFlying()) return;
+        if (mc.player == null || !mc.player.isGliding()) return;
 
-        boolean thrust = autoForward.get() || mc.options.keyUp.isDown();
+        boolean thrust = autoForward.get() || mc.options.forwardKey.isPressed();
 
         double h = horizontalSpeed.get();
-        Vec3 look = mc.player.getViewVector(1.0f);
-        Vec3 cur = mc.player.getDeltaMovement();
+        Vec3d look = mc.player.getRotationVec(1.0f);
+        Vec3d cur = mc.player.getVelocity();
 
         double vx = thrust ? look.x * h : cur.x;
         double vz = thrust ? look.z * h : cur.z;
 
         double vy = thrust ? look.y * h : cur.y;
-        if (mc.options.keyJump.isDown()) vy = Math.max(vy, verticalSpeed.get());
-        if (mc.options.keyShift.isDown()) vy = Math.min(vy, -verticalSpeed.get());
+        if (mc.options.jumpKey.isPressed()) vy = Math.max(vy, verticalSpeed.get());
+        if (mc.options.sneakKey.isPressed()) vy = Math.min(vy, -verticalSpeed.get());
 
-        mc.player.setDeltaMovement(new Vec3(vx, vy, vz));
+        mc.player.setVelocity(new Vec3d(vx, vy, vz));
     }
 }

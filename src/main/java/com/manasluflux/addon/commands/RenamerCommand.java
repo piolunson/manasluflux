@@ -3,9 +3,9 @@ package com.manasluflux.addon.commands;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.chat.Component;
+import net.minecraft.command.CommandSource;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.text.Text;
 
 public class RenamerCommand extends Command {
     public RenamerCommand() {
@@ -13,7 +13,7 @@ public class RenamerCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(argument("name", StringArgumentType.greedyString()).executes(context -> {
             if (mc.player == null) {
                 Msg.error("Not in a world.");
@@ -21,12 +21,12 @@ public class RenamerCommand extends Command {
             }
 
             String name = StringArgumentType.getString(context, "name");
-            if (mc.player.getMainHandItem().isEmpty()) {
+            if (mc.player.getMainHandStack().isEmpty()) {
                 Msg.error("Hold an item first.");
                 return SINGLE_SUCCESS;
             }
 
-            mc.player.getMainHandItem().set(DataComponents.CUSTOM_NAME, Component.literal(name));
+            mc.player.getMainHandStack().set(DataComponentTypes.CUSTOM_NAME, Text.literal(name));
             Msg.info("Renamed held item to §b%s§7 (client-side).", name);
             return SINGLE_SUCCESS;
         }));

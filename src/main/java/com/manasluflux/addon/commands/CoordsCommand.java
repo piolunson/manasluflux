@@ -2,7 +2,7 @@ package com.manasluflux.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class CoordsCommand extends Command {
     public CoordsCommand() {
@@ -10,7 +10,7 @@ public class CoordsCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             if (mc.player == null) {
                 Msg.error("Not in a world.");
@@ -18,7 +18,7 @@ public class CoordsCommand extends Command {
             }
 
             String coords = String.format("%.0f %d %.0f", mc.player.getX(), mc.player.getBlockY(), mc.player.getZ());
-            mc.keyboardHandler.setClipboard(coords);
+            mc.keyboard.setClipboard(coords);
             Msg.info("Coordinates: §b%s§7 (copied to clipboard).", coords);
             return SINGLE_SUCCESS;
         });

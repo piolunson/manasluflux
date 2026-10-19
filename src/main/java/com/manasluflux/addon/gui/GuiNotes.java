@@ -1,10 +1,10 @@
 package com.manasluflux.addon.gui;
 
 import com.manasluflux.addon.AddonTemplate;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,19 +43,19 @@ public final class GuiNotes {
     public void load() {
         if (Files.notExists(FILE)) return;
         try {
-            CompoundTag tag = NbtIo.read(FILE);
-            notepad = tag.getStringOr("notepad", "");
+            NbtCompound tag = NbtIo.read(FILE);
+            notepad = tag.getString("notepad", "");
 
             pages.clear();
-            ListTag pagesList = tag.getListOrEmpty("pages");
-            for (int i = 0; i < pagesList.size(); i++) pages.add(pagesList.getStringOr(i, ""));
+            NbtList pagesList = tag.getList("pages").orElseGet(NbtList::new);
+            for (int i = 0; i < pagesList.size(); i++) pages.add(pagesList.getString(i, ""));
             if (pages.isEmpty()) pages.add("");
 
             tasks.clear();
-            ListTag tasksList = tag.getListOrEmpty("tasks");
+            NbtList tasksList = tag.getList("tasks").orElseGet(NbtList::new);
             for (int i = 0; i < tasksList.size(); i++) {
-                CompoundTag t = tasksList.getCompoundOrEmpty(i);
-                tasks.add(new Task(t.getStringOr("text", ""), t.getBooleanOr("done", false)));
+                NbtCompound t = tasksList.getCompoundOrEmpty(i);
+                tasks.add(new Task(t.getString("text", ""), t.getBoolean("done", false)));
             }
         } catch (IOException e) {
             AddonTemplate.LOG.warn("Failed to read ManasluFlux GUI notes", e);
@@ -65,16 +65,16 @@ public final class GuiNotes {
     public void save() {
         try {
             Files.createDirectories(FILE.getParent());
-            CompoundTag tag = new CompoundTag();
+            NbtCompound tag = new NbtCompound();
             tag.putString("notepad", notepad);
 
-            ListTag pagesList = new ListTag();
-            for (String p : pages) pagesList.add(StringTag.valueOf(p));
+            NbtList pagesList = new NbtList();
+            for (String p : pages) pagesList.add(NbtString.of(p));
             tag.put("pages", pagesList);
 
-            ListTag tasksList = new ListTag();
+            NbtList tasksList = new NbtList();
             for (Task t : tasks) {
-                CompoundTag tTag = new CompoundTag();
+                NbtCompound tTag = new NbtCompound();
                 tTag.putString("text", t.text);
                 tTag.putBoolean("done", t.done);
                 tasksList.add(tTag);

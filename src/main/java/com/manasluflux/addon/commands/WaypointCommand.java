@@ -5,8 +5,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.manasluflux.addon.modules.Waypoint;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.core.BlockPos;
+import net.minecraft.command.CommandSource;
+import net.minecraft.util.math.BlockPos;
 
 public class WaypointCommand extends Command {
     public WaypointCommand() {
@@ -14,15 +14,15 @@ public class WaypointCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
-        builder.then(literal("add").then(argument("name", StringArgumentType.word()).executes(context -> {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
+        builder.then(literal("add").then(argument("name", StringArgumentType.string()).executes(context -> {
             if (mc.player == null) {
                 Msg.error("Not in a world.");
                 return SINGLE_SUCCESS;
             }
             String name = StringArgumentType.getString(context, "name");
             Waypoint module = Modules.get().get(Waypoint.class);
-            module.add(name, BlockPos.containing(mc.player.position()));
+            module.add(name, BlockPos.ofFloored(mc.player.getEntityPos()));
             Msg.info("Added waypoint %s at %d %d %d.", name,
                 mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ());
             return SINGLE_SUCCESS;

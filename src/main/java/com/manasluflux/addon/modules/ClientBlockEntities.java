@@ -12,13 +12,13 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.world.chunk.WorldChunk;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -84,10 +84,10 @@ public class ClientBlockEntities extends Module {
         if (cachedTypes.isEmpty() && !entityIds.get().isEmpty()) {
             if (!source.equals(cachedSource) || cachedSource == null) {
                 cachedTypes.clear();
-                Registry<BlockEntityType<?>> registry = BuiltInRegistries.BLOCK_ENTITY_TYPE;
+                Registry<BlockEntityType<?>> registry = Registries.BLOCK_ENTITY_TYPE;
                 for (String id : entityIds.get()) {
                     try {
-                        BlockEntityType<?> type = registry.getValue(Identifier.parse(id.trim().toLowerCase()));
+                        BlockEntityType<?> type = registry.get(Identifier.of(id.trim().toLowerCase()));
                         if (type != null) cachedTypes.add(type);
                     } catch (Exception ignored) {}
                 }
@@ -104,6 +104,42 @@ public class ClientBlockEntities extends Module {
         return matchedTypes().contains(be.getType());
     }
 
+    private static final java.lang.invoke.MethodHandle STATE_TYPE = initTypePuller();
+
+    /**
+     * Yarn 1.21.11 runs block-entity rendering through BlockEntityRenderState, whose
+     * `type` field (BlockEntityType) is package-private — a one-shot MethodHandle getter
+     * reads it without a mixin accessor.
+     */
+    private static java.lang.invoke.MethodHandle initTypePuller() {
+        try {
+            Class<?> stateCls = BlockEntityType.class.getClassLoader()
+                .loadClass("net.minecraft.client.render.block.entity.state.BlockEntityRenderState");
+            java.lang.reflect.Field chosen = null;
+            for (java.lang.reflect.Field f : stateCls.getDeclaredFields()) {
+                if (f.getType() == BlockEntityType.class) { chosen = f; break; }
+            }
+            if (chosen == null) return null;
+            chosen.setAccessible(true);
+            return java.lang.invoke.MethodHandles.lookup().unreflectGetter(chosen);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * Called from BlockEntityDispatcherMixin — resolves the block entity type out of
+     * the queued render state so skip decisions keep keying off the same id list.
+     */
+    public static BlockEntityType<?> rendererType(Object renderState) {
+        if (STATE_TYPE == null || renderState == null) return null;
+        try {
+            return (BlockEntityType<?>) STATE_TYPE.invoke(renderState);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     /**
      * Called from BlockEntityDispatcherMixin - true if the vanilla block-entity
      * render should be skipped for this type.
@@ -116,23 +152,23 @@ public class ClientBlockEntities extends Module {
 
     @EventHandler
     private void onRender3D(Render3DEvent event) {
-        if (mc.level == null || mode.get() != Mode.Simple) return;
+        if (mc.world == null || mode.get() != Mode.Simple) return;
         Set<BlockEntityType<?>> types = matchedTypes();
         if (types.isEmpty()) return;
 
-        int viewDist = mc.options.getEffectiveRenderDistance();
-        int pcx = mc.player != null ? mc.player.chunkPosition().x() : 0;
-        int pcz = mc.player != null ? mc.player.chunkPosition().z() : 0;
+        int viewDist = mc.options.getClampedViewDistance();
+        int pcx = mc.player != null ? mc.player.getChunkPos().x : 0;
+        int pcz = mc.player != null ? mc.player.getChunkPos().z : 0;
 
         for (int cx = pcx - viewDist; cx <= pcx + viewDist; cx++) {
             for (int cz = pcz - viewDist; cz <= pcz + viewDist; cz++) {
-                LevelChunk chunk = mc.level.getChunk(cx, cz);
+                WorldChunk chunk = mc.world.getChunk(cx, cz);
                 if (chunk == null) continue;
 
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
                     if (!types.contains(be.getType())) continue;
 
-                    BlockPos pos = be.getBlockPos();
+                    BlockPos pos = be.getPos();
                     event.renderer.box(
                         pos.getX(), pos.getY(), pos.getZ(),
                         pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1,

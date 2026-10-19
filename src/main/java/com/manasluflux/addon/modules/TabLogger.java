@@ -7,7 +7,7 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.network.PlayerListEntry;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,10 +55,10 @@ public class TabLogger extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.level == null || mc.player == null || mc.getConnection() == null) return;
+        if (mc.world == null || mc.player == null || mc.getNetworkHandler() == null) return;
 
         Set<Snapshot> current = new HashSet<>();
-        for (PlayerInfo entry : mc.getConnection().getOnlinePlayers()) {
+        for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
             if (entry.getProfile() == null || entry.getProfile().id() == null || entry.getProfile().name() == null) continue;
 
             String uuid = entry.getProfile().id().toString();
@@ -76,13 +76,13 @@ public class TabLogger extends Module {
         Set<Snapshot> toProcess = new HashSet<>(current);
         lastSnapshots = current;
 
-        String serverIp = mc.getCurrentServer() != null ? mc.getCurrentServer().ip.replaceAll(":", "_") : "singleplayer";
+        String serverIp = mc.getCurrentServerEntry() != null ? mc.getCurrentServerEntry().address.replaceAll(":", "_") : "singleplayer";
         logExecutor.submit(() -> processAndWriteLogs(toProcess, serverIp));
     }
 
     private void processAndWriteLogs(Set<Snapshot> snapshots, String serverIp) {
         try {
-            File folder = new File(mc.gameDirectory, "manasluflux" + File.separator + "tab-logger");
+            File folder = new File(mc.runDirectory, "manasluflux" + File.separator + "tab-logger");
             if (!folder.exists()) folder.mkdirs();
 
             File logFile = new File(folder, serverIp + ".txt");

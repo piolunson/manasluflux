@@ -5,8 +5,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.network.chat.Component;
+import net.minecraft.command.CommandSource;
+import net.minecraft.text.Text;
 
 /**
  * .mfaddtext - local-only chat. Shows any text in your chat without sending anything to the server,
@@ -18,7 +18,7 @@ public class AddTextCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             Msg.info("Usage: .mfaddtext <text> - shows the text in your chat only (client-side).");
             return SINGLE_SUCCESS;
@@ -52,8 +52,8 @@ public class AddTextCommand extends Command {
      * ChatComponent path, so other client-side modules (colored chat, mute) still apply to it.
      */
     public static void show(String text) {
-        if (mc.player == null || mc.gui == null) return;
+        if (mc.player == null || mc.inGameHud == null) return;
 
-        mc.gui.chatListener().handleSystemMessage(Component.literal(text), false);
+        mc.inGameHud.getChatHud().addMessage(Text.literal(text));
     }
 }

@@ -24,21 +24,21 @@ public class ToggleTab extends Module {
 
     @Override
     public void onActivate() {
-        mc.options.keyPlayerList.setDown(true);
+        mc.options.playerListKey.setPressed(true);
     }
 
     @Override
     public void onDeactivate() {
-        mc.options.keyPlayerList.setDown(false);
-        if (hideOnDisable.get() && mc.gui != null && mc.gui.hud != null) {
-            mc.gui.hud.getTabList().setVisible(false);
+        mc.options.playerListKey.setPressed(false);
+        if (hideOnDisable.get() && mc.inGameHud != null) {
+            mc.inGameHud.getPlayerListHud().setVisible(false);
         }
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        // Vanilla's HUD extraction renders the tab list only while keyPlayerList.isDown() is true,
+        // Vanilla's HUD extraction renders the tab list only while playerListKey.isPressed() is true,
         // and screen open/close events (releaseAll) clear the faked state - so re-assert every tick.
-        mc.options.keyPlayerList.setDown(true);
+        mc.options.playerListKey.setPressed(true);
     }
 }

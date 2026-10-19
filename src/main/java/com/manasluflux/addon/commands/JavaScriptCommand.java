@@ -5,13 +5,13 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.CrashReport;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.client.gui.screens.ConfirmScreen;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.crash.CrashReport;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.command.CommandSource;
+import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -36,7 +36,7 @@ public class JavaScriptCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             ask("Do you really want to execute this JavaScript?");
             return SINGLE_SUCCESS;
@@ -63,19 +63,19 @@ public class JavaScriptCommand extends Command {
 
         ConfirmScreen screen = new ConfirmScreen(
             callback,
-            Component.literal("mfjavascript"),
-            Component.literal(question),
-            Component.literal("YES (crash)"),
-            Component.literal("NO (confetti)")
+            Text.literal("mfjavascript"),
+            Text.literal(question),
+            Text.literal("YES (crash)"),
+            Text.literal("NO (confetti)")
         );
 
-        mc.setScreenAndShow(screen);
+        mc.setScreenAndRender(screen);
     }
 
     private void crashTheGame() {
         RuntimeException cause = new RuntimeException("mfjavascript: the user pressed YES. On purpose.");
         CrashReport report = new CrashReport("ManasluFlux - mfjavascript was confirmed", cause);
-        Minecraft.crash(mc, mc.gameDirectory, report, 0);
+        mc.printCrashReport(report);
     }
 
     private void startConfetti() {
@@ -90,7 +90,7 @@ public class JavaScriptCommand extends Command {
                 mc.execute(this::confettiBurst);
                 try {
                     Thread.sleep(CONFETTI_BURST_INTERVAL_MS);
-                } catch (InterruptedException _) {
+                } catch (InterruptedException ignored) {
                     return;
                 }
             }
@@ -107,20 +107,20 @@ public class JavaScriptCommand extends Command {
     }
 
     private void confettiBurst() {
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.world == null) return;
 
-        Vec3 pos = mc.player.position();
+        Vec3d pos = mc.player.getEntityPos();
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         for (int i = 0; i < BURST_PARTICLES; i++) {
             int color = CONFETTI_COLORS[random.nextInt(CONFETTI_COLORS.length)];
-            DustParticleOptions options = new DustParticleOptions(color, DUST_SCALE);
+            DustParticleEffect options = new DustParticleEffect(color, DUST_SCALE);
 
             double x = pos.x + random.nextDouble(-1.5, 1.5);
             double y = pos.y + random.nextDouble(0.5, 2.5);
             double z = pos.z + random.nextDouble(-1.5, 1.5);
 
-            mc.level.addParticle(
+            mc.world.addParticleClient(
                 options,
                 x, y, z,
                 random.nextDouble(-0.15, 0.15),

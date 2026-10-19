@@ -11,7 +11,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.entity.decoration.EndCrystalEntity;
 
 /**
  * Replaces every end crystal's full animated model (outer cube, inner core, bedrock
@@ -58,10 +58,10 @@ public class CrystalOptimizer extends Module {
 
     @EventHandler
     private void onRender3D(Render3DEvent event) {
-        if (mc.level == null || mode.get() != Mode.Simple) return;
+        if (mc.world == null || mode.get() != Mode.Simple) return;
 
-        for (var entity : mc.level.entitiesForRendering()) {
-            if (!(entity instanceof EndCrystal crystal)) continue;
+        for (var entity : mc.world.getEntities()) {
+            if (!(entity instanceof EndCrystalEntity crystal)) continue;
 
             var bb = crystal.getBoundingBox();
             event.renderer.box(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ,

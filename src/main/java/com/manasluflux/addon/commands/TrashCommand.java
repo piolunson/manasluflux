@@ -2,8 +2,8 @@ package com.manasluflux.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.command.CommandSource;
+import net.minecraft.item.ItemStack;
 
 public class TrashCommand extends Command {
     public TrashCommand() {
@@ -11,15 +11,15 @@ public class TrashCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             if (mc.player == null) {
                 Msg.error("Not in a world.");
                 return SINGLE_SUCCESS;
             }
             int count = 0;
-            for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = mc.player.getInventory().getItem(i);
+            for (int i = 0; i < mc.player.getInventory().size(); i++) {
+                ItemStack stack = mc.player.getInventory().getStack(i);
                 if (!stack.isEmpty()) count++;
             }
             Msg.warning("This would drop %d item stacks! Run 'mftrash confirm' to drop your whole inventory.", count);
@@ -28,10 +28,10 @@ public class TrashCommand extends Command {
 
         builder.then(literal("confirm").executes(context -> {
             if (mc.player == null) return SINGLE_SUCCESS;
-            for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = mc.player.getInventory().getItem(i);
+            for (int i = 0; i < mc.player.getInventory().size(); i++) {
+                ItemStack stack = mc.player.getInventory().getStack(i);
                 if (!stack.isEmpty()) {
-                    mc.player.drop(stack, true);
+                    mc.player.dropItem(stack, true);
                     stack.setCount(0);
                 }
             }

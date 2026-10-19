@@ -11,8 +11,8 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 
 public class ModuleExample extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
@@ -39,11 +39,11 @@ public class ModuleExample extends Module {
 
     @EventHandler
     private void onRender3d(Render3DEvent event) {
-        AABB marker = new AABB(BlockPos.ZERO);
-        marker = marker.expandTowards(
-            scale.get() * marker.getXsize(),
-            scale.get() * marker.getYsize(),
-            scale.get() * marker.getZsize()
+        Box marker = new Box(BlockPos.ORIGIN);
+        marker = marker.stretch(
+            scale.get() * marker.getLengthX(),
+            scale.get() * marker.getLengthY(),
+            scale.get() * marker.getLengthZ()
         );
 
         event.renderer.box(marker, color.get(), color.get(), ShapeMode.Both, 0);

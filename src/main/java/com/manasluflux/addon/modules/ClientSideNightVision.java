@@ -7,8 +7,8 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 
 public class ClientSideNightVision extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -32,8 +32,8 @@ public class ClientSideNightVision extends Module {
 
     private void apply() {
         if (mc.player == null) return;
-        mc.player.addEffect(new MobEffectInstance(
-            MobEffects.NIGHT_VISION,
+        mc.player.addStatusEffect(new StatusEffectInstance(
+            StatusEffects.NIGHT_VISION,
             DURATION_TICKS,
             0,          // amplifier
             true,      // ambient
@@ -50,7 +50,7 @@ public class ClientSideNightVision extends Module {
 
     @Override
     public void onDeactivate() {
-        if (mc.player != null) mc.player.removeEffect(MobEffects.NIGHT_VISION);
+        if (mc.player != null) mc.player.removeStatusEffect(StatusEffects.NIGHT_VISION);
         timer = 0;
     }
 
@@ -59,7 +59,7 @@ public class ClientSideNightVision extends Module {
         if (mc.player == null) return;
 
         // Re-apply periodically and after world changes (also covers joining a world while enabled).
-        if (++timer >= REFRESH_TICKS || mc.player.getEffect(MobEffects.NIGHT_VISION) == null) {
+        if (++timer >= REFRESH_TICKS || mc.player.getStatusEffect(StatusEffects.NIGHT_VISION) == null) {
             apply();
         }
     }

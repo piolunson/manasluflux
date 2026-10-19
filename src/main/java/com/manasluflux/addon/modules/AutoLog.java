@@ -7,9 +7,9 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.DisconnectionDetails;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.network.DisconnectionInfo;
+import net.minecraft.text.Text;
+import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 
 public class AutoLog extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -37,14 +37,14 @@ public class AutoLog extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.getConnection() == null) return;
+        if (mc.player == null || mc.getNetworkHandler() == null) return;
 
         float percent = mc.player.getHealth() / mc.player.getMaxHealth() * 100f;
         if (percent < threshold.get()) {
             warning("Health dropped below %d%% - disconnecting!", threshold.get());
             toggle();
-            mc.getConnection().handleDisconnect(new ClientboundDisconnectPacket(
-                Component.literal("[ManasluFlux] AutoLog: health below " + threshold.get() + "%")
+            mc.getNetworkHandler().onDisconnect(new DisconnectS2CPacket(
+                Text.literal("[ManasluFlux] AutoLog: health below " + threshold.get() + "%")
             ));
         }
     }

@@ -8,11 +8,11 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 
 public class AutoEat extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -65,14 +65,14 @@ public class AutoEat extends Module {
     }
 
     private boolean isFood(ItemStack stack) {
-        if (stack.isEmpty() || !stack.has(DataComponents.FOOD)) return false;
-        if (avoidGapples.get() && (stack.is(Items.GOLDEN_APPLE) || stack.is(Items.ENCHANTED_GOLDEN_APPLE))) return false;
+        if (stack.isEmpty() || !stack.contains(DataComponentTypes.FOOD)) return false;
+        if (avoidGapples.get() && (stack.isOf(Items.GOLDEN_APPLE) || stack.isOf(Items.ENCHANTED_GOLDEN_APPLE))) return false;
         return true;
     }
 
     private int findFoodSlot() {
         for (int i = 0; i < 9; i++) {
-            if (isFood(mc.player.getInventory().getItem(i))) return i;
+            if (isFood(mc.player.getInventory().getStack(i))) return i;
         }
         return -1;
     }
@@ -83,7 +83,7 @@ public class AutoEat extends Module {
 
         if (silent.get()) {
             // Server-side only: the client keeps its current visible slot.
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(slot));
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot));
         } else {
             mc.player.getInventory().setSelectedSlot(slot);
         }
@@ -92,7 +92,7 @@ public class AutoEat extends Module {
     private void restoreSlot() {
         if (silent.get()) {
             // Tell the server we're back on the slot the client actually shows.
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(mc.player.getInventory().getSelectedSlot()));
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(mc.player.getInventory().getSelectedSlot()));
         } else if (lastSlot != -1) {
             mc.player.getInventory().setSelectedSlot(lastSlot);
         }
@@ -102,14 +102,14 @@ public class AutoEat extends Module {
     private void startEating(int slot) {
         lastSlot = mc.player.getInventory().getSelectedSlot();
         switchTo(slot);
-        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
-        mc.player.startUsingItem(InteractionHand.MAIN_HAND);
+        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+        mc.player.setCurrentHand(Hand.MAIN_HAND);
         eating = true;
         usingTicks = 0;
     }
 
     private void stopEating() {
-        if (mc.player.isUsingItem()) mc.player.releaseUsingItem();
+        if (mc.player.isUsingItem()) mc.player.stopUsingItem();
         restoreSlot();
         eating = false;
         usingTicks = 0;
@@ -117,9 +117,9 @@ public class AutoEat extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.interactionManager == null) return;
 
-        int food = mc.player.getFoodData().getFoodLevel();
+        int food = mc.player.getHungerManager().getFoodLevel();
 
         if (eating) {
             usingTicks++;

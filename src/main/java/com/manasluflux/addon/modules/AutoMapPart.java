@@ -8,13 +8,13 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.decoration.ItemFrame;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,9 +47,9 @@ public class AutoMapPart extends Module {
         .build()
     );
 
-    private final List<ItemFrame> filled = new ArrayList<>();
+    private final List<ItemFrameEntity> filled = new ArrayList<>();
     // Frames waiting out their delay, with ticks left before they get filled.
-    private final Map<ItemFrame, Integer> waiting = new HashMap<>();
+    private final Map<ItemFrameEntity, Integer> waiting = new HashMap<>();
     private final Random random = new Random();
 
     public AutoMapPart() {
@@ -58,21 +58,21 @@ public class AutoMapPart extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
 
-        List<ItemFrame> newFrames = new ArrayList<>();
-        for (var entity : mc.level.entitiesForRendering()) {
-            if (!(entity instanceof ItemFrame frame)) continue;
+        List<ItemFrameEntity> newFrames = new ArrayList<>();
+        for (var entity : mc.world.getEntities()) {
+            if (!(entity instanceof ItemFrameEntity frame)) continue;
             if (filled.contains(frame) || waiting.containsKey(frame)) continue;
 
             // Only freshly-spawned empty frames: ones we just placed.
-            if (!frame.getItem().isEmpty()) continue;
-            if (frame.tickCount > 2) continue;
+            if (!frame.getHeldItemStack().isEmpty()) continue;
+            if (frame.age > 2) continue;
 
             newFrames.add(frame);
         }
 
-        for (ItemFrame frame : newFrames) {
+        for (ItemFrameEntity frame : newFrames) {
             // Claim the frame right away so it is never detected twice.
             filled.add(frame);
             if (delay.get() > 0) {
@@ -84,10 +84,10 @@ public class AutoMapPart extends Module {
 
         // Count down waiting frames.
         if (!waiting.isEmpty()) {
-            List<ItemFrame> ready = new ArrayList<>();
+            List<ItemFrameEntity> ready = new ArrayList<>();
             for (var e : waiting.entrySet()) {
-                ItemFrame frame = e.getKey();
-                if (mc.level.getEntity(frame.getId()) == null || !frame.getItem().isEmpty()) {
+                ItemFrameEntity frame = e.getKey();
+                if (mc.world.getEntityById(frame.getId()) == null || !frame.getHeldItemStack().isEmpty()) {
                     ready.add(frame); // gone or already filled - drop it
                     continue;
                 }
@@ -95,24 +95,24 @@ public class AutoMapPart extends Module {
                 if (left <= 0) ready.add(frame);
                 else waiting.put(frame, left);
             }
-            for (ItemFrame frame : ready) {
+            for (ItemFrameEntity frame : ready) {
                 waiting.remove(frame);
-                if (frame.getItem().isEmpty() && mc.level.getEntity(frame.getId()) != null) {
+                if (frame.getHeldItemStack().isEmpty() && mc.world.getEntityById(frame.getId()) != null) {
                     fillFrame(frame);
                 }
             }
         }
 
         // Clean up removed frames from the memory list so it doesn't grow forever.
-        filled.removeIf(f -> (mc.level.getEntity(f.getId())) == null);
+        filled.removeIf(f -> (mc.world.getEntityById(f.getId())) == null);
     }
 
-    private void fillFrame(ItemFrame frame) {
+    private void fillFrame(ItemFrameEntity frame) {
         // Pick a filled map from the hotbar.
         List<Integer> mapSlots = new ArrayList<>();
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getItem(i);
-            if (!stack.isEmpty() && stack.is(Items.FILLED_MAP)) mapSlots.add(i);
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (!stack.isEmpty() && stack.isOf(Items.FILLED_MAP)) mapSlots.add(i);
         }
         if (mapSlots.isEmpty()) return;
 
@@ -122,15 +122,13 @@ public class AutoMapPart extends Module {
         if (silent.get()) {
             // Silent: send a carried-item packet so the server swaps the slot invisibly,
             // interact, then swap the server's view back to the real slot.
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(slot));
-            mc.player.connection.send(new ServerboundInteractPacket(frame.getId(),
-                InteractionHand.MAIN_HAND, new Vec3(0.5, 0.5, 0.5), false));
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(realSlot));
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot));
+            mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.interactAt(frame, false, Hand.MAIN_HAND, new Vec3d(0.5, 0.5, 0.5)));
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
         } else {
             // Visible: actually swap the hotbar, interact, then swap back.
             mc.player.getInventory().setSelectedSlot(slot);
-            mc.player.connection.send(new ServerboundInteractPacket(frame.getId(),
-                InteractionHand.MAIN_HAND, new Vec3(0.5, 0.5, 0.5), false));
+            mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.interactAt(frame, false, Hand.MAIN_HAND, new Vec3d(0.5, 0.5, 0.5)));
             mc.player.getInventory().setSelectedSlot(realSlot);
         }
     }

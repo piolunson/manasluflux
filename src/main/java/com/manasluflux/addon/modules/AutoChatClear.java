@@ -10,9 +10,8 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.gui.components.ChatComponent;
-import net.minecraft.client.gui.Hud;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.text.Text;
 
 /**
  * Automation of vanilla's F3+D (clear chat): after every N messages received,
@@ -88,15 +87,15 @@ public class AutoChatClear extends Module {
      * Feedback lines printed by the module itself (Msg.info("Chat cleared."))
      * carry text we can detect cheaply.
      */
-    private static boolean isOwnFeedback(Component message) {
+    private static boolean isOwnFeedback(Text message) {
         String text = message.getString();
         return text.startsWith("Chat cleared") || text.contains("AutoChatClear");
     }
 
     private void clearChat() {
-        ChatComponent chat = mc.gui.hud.getChat();
+        ChatHud chat = mc.inGameHud.getChatHud();
         if (chat != null) {
-            chat.clearMessages(clearRecent.get());
+            chat.clear(clearRecent.get());
             if (notify.get()) {
                 Msg.info("Chat cleared.");
             }

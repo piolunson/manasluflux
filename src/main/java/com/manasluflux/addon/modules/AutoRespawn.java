@@ -50,7 +50,7 @@ public class AutoRespawn extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.level == null || mc.player == null) return;
+        if (mc.world == null || mc.player == null) return;
 
         // Ignore the initial join/respawn burst so old commands aren't replayed.
         if (!worldActive) {
@@ -59,8 +59,8 @@ public class AutoRespawn extends Module {
             return;
         }
 
-        if (mc.player.isDeadOrDying()) {
-            mc.player.respawn();
+        if (mc.player.isDead()) {
+            mc.player.requestRespawn();
             waitingForCommands = true;
             commandQueue.clear();
             commandQueue.addAll(commands.get());
@@ -77,8 +77,8 @@ public class AutoRespawn extends Module {
             String line = commandQueue.get(commandIndex);
             if (line != null && !line.isBlank()) {
                 String message = line.trim();
-                if (message.startsWith("/")) mc.player.connection.sendCommand(message.substring(1));
-                else mc.player.connection.sendChat(message);
+                if (message.startsWith("/")) mc.player.networkHandler.sendChatCommand(message.substring(1));
+                else mc.player.networkHandler.sendChatMessage(message);
             }
             commandIndex++;
             if (commandIndex >= commandQueue.size()) waitingForCommands = false;

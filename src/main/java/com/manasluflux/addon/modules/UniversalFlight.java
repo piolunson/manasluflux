@@ -8,7 +8,7 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.entity.player.PlayerAbilities;
 
 /**
  * Keeps flight enabled every tick, with a vanilla flying speed setting.
@@ -46,52 +46,52 @@ public class UniversalFlight extends Module {
     @Override
     public void onActivate() {
         if (mc.player == null) return;
-        Abilities abilities = mc.player.getAbilities();
-        savedMayFly = abilities.mayfly;
+        PlayerAbilities abilities = mc.player.getAbilities();
+        savedMayFly = abilities.allowFlying;
         savedFlying = abilities.flying;
-        savedFlyingSpeed = abilities.getFlyingSpeed();
+        savedFlyingSpeed = abilities.getFlySpeed();
     }
 
     @Override
     public void onDeactivate() {
         if (mc.player == null) return;
-        Abilities abilities = mc.player.getAbilities();
-        abilities.mayfly = savedMayFly;
+        PlayerAbilities abilities = mc.player.getAbilities();
+        abilities.allowFlying = savedMayFly;
         abilities.flying = savedFlying && savedMayFly;
-        abilities.setFlyingSpeed(savedFlyingSpeed);
-        mc.player.onUpdateAbilities();
+        abilities.setFlySpeed(savedFlyingSpeed);
+        mc.player.sendAbilitiesUpdate();
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null) return;
 
-        Abilities abilities = mc.player.getAbilities();
+        PlayerAbilities abilities = mc.player.getAbilities();
         float speed = flyingSpeed.get().floatValue();
 
         if (alwaysFly.get()) {
             // Force the vanilla creative flight switch on every tick.
-            if (abilities.mayfly && abilities.flying && abilities.getFlyingSpeed() == speed) {
+            if (abilities.allowFlying && abilities.flying && abilities.getFlySpeed() == speed) {
                 return; // already on - don't spam packets
             }
 
-            abilities.mayfly = true;
+            abilities.allowFlying = true;
             abilities.flying = true;
-            abilities.setFlyingSpeed(speed);
-            mc.player.onUpdateAbilities();
+            abilities.setFlySpeed(speed);
+            mc.player.sendAbilitiesUpdate();
         } else {
             // Only guarantee the flight permission and speed, and leave "flying" alone.
             // Vanilla's double-jump toggle then turns flight on and off, like in creative.
             boolean changed = false;
-            if (!abilities.mayfly) {
-                abilities.mayfly = true;
+            if (!abilities.allowFlying) {
+                abilities.allowFlying = true;
                 changed = true;
             }
-            if (abilities.getFlyingSpeed() != speed) {
-                abilities.setFlyingSpeed(speed);
+            if (abilities.getFlySpeed() != speed) {
+                abilities.setFlySpeed(speed);
                 changed = true;
             }
-            if (changed) mc.player.onUpdateAbilities();
+            if (changed) mc.player.sendAbilitiesUpdate();
         }
     }
 }

@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.manasluflux.addon.modules.AutoLog;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class AutoLogCommand extends Command {
     public AutoLogCommand() {
@@ -13,7 +13,7 @@ public class AutoLogCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(argument("health", IntegerArgumentType.integer(1, 99)).executes(context -> {
             int threshold = IntegerArgumentType.getInteger(context, "health");
             AutoLog module = Modules.get().get(AutoLog.class);

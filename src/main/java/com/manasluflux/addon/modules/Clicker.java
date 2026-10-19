@@ -65,8 +65,8 @@ public class Clicker extends Module {
 
     @Override
     public void onDeactivate() {
-        mc.options.keyAttack.setDown(false);
-        mc.options.keyUse.setDown(false);
+        mc.options.attackKey.setPressed(false);
+        mc.options.useKey.setPressed(false);
         leftTicks = 0;
         rightTicks = 0;
     }
@@ -76,24 +76,24 @@ public class Clicker extends Module {
         if (mc.player == null) return;
 
         switch (leftMode.get()) {
-            case NOTHING -> mc.options.keyAttack.setDown(false);
-            case HOLD -> mc.options.keyAttack.setDown(true);
+            case NOTHING -> mc.options.attackKey.setPressed(false);
+            case HOLD -> mc.options.attackKey.setPressed(true);
             case CLICK -> {
-                mc.options.keyAttack.setDown(false);
+                mc.options.attackKey.setPressed(false);
                 if (leftTicks-- <= 0) {
-                    mc.options.keyAttack.setDown(true);
+                    mc.options.attackKey.setPressed(true);
                     leftTicks = leftDelay.get();
                 }
             }
         }
 
         switch (rightMode.get()) {
-            case NOTHING -> mc.options.keyUse.setDown(false);
-            case HOLD -> mc.options.keyUse.setDown(true);
+            case NOTHING -> mc.options.useKey.setPressed(false);
+            case HOLD -> mc.options.useKey.setPressed(true);
             case CLICK -> {
-                mc.options.keyUse.setDown(false);
+                mc.options.useKey.setPressed(false);
                 if (rightTicks-- <= 0) {
-                    mc.options.keyUse.setDown(true);
+                    mc.options.useKey.setPressed(true);
                     rightTicks = rightDelay.get();
                 }
             }

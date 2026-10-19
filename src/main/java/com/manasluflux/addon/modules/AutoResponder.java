@@ -74,8 +74,8 @@ public class AutoResponder extends Module {
         String response = possibleResponses.get(random.nextInt(possibleResponses.size())).trim();
         if (response.isEmpty()) return;
 
-        if (response.startsWith("/")) mc.player.connection.sendCommand(response.substring(1));
-        else mc.player.connection.sendChat(response);
+        if (response.startsWith("/")) mc.player.networkHandler.sendChatCommand(response.substring(1));
+        else mc.player.networkHandler.sendChatMessage(response);
 
         lastResponseMs = now;
     }

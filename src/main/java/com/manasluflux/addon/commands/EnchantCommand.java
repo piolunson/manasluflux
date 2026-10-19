@@ -3,8 +3,8 @@ package com.manasluflux.addon.commands;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.command.CommandSource;
+import net.minecraft.component.DataComponentTypes;
 
 public class EnchantCommand extends Command {
     public EnchantCommand() {
@@ -12,10 +12,10 @@ public class EnchantCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(literal("clear").executes(context -> {
             if (mc.player == null) return SINGLE_SUCCESS;
-            mc.player.getMainHandItem().remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+            mc.player.getMainHandStack().remove(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
             Msg.info("Removed fake glint from held item.");
             return SINGLE_SUCCESS;
         }));
@@ -25,11 +25,11 @@ public class EnchantCommand extends Command {
                 Msg.error("Not in a world.");
                 return SINGLE_SUCCESS;
             }
-            if (mc.player.getMainHandItem().isEmpty()) {
+            if (mc.player.getMainHandStack().isEmpty()) {
                 Msg.error("Hold an item first.");
                 return SINGLE_SUCCESS;
             }
-            mc.player.getMainHandItem().set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+            mc.player.getMainHandStack().set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
             Msg.info("Applied fake enchant glint (visual only - runs 'mfenchant clear' to remove).");
             return SINGLE_SUCCESS;
         });

@@ -7,9 +7,9 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.vehicle.AbstractBoatEntity;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Fly while riding a boat. Jump = up, sneak = down.
@@ -39,39 +39,39 @@ public class BoatFlight extends Module {
 
     @Override
     public void onDeactivate() {
-        if (mc.player != null && mc.player.isPassenger()) {
+        if (mc.player != null && mc.player.hasVehicle()) {
             Entity vehicle = mc.player.getVehicle();
-            if (vehicle instanceof AbstractBoat) vehicle.setNoGravity(false);
+            if (vehicle instanceof AbstractBoatEntity) vehicle.setNoGravity(false);
         }
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || !mc.player.isPassenger()) return;
+        if (mc.player == null || !mc.player.hasVehicle()) return;
 
         Entity vehicle = mc.player.getVehicle();
-        if (!(vehicle instanceof AbstractBoat)) return;
+        if (!(vehicle instanceof AbstractBoatEntity)) return;
 
         vehicle.setNoGravity(true);
 
         double h = horizontalSpeed.get();
         double v = verticalSpeed.get();
-        double yaw = Math.toRadians(mc.player.getYRot());
+        double yaw = Math.toRadians(mc.player.getYaw());
         double fx = -Math.sin(yaw), fz = Math.cos(yaw);
         double lx = Math.cos(yaw), lz = -Math.sin(yaw);
 
         double vx = 0, vz = 0;
-        if (mc.options.keyUp.isDown())    { vx += fx * h; vz += fz * h; }
-        if (mc.options.keyDown.isDown())  { vx -= fx * h; vz -= fz * h; }
-        if (mc.options.keyLeft.isDown())  { vx += lx * h * 0.7; vz += lz * h * 0.7; }
-        if (mc.options.keyRight.isDown()) { vx -= lx * h * 0.7; vz -= lz * h * 0.7; }
+        if (mc.options.forwardKey.isPressed())    { vx += fx * h; vz += fz * h; }
+        if (mc.options.backKey.isPressed())  { vx -= fx * h; vz -= fz * h; }
+        if (mc.options.leftKey.isPressed())  { vx += lx * h * 0.7; vz += lz * h * 0.7; }
+        if (mc.options.rightKey.isPressed()) { vx -= lx * h * 0.7; vz -= lz * h * 0.7; }
 
         double vy = 0;
-        if (mc.options.keyJump.isDown()) vy += v;
-        if (mc.options.keyShift.isDown()) vy -= v;
+        if (mc.options.jumpKey.isPressed()) vy += v;
+        if (mc.options.sneakKey.isPressed()) vy -= v;
 
-        Vec3 motion = new Vec3(vx, vy, vz);
-        vehicle.setDeltaMovement(motion);
-        vehicle.lerpMotion(motion);
+        Vec3d motion = new Vec3d(vx, vy, vz);
+        vehicle.setVelocity(motion);
+        vehicle.setVelocityClient(motion);
     }
 }

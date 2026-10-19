@@ -20,25 +20,26 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.entity.boss.wither.WitherBoss;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.TypeFilter;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.text.Text;
+import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ExperienceOrbEntity;
+import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -147,7 +148,7 @@ public class AutoWither extends Module {
     private enum State { IDLE, NAMETAG_WAIT, NAMETAG, DONE }
 
     private State nametagState = State.IDLE;
-    private WitherBoss pendingWither;
+    private WitherEntity pendingWither;
     private int nametagTicks;
     private boolean building = false;
     private boolean hasMaterials = false;
@@ -171,7 +172,7 @@ public class AutoWither extends Module {
     private int countWithersAvailable() {
         int soul = 0, skull = 0;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getItem(i);
+            ItemStack stack = mc.player.getInventory().getStack(i);
             if (stack.isEmpty()) continue;
             Item item = stack.getItem();
             if (item == Items.SOUL_SAND || item == Items.SOUL_SOIL) soul += stack.getCount();
@@ -183,12 +184,12 @@ public class AutoWither extends Module {
     private boolean hasWitherMaterials() {
         int soul = 0, skull = 0;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getItem(i);
+            ItemStack stack = mc.player.getInventory().getStack(i);
             if (stack.isEmpty()) continue;
             Item item = stack.getItem();
             if (item == Items.SOUL_SAND || item == Items.SOUL_SOIL) soul += stack.getCount();
             else if (item == Items.WITHER_SKELETON_SKULL) skull += stack.getCount();
-            if (mc.player.hasInfiniteMaterials()) {
+            if (mc.player.isInCreativeMode()) {
                 if (soul >= 1 && skull >= 1) return true;
             } else {
                 if (soul >= 4 && skull >= 3) return true;
@@ -207,8 +208,8 @@ public class AutoWither extends Module {
     // ===== Input =====
     @EventHandler
     private void onMouseButton(MouseClickEvent event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
-        if (mc.gui.screen() != null) return; // do nothing inside GUIs
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
+        if (mc.currentScreen != null) return; // do nothing inside GUIs
         if (event.click.button() != 1) return; // right mouse button only
         if (event.action != KeyAction.Press) return;
         if (building) return;
@@ -229,7 +230,7 @@ public class AutoWither extends Module {
     // ===== Placement loop =====
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
         hasMaterials = hasWitherMaterials();
 
         if (!building) return;
@@ -274,14 +275,14 @@ public class AutoWither extends Module {
     // ===== Nametag =====
     @EventHandler
     private void onTickPost(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
 
         // update preview position from the crosshair.
         updatePreviewPos();
         if (!nametagIt.get() || nametagState == State.IDLE) return;
 
         if (nametagState == State.NAMETAG_WAIT) {
-            WitherBoss wither = findBuiltWither();
+            WitherEntity wither = findBuiltWither();
             if (wither != null) {
                 pendingWither = wither;
                 if (nametagDelay.get() > 0 && nametagTicks < nametagDelay.get()) {
@@ -304,23 +305,23 @@ public class AutoWither extends Module {
     }
 
     private void updatePreviewPos() {
-        if (mc.hitResult instanceof BlockHitResult hit) {
+        if (mc.crosshairTarget instanceof BlockHitResult hit) {
             BlockPos pos = hit.getBlockPos();
             // Out of configured range: no preview, nothing can be built there.
-            if (mc.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > range.get() * range.get()) {
+            if (mc.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > range.get() * range.get()) {
                 previewPos = null;
                 return;
             }
-            BlockState state = mc.level.getBlockState(pos);
+            BlockState state = mc.world.getBlockState(pos);
             if (airPlace.get()) {
-                if (state.isRedstoneConductor(mc.level, pos)) {
-                    previewPos = pos.above();
+                if (state.isSolidBlock(mc.world, pos)) {
+                    previewPos = pos.up();
                 } else {
                     previewPos = pos;
                 }
             } else {
-                if (state.isRedstoneConductor(mc.level, pos)) {
-                    previewPos = pos.above();
+                if (state.isSolidBlock(mc.world, pos)) {
+                    previewPos = pos.up();
                 } else {
                     previewPos = null;
                 }
@@ -330,11 +331,11 @@ public class AutoWither extends Module {
         }
     }
 
-    private WitherBoss findBuiltWither() {
+    private WitherEntity findBuiltWither() {
         if (previewPos == null) return null;
-        Vec3 center = Vec3.atCenterOf(previewPos);
-        for (Entity entity : mc.level.entitiesForRendering()) {
-            if (entity instanceof WitherBoss w && w.position().distanceTo(center) < 12) return w;
+        Vec3d center = Vec3d.ofCenter(previewPos);
+        for (Entity entity : mc.world.getEntities()) {
+            if (entity instanceof WitherEntity w && w.getEntityPos().distanceTo(center) < 12) return w;
         }
         return null;
     }
@@ -349,19 +350,19 @@ public class AutoWither extends Module {
         }
 
         // Creative: write the configured name onto the tag (client inventory is authoritative).
-        if (mc.player.hasInfiniteMaterials() && !witherName.get().isEmpty()) {
-            ItemStack tagStack = mc.player.getInventory().getItem(tagSlot);
-            tagStack.set(DataComponents.CUSTOM_NAME, Component.literal(witherName.get()));
-            mc.player.connection.send(new ServerboundSetCreativeModeSlotPacket(tagSlot, tagStack));
+        if (mc.player.isInCreativeMode() && !witherName.get().isEmpty()) {
+            ItemStack tagStack = mc.player.getInventory().getStack(tagSlot);
+            tagStack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(witherName.get()));
+            mc.player.networkHandler.sendPacket(new CreativeInventoryActionC2SPacket(tagSlot, tagStack));
         }
 
         int originalSlot = mc.player.getInventory().getSelectedSlot();
-        mc.player.connection.send(new ServerboundSetCarriedItemPacket(tagSlot));
-        mc.gameMode.interact(mc.player, pendingWither,
-            new EntityHitResult(pendingWither), InteractionHand.MAIN_HAND);
-        mc.player.connection.send(new ServerboundSetCarriedItemPacket(originalSlot));
+        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(tagSlot));
+        mc.interactionManager.interactEntityAtLocation(mc.player, pendingWither,
+            new EntityHitResult(pendingWither), Hand.MAIN_HAND);
+        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(originalSlot));
         mc.player.getInventory().setSelectedSlot(originalSlot);
-        mc.player.swing(InteractionHand.MAIN_HAND);
+        mc.player.swingHand(Hand.MAIN_HAND);
 
         pendingWither = null;
     }
@@ -377,23 +378,23 @@ public class AutoWither extends Module {
         pendingBlocks.clear();
         pendingSkulls.clear();
 
-        Direction direction = lockRotation.get() ? chosenDirection.get().toMcDirection() : mc.player.getDirection();
+        Direction direction = lockRotation.get() ? chosenDirection.get().toDirection() : mc.player.getHorizontalFacing();
 
         if (direction == Direction.NORTH || direction == Direction.SOUTH) {
-            pendingBlocks.add(basePos.above().west());
-            pendingBlocks.add(basePos.above().east());
-            pendingSkulls.add(basePos.above().west());
-            pendingSkulls.add(basePos.above().east());
+            pendingBlocks.add(basePos.up().west());
+            pendingBlocks.add(basePos.up().east());
+            pendingSkulls.add(basePos.up().west());
+            pendingSkulls.add(basePos.up().east());
         } else {
-            pendingBlocks.add(basePos.above().south());
-            pendingBlocks.add(basePos.above().north());
-            pendingSkulls.add(basePos.above().south());
-            pendingSkulls.add(basePos.above().north());
+            pendingBlocks.add(basePos.up().south());
+            pendingBlocks.add(basePos.up().north());
+            pendingSkulls.add(basePos.up().south());
+            pendingSkulls.add(basePos.up().north());
         }
         pendingBlocks.add(basePos);
-        pendingBlocks.add(basePos.above());
+        pendingBlocks.add(basePos.up());
         if (placeCenterSkull.get()) {
-            pendingSkulls.add(basePos.above());
+            pendingSkulls.add(basePos.up());
         }
 
         tickDelay = 0;
@@ -401,31 +402,31 @@ public class AutoWither extends Module {
 
     private boolean checkWitherBlocks(BlockPos basePos) {
         List<BlockPos> blockPositions = new ArrayList<>();
-        Direction direction = lockRotation.get() ? chosenDirection.get().toMcDirection() : mc.player.getDirection();
+        Direction direction = lockRotation.get() ? chosenDirection.get().toDirection() : mc.player.getHorizontalFacing();
 
         if (direction == Direction.NORTH || direction == Direction.SOUTH) {
-            blockPositions.add(basePos.above().west());
-            blockPositions.add(basePos.above().east());
-            blockPositions.add(basePos.above(2).west());
-            blockPositions.add(basePos.above(2).east());
+            blockPositions.add(basePos.up().west());
+            blockPositions.add(basePos.up().east());
+            blockPositions.add(basePos.up(2).west());
+            blockPositions.add(basePos.up(2).east());
             blockPositions.add(basePos.west());
             blockPositions.add(basePos.east());
         } else {
-            blockPositions.add(basePos.above().south());
-            blockPositions.add(basePos.above().north());
-            blockPositions.add(basePos.above(2).south());
-            blockPositions.add(basePos.above(2).north());
+            blockPositions.add(basePos.up().south());
+            blockPositions.add(basePos.up().north());
+            blockPositions.add(basePos.up(2).south());
+            blockPositions.add(basePos.up(2).north());
             blockPositions.add(basePos.south());
             blockPositions.add(basePos.north());
         }
         blockPositions.add(basePos);
-        blockPositions.add(basePos.above());
+        blockPositions.add(basePos.up());
         if (placeCenterSkull.get()) {
-            blockPositions.add(basePos.above(2));
+            blockPositions.add(basePos.up(2));
         }
 
         for (BlockPos pos : blockPositions) {
-            if (!mc.level.getBlockState(pos).isAir()) return false;
+            if (!mc.world.getBlockState(pos).isAir()) return false;
         }
         blockPositions.remove(4);
         blockPositions.remove(5);
@@ -436,8 +437,8 @@ public class AutoWither extends Module {
     }
 
     private boolean checkBlockForEntity(BlockPos pos) {
-        List<Entity> entities = mc.level.getEntitiesOfClass(Entity.class,
-            new AABB(pos), e -> !(e instanceof ItemEntity || e instanceof ExperienceOrb));
+        List<Entity> entities = mc.world.getEntitiesByType(TypeFilter.instanceOf(Entity.class),
+            new Box(pos), e -> !(e instanceof ItemEntity || e instanceof ExperienceOrbEntity));
         return entities.isEmpty();
     }
 
@@ -451,21 +452,21 @@ public class AutoWither extends Module {
         int slot = findHotbarSlot(item);
         if (slot == -1) return;
         mc.player.getInventory().setSelectedSlot(slot);
-        mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND,
-            new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
-        if (swingHand.get()) mc.player.swing(InteractionHand.MAIN_HAND);
+        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND,
+            new BlockHitResult(Vec3d.ofCenter(pos), Direction.UP, pos, false));
+        if (swingHand.get()) mc.player.swingHand(Hand.MAIN_HAND);
     }
 
     private int findHotbarSlot(Item item) {
         for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getItem(i).getItem() == item) return i;
+            if (mc.player.getInventory().getStack(i).getItem() == item) return i;
         }
         return -1;
     }
 
     private boolean hasSoulSandHotbar() {
         for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getItem(i).getItem() == Items.SOUL_SAND) return true;
+            if (mc.player.getInventory().getStack(i).getItem() == Items.SOUL_SAND) return true;
         }
         return false;
     }
@@ -475,23 +476,23 @@ public class AutoWither extends Module {
     private void onRender3d(Render3DEvent event) {
         if (!renderPreview.get() || !hasMaterials || previewPos == null) return;
 
-        Direction direction = lockRotation.get() ? chosenDirection.get().toMcDirection() : mc.player.getDirection();
+        Direction direction = lockRotation.get() ? chosenDirection.get().toDirection() : mc.player.getHorizontalFacing();
 
         event.renderer.box(previewPos, previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
-        event.renderer.box(previewPos.above(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+        event.renderer.box(previewPos.up(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
         if (direction == Direction.NORTH || direction == Direction.SOUTH) {
-            event.renderer.box(previewPos.above().west(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
-            event.renderer.box(previewPos.above().east(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
-            renderSkull(event, previewPos.above(2).west());
-            renderSkull(event, previewPos.above(2).east());
+            event.renderer.box(previewPos.up().west(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            event.renderer.box(previewPos.up().east(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            renderSkull(event, previewPos.up(2).west());
+            renderSkull(event, previewPos.up(2).east());
         } else {
-            event.renderer.box(previewPos.above().south(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
-            event.renderer.box(previewPos.above().north(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
-            renderSkull(event, previewPos.above(2).south());
-            renderSkull(event, previewPos.above(2).north());
+            event.renderer.box(previewPos.up().south(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            event.renderer.box(previewPos.up().north(), previewColor.get(), previewOutlineColor.get(), ShapeMode.Both, 0);
+            renderSkull(event, previewPos.up(2).south());
+            renderSkull(event, previewPos.up(2).north());
         }
         if (placeCenterSkull.get()) {
-            renderSkull(event, previewPos.above(2));
+            renderSkull(event, previewPos.up(2));
         }
     }
 
@@ -523,7 +524,7 @@ public class AutoWither extends Module {
             this.mcDirection = mcDirection;
         }
 
-        public Direction toMcDirection() {
+        public Direction toDirection() {
             return mcDirection;
         }
     }

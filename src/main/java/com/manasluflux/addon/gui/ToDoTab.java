@@ -31,7 +31,7 @@ public class ToDoTab extends Tab {
     }
 
     @Override
-    public boolean isScreen(net.minecraft.client.gui.screens.Screen screen) {
+    public boolean isScreen(net.minecraft.client.gui.screen.Screen screen) {
         return screen instanceof ToDoScreen;
     }
 
@@ -108,7 +108,7 @@ public class ToDoTab extends Tab {
         }
 
         @Override
-        public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
+        public boolean keyReleased(net.minecraft.client.input.KeyInput event) {
             notes.save();
             return super.keyReleased(event);
         }

@@ -4,9 +4,9 @@ import com.manasluflux.addon.AddonTemplate;
 import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
 
 import java.util.Optional;
 
@@ -21,12 +21,12 @@ public class UniversalColoredChat extends Module {
 
     @EventHandler
     private void onMessageReceive(ReceiveMessageEvent event) {
-        Component message = event.getMessage();
+        Text message = event.getMessage();
         if (message.getString().indexOf('&') == -1) return;
 
-        MutableComponent replaced = Component.empty();
+        MutableText replaced = Text.empty();
         message.visit((style, text) -> {
-            replaced.append(Component.literal(text.replace('&', '\u00a7')).setStyle(style));
+            replaced.append(Text.literal(text.replace('&', '\u00a7')).setStyle(style));
             return Optional.empty();
         }, Style.EMPTY);
 

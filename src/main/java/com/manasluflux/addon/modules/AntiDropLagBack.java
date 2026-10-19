@@ -12,9 +12,9 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
-import net.minecraft.world.entity.PositionMoveRotation;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.entity.EntityPosition;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -100,13 +100,13 @@ public class AntiDropLagBack extends Module {
 
     @EventHandler
     private void onPacket(PacketEvent.Receive event) {
-        if (!(event.packet instanceof ClientboundPlayerPositionPacket packet)) return;
+        if (!(event.packet instanceof PlayerPositionLookS2CPacket packet)) return;
 
         // Teleport id 0 is the plain movement accept; real lagbacks/corrections carry id >= 1
         // or include position relatives. Treat every sync as a candidate and filter by distance.
-        PositionMoveRotation change = packet.change();
-        Vec3 serverPos = change.position();
-        Vec3 clientPos = mc.player != null ? mc.player.position() : null;
+        EntityPosition change = packet.change();
+        Vec3d serverPos = change.position();
+        Vec3d clientPos = mc.player != null ? mc.player.getEntityPos() : null;
         if (clientPos == null) return;
 
         double dist = clientPos.distanceTo(serverPos);

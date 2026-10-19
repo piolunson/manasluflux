@@ -1,7 +1,7 @@
 package com.manasluflux.addon.commands;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 
 public final class Msg {
     private Msg() {}
@@ -11,23 +11,23 @@ public final class Msg {
     }
 
     public static void info(String message, Object... args) {
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player != null) {
-            mc.player.sendSystemMessage(Component.literal(prefix() + String.format(message, args)));
+            mc.player.sendMessage(Text.literal(prefix() + String.format(message, args)), false);
         }
     }
 
     public static void error(String message, Object... args) {
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player != null) {
-            mc.player.sendSystemMessage(Component.literal(prefix() + "Error: " + String.format(message, args)));
+            mc.player.sendMessage(Text.literal(prefix() + "Error: " + String.format(message, args)), false);
         }
     }
 
     public static void warning(String message, Object... args) {
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player != null) {
-            mc.player.sendSystemMessage(Component.literal(prefix() + "Warning: " + String.format(message, args)));
+            mc.player.sendMessage(Text.literal(prefix() + "Warning: " + String.format(message, args)), false);
         }
     }
 }

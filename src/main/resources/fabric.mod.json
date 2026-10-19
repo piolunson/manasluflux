@@ -22,7 +22,7 @@
   ],
   "jars": [
     {
-      "file": "META-INF/jars/baritone-standalone-fabric-1.19.0.jar"
+      "file": "META-INF/jars/baritone-meteor-1.21.11.jar"
     }
   ],
   "custom": {

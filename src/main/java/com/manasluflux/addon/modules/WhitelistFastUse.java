@@ -10,8 +10,8 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.player.FastUse;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
 import java.util.List;
 
@@ -49,8 +49,8 @@ public class WhitelistFastUse extends Module {
 
     private boolean shouldBeActive() {
         if (mc.player == null) return false;
-        boolean main = isWhitelisted(mc.player.getMainHandItem());
-        boolean off = !onlyWhenHolding.get() && isWhitelisted(mc.player.getOffhandItem());
+        boolean main = isWhitelisted(mc.player.getMainHandStack());
+        boolean off = !onlyWhenHolding.get() && isWhitelisted(mc.player.getOffHandStack());
         return main || off;
     }
 

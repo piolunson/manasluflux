@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.manasluflux.addon.modules.AutoEat;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class AutoEatCommand extends Command {
     public AutoEatCommand() {
@@ -13,7 +13,7 @@ public class AutoEatCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(argument("threshold", IntegerArgumentType.integer(1, 19)).executes(context -> {
             int threshold = IntegerArgumentType.getInteger(context, "threshold");
             AutoEat module = Modules.get().get(AutoEat.class);

@@ -8,10 +8,10 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.projectile.FishingHook;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.util.Hand;
+import net.minecraft.entity.projectile.FishingBobberEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 
 public class AutoFish extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -95,21 +95,21 @@ public class AutoFish extends Module {
     }
 
     private boolean holdingRod() {
-        return mc.player != null && mc.player.getMainHandItem().is(Items.FISHING_ROD);
+        return mc.player != null && mc.player.getMainHandStack().isOf(Items.FISHING_ROD);
     }
 
     private void useRod() {
-        mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
-        mc.player.swing(InteractionHand.MAIN_HAND);
+        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+        mc.player.swingHand(Hand.MAIN_HAND);
     }
 
     private void lookUp() {
-        mc.player.setXRot(lookUpPitch.get().floatValue());
+        mc.player.setPitch(lookUpPitch.get().floatValue());
     }
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.gameMode == null || !holdingRod()) return;
+        if (mc.player == null || mc.interactionManager == null || !holdingRod()) return;
 
         // Grace window right after a cast so the bobber has time to appear.
         if (settleTicks > 0) {
@@ -129,11 +129,11 @@ public class AutoFish extends Module {
             return;
         }
 
-        FishingHook hook = mc.player.fishing;
+        FishingBobberEntity hook = mc.player.fishHook;
 
         if (hook != null) {
             // A hooked entity means a bite: reel in, look up and schedule the recast.
-            if (reelOnCatch.get() && hook.getHookedIn() != null) {
+            if (reelOnCatch.get() && hook.getHookedEntity() != null) {
                 useRod();
                 if (lookUp.get()) lookUp();
                 if (recast.get()) scheduleCast(recastDelayTicks());

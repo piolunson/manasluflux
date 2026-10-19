@@ -9,12 +9,12 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Port of RyanWare's ClickTP (SmilerRyan): hold use while looking at a block and you teleport
@@ -59,7 +59,7 @@ public class ClickTp extends Module {
         .build()
     );
 
-    private Vec3 targetPos;
+    private Vec3d targetPos;
     private int teleportTimer;
 
     public ClickTp() {
@@ -80,27 +80,27 @@ public class ClickTp extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.world == null) return;
 
         if (teleportTimer > 0) {
             teleportTimer--;
             return;
         }
 
-        if (mc.options.keyUse.isDown()) handleTeleport();
+        if (mc.options.useKey.isPressed()) handleTeleport();
 
         if (targetPos != null) stepTeleport();
     }
 
     private void handleTeleport() {
-        HitResult hit = mc.hitResult;
+        HitResult hit = mc.crosshairTarget;
         if (hit == null || hit.getType() != HitResult.Type.BLOCK) return;
 
         BlockHitResult blockHit = (BlockHitResult) hit;
         BlockPos blockPos = blockHit.getBlockPos();
-        Vec3 hitPos = hit.getLocation();
+        Vec3d hitPos = hit.getPos();
 
-        Vec3 target = new Vec3(hitPos.x, blockPos.getY() + 1, hitPos.z);
+        Vec3d target = new Vec3d(hitPos.x, blockPos.getY() + 1, hitPos.z);
 
         if (safeTeleport.get() && !isSafePosition(target)) {
             error("Target position is not safe!");
@@ -125,7 +125,7 @@ public class ClickTp extends Module {
     private void stepTeleport() {
         if (targetPos == null) return;
 
-        Vec3 playerPos = mc.player.position();
+        Vec3d playerPos = mc.player.getEntityPos();
         double distance = Math.sqrt(
             squared(targetPos.x - playerPos.x)
                 + squared(targetPos.y - playerPos.y)
@@ -153,13 +153,13 @@ public class ClickTp extends Module {
         }
     }
 
-    private boolean isSafePosition(Vec3 pos) {
-        BlockPos blockPos = BlockPos.containing(pos);
-        BlockState below = mc.level.getBlockState(blockPos.below());
-        BlockState at = mc.level.getBlockState(blockPos);
-        BlockState above = mc.level.getBlockState(blockPos.above());
+    private boolean isSafePosition(Vec3d pos) {
+        BlockPos blockPos = BlockPos.ofFloored(pos);
+        BlockState below = mc.world.getBlockState(blockPos.down());
+        BlockState at = mc.world.getBlockState(blockPos);
+        BlockState above = mc.world.getBlockState(blockPos.up());
 
-        return below.isFaceSturdy(mc.level, blockPos.below(), Direction.UP) && at.isAir() && above.isAir();
+        return below.isSideSolidFullSquare(mc.world, blockPos.down(), Direction.UP) && at.isAir() && above.isAir();
     }
 
     private static double squared(double d) {

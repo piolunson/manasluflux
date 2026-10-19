@@ -11,9 +11,9 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.network.PlayerListEntry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,7 +23,7 @@ import java.util.UUID;
 public class PlayerListHud extends HudElement {
     public static final HudElementInfo<PlayerListHud> INFO = new HudElementInfo<>(AddonTemplate.HUD_GROUP, "player-list", "Box with all the other players on the server, sorted by name or ping.", PlayerListHud::new);
 
-    private static final Minecraft mc = Minecraft.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     private static final Color BACKGROUND = new Color(0, 0, 0, 140);
     private static final Color TITLE_COLOR = new Color(255, 196, 217);
@@ -101,30 +101,30 @@ public class PlayerListHud extends HudElement {
         double th = renderer.textHeight(true);
 
         // Collect players
-        List<PlayerInfo> players = new ArrayList<>();
-        ClientPacketListener conn = mc.getConnection();
-        UUID self = mc.player != null ? mc.player.getUUID() : null;
+        List<PlayerListEntry> players = new ArrayList<>();
+        ClientPlayNetworkHandler conn = mc.getNetworkHandler();
+        UUID self = mc.player != null ? mc.player.getUuid() : null;
         if (conn != null) {
-            for (PlayerInfo p : conn.getOnlinePlayers()) {
+            for (PlayerListEntry p : conn.getPlayerList()) {
                 if (!showSelf.get() && self != null && p.getProfile().id().equals(self)) continue;
                 players.add(p);
             }
         }
 
-        Comparator<PlayerInfo> cmp = sortMode.get() == SortMode.Name
+        Comparator<PlayerListEntry> cmp = sortMode.get() == SortMode.Name
             ? Comparator.comparing(p -> p.getProfile().name().toLowerCase())
-            : Comparator.comparingInt(PlayerInfo::getLatency);
+            : Comparator.comparingInt(PlayerListEntry::getLatency);
         if (reverse.get()) cmp = cmp.reversed();
         players.sort(cmp);
 
         int cap = maxRows.get();
-        List<PlayerInfo> shown = cap > 0 && players.size() > cap ? players.subList(0, cap) : players;
+        List<PlayerListEntry> shown = cap > 0 && players.size() > cap ? players.subList(0, cap) : players;
 
         // Measure
         String titleText = title.get();
         String emptyText = conn == null ? "not connected" : "no other players";
         double width = pad * 2 + renderer.textWidth(titleText, true);
-        for (PlayerInfo p : shown) {
+        for (PlayerListEntry p : shown) {
             double w = pad * 2 + renderer.textWidth(p.getProfile().name(), true);
             if (showPing.get()) w += 8 + renderer.textWidth(pingText(p.getLatency()), true);
             width = Math.max(width, w);
@@ -149,7 +149,7 @@ public class PlayerListHud extends HudElement {
         }
 
         // Rows
-        for (PlayerInfo p : shown) {
+        for (PlayerListEntry p : shown) {
             renderer.text(p.getProfile().name(), x + pad, cy, NAME_COLOR, true);
             if (showPing.get()) {
                 String t = pingText(p.getLatency());

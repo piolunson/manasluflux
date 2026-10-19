@@ -13,16 +13,16 @@ import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.hit.BlockHitResult;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -88,30 +88,30 @@ public class BlockReplacer extends Module {
 
     @EventHandler
     private void onPacketSend(PacketEvent.Send event) {
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.world == null) return;
 
         // Track own block placements.
-        if (event.packet instanceof ServerboundUseItemOnPacket packet) {
-            Item held = mc.player.getItemInHand(packet.getHand()).getItem();
+        if (event.packet instanceof PlayerInteractBlockC2SPacket packet) {
+            Item held = mc.player.getStackInHand(packet.getHand()).getItem();
             if (!(held instanceof BlockItem blockItem)) return;
 
             Block placed = blockItem.getBlock();
-            BlockHitResult hit = packet.getHitResult();
+            BlockHitResult hit = packet.getBlockHitResult();
             BlockPos clicked = hit.getBlockPos();
-            BlockPos neighbor = clicked.relative(hit.getDirection());
+            BlockPos neighbor = clicked.offset(hit.getSide());
 
             // Normal placement goes into the neighbor of the clicked face; placing into a
             // replaceable block (grass, water, ...) replaces the clicked position itself.
-            if (mc.level.getBlockState(neighbor).getBlock() == placed) {
+            if (mc.world.getBlockState(neighbor).getBlock() == placed) {
                 track(neighbor, placed);
-            } else if (mc.level.getBlockState(clicked).getBlock() == placed) {
+            } else if (mc.world.getBlockState(clicked).getBlock() == placed) {
                 track(clicked, placed);
             }
         }
 
         // Stop replacing blocks we mine ourselves.
-        if (ignoreSelfMined.get() && event.packet instanceof ServerboundPlayerActionPacket packet) {
-            if (packet.getAction() == ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK) {
+        if (ignoreSelfMined.get() && event.packet instanceof PlayerActionC2SPacket packet) {
+            if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
                 tracked.remove(packet.getPos());
             }
         }
@@ -119,7 +119,7 @@ public class BlockReplacer extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null || tracked.isEmpty()) return;
+        if (mc.player == null || mc.world == null || tracked.isEmpty()) return;
 
         double rangeSq = range.get() * range.get();
 
@@ -128,14 +128,14 @@ public class BlockReplacer extends Module {
             Map.Entry<BlockPos, Block> entry = it.next();
             BlockPos pos = entry.getKey();
 
-            if (mc.player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > rangeSq) {
+            if (mc.player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > rangeSq) {
                 it.remove();
                 continue;
             }
 
-            BlockState state = mc.level.getBlockState(pos);
+            BlockState state = mc.world.getBlockState(pos);
             if (state.getBlock() == Blocks.VOID_AIR) continue; // chunk not loaded
-            if (!state.isAir() && !state.canBeReplaced()) continue; // block still there
+            if (!state.isAir() && !state.isReplaceable()) continue; // block still there
 
             Item item = entry.getValue().asItem();
             if (item == Items.AIR) {

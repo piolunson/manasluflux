@@ -138,7 +138,7 @@ public class AutoLogin extends Module {
         if (cmd.isEmpty()) return;
         if (cmd.startsWith("/")) cmd = cmd.substring(1);
 
-        mc.player.connection.sendCommand(cmd + " " + password.get());
+        mc.player.networkHandler.sendChatCommand(cmd + " " + password.get());
         lastSentMs = now;
 
         info("Login command sent.");

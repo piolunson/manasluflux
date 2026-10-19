@@ -12,11 +12,11 @@ import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -74,7 +74,7 @@ public class Placer extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.world == null) return;
 
         FindItemResult item = InvUtils.find(stack -> {
             if (!(stack.getItem() instanceof BlockItem blockItem)) return false;
@@ -82,16 +82,16 @@ public class Placer extends Module {
         });
         if (!item.found()) return;
 
-        BlockPos feet = mc.player.blockPosition();
+        BlockPos feet = mc.player.getBlockPos();
         int r = radius.get();
 
         List<BlockPos> positions = new ArrayList<>();
-        for (BlockPos pos : BlockPos.betweenClosed(feet.offset(-r, -r, -r), feet.offset(r, r, r))) {
+        for (BlockPos pos : BlockPos.iterate(feet.add(-r, -r, -r), feet.add(r, r, r))) {
             if (checkEntities.get() ? !BlockUtils.canPlace(pos, true) : !BlockUtils.canPlace(pos)) continue;
-            positions.add(pos.immutable());
+            positions.add(pos.toImmutable());
         }
 
-        positions.sort(Comparator.comparingDouble(feet::distSqr));
+        positions.sort(Comparator.comparingDouble(feet::getSquaredDistance));
 
         int placed = 0;
         for (BlockPos pos : positions) {

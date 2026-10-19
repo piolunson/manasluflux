@@ -1,6 +1,6 @@
 package com.manasluflux.addon.hud;
 
-import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.textures.FilterMode;
 import meteordevelopment.meteorclient.renderer.Renderer2D;
 import meteordevelopment.meteorclient.renderer.Texture;
@@ -54,7 +54,7 @@ abstract class TextureHud extends HudElement {
             .defaultValue(1)
             .min(0.1)
             .sliderRange(0.1, 5)
-            .onChanged(_ -> applySize())
+            .onChanged(ignored -> applySize())
             .build()
         );
 
@@ -71,7 +71,7 @@ abstract class TextureHud extends HudElement {
             .name("smooth")
             .description("Use linear filtering instead of nearest neighbour.")
             .defaultValue(true)
-            .onChanged(_ -> reload())
+            .onChanged(ignored -> reload())
             .build()
         );
     }
@@ -100,7 +100,7 @@ abstract class TextureHud extends HudElement {
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(file);
-        } catch (IOException _) {
+        } catch (IOException ignored) {
             return;
         }
 
@@ -119,7 +119,7 @@ abstract class TextureHud extends HudElement {
         texHeight = height;
 
         FilterMode filter = smooth.get() ? FilterMode.LINEAR : FilterMode.NEAREST;
-        texture = new Texture(width, height, GpuFormat.RGBA8_UNORM, filter, filter);
+        texture = new Texture(width, height, TextureFormat.RGBA8, filter, filter);
         texture.upload(rgba);
     }
 
@@ -135,7 +135,7 @@ abstract class TextureHud extends HudElement {
 
         Renderer2D.TEXTURE.begin();
         Renderer2D.TEXTURE.texQuad(x, y, getWidth(), getHeight(), renderColor);
-        Renderer2D.TEXTURE.render(texture.getTextureView(), texture.getSampler());
+        Renderer2D.TEXTURE.render(texture.getGlTextureView(), texture.getSampler());
     }
 
     protected void renderMissing(HudRenderer renderer) {
@@ -155,7 +155,7 @@ abstract class TextureHud extends HudElement {
         Path file = Path.of(raw);
         if (Files.exists(file)) return file;
 
-        Path relative = mc.gameDirectory.toPath().resolve(raw);
+        Path relative = mc.runDirectory.toPath().resolve(raw);
         if (Files.exists(relative)) return relative;
 
         return null;

@@ -2,7 +2,7 @@ package com.manasluflux.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.command.CommandSource;
 
 public class ServerInfoCommand extends Command {
     public ServerInfoCommand() {
@@ -10,20 +10,20 @@ public class ServerInfoCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
-            if (mc.getConnection() == null) {
+            if (mc.getNetworkHandler() == null) {
                 Msg.error("Not connected to a server.");
                 return SINGLE_SUCCESS;
             }
 
-            var serverData = mc.getCurrentServer();
+            var serverData = mc.getCurrentServerEntry();
             if (serverData != null) {
-                Msg.info("Server: §b%s§7 (%s)", serverData.name, serverData.ip);
+                Msg.info("Server: §b%s§7 (%s)", serverData.name, serverData.address);
             } else {
                 Msg.info("Singleplayer world.");
             }
-            Msg.info("Players online: §b%d§7.", mc.getConnection().getOnlinePlayers().size());
+            Msg.info("Players online: §b%d§7.", mc.getNetworkHandler().getPlayerList().size());
             return SINGLE_SUCCESS;
         });
     }

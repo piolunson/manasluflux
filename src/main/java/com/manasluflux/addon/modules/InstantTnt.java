@@ -12,25 +12,25 @@ import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.TntBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.util.ActionResult;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.TntBlock;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Looks at TNT -> ignites it automatically. No key press, no holding.
@@ -137,10 +137,10 @@ public class InstantTnt extends Module {
      */
     private boolean isFlameBow(ItemStack stack) {
         if (stack.getItem() != Items.BOW) return false;
-        if (mc.player.getAbilities().instabuild) return true;
+        if (mc.player.getAbilities().creativeMode) return true;
 
-        for (Holder<Enchantment> enchantment : stack.getEnchantments().keySet()) {
-            if (enchantment.unwrapKey().filter(key -> key == Enchantments.FLAME).isPresent()) return true;
+        for (RegistryEntry<Enchantment> enchantment : stack.getEnchantments().getEnchantments()) {
+            if (enchantment.getKey().filter(key -> key == Enchantments.FLAME).isPresent()) return true;
         }
         return false;
     }
@@ -150,10 +150,10 @@ public class InstantTnt extends Module {
      * shot arrows burn there.
      */
     private int findBowSlot() {
-        boolean creative = mc.player.getAbilities().instabuild;
+        boolean creative = mc.player.getAbilities().creativeMode;
         int plain = -1;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getItem(i);
+            ItemStack stack = mc.player.getInventory().getStack(i);
             if (stack.getItem() != Items.BOW) continue;
             if (isFlameBow(stack)) return i;
             if (plain == -1) plain = i;
@@ -162,9 +162,9 @@ public class InstantTnt extends Module {
     }
 
     private boolean hasArrow() {
-        if (mc.player.getAbilities().instabuild) return true;
-        for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
-            if (mc.player.getInventory().getItem(i).getItem() == Items.ARROW) return true;
+        if (mc.player.getAbilities().creativeMode) return true;
+        for (int i = 0; i < mc.player.getInventory().size(); i++) {
+            if (mc.player.getInventory().getStack(i).getItem() == Items.ARROW) return true;
         }
         return false;
     }
@@ -181,16 +181,16 @@ public class InstantTnt extends Module {
 
     private int findIgniterSlot() {
         for (int i = 0; i < 9; i++) {
-            if (isIgniter(mc.player.getInventory().getItem(i).getItem())) return i;
+            if (isIgniter(mc.player.getInventory().getStack(i).getItem())) return i;
         }
         return -1;
     }
 
     private BlockHitResult lookingAtTnt() {
-        if (mc.hitResult == null || !(mc.hitResult instanceof BlockHitResult bhr)) return null;
+        if (mc.crosshairTarget == null || !(mc.crosshairTarget instanceof BlockHitResult bhr)) return null;
         BlockPos pos = bhr.getBlockPos();
-        if (mc.level == null || !(mc.level.getBlockState(pos).getBlock() instanceof TntBlock)) return null;
-        if (!mc.player.isWithinBlockInteractionRange(pos, mc.player.blockInteractionRange())) return null;
+        if (mc.world == null || !(mc.world.getBlockState(pos).getBlock() instanceof TntBlock)) return null;
+        if (!mc.player.canInteractWithBlockAt(pos, mc.player.getBlockInteractionRange())) return null;
         return bhr;
     }
 
@@ -198,33 +198,33 @@ public class InstantTnt extends Module {
      * Finds the nearest TNT in reach, ignoring line of sight.
      */
     private BlockHitResult findTntThroughWalls(double range) {
-        Vec3 eye = mc.player.getEyePosition();
+        Vec3d eye = mc.player.getEyePos();
 
         BlockPos best = null;
         double bestDist = Double.MAX_VALUE;
 
         int r = (int) Math.ceil(range);
-        BlockPos eyePos = BlockPos.containing(eye);
+        BlockPos eyePos = BlockPos.ofFloored(eye);
 
-        for (BlockPos pos : BlockPos.betweenClosed(
-            eyePos.offset(-r, -r, -r),
-            eyePos.offset(r, r, r)
+        for (BlockPos pos : BlockPos.iterate(
+            eyePos.add(-r, -r, -r),
+            eyePos.add(r, r, r)
         )) {
-            BlockState state = mc.level.getBlockState(pos);
+            BlockState state = mc.world.getBlockState(pos);
             if (!(state.getBlock() instanceof TntBlock)) continue;
 
-            Vec3 center = Vec3.atCenterOf(pos);
+            Vec3d center = Vec3d.ofCenter(pos);
             double dist = eye.distanceTo(center);
             if (dist > range || dist >= bestDist) continue;
 
-            best = pos.immutable();
+            best = pos.toImmutable();
             bestDist = dist;
         }
 
         if (best == null) return null;
 
         // Aim at the top face center - a valid-looking hit for the server.
-        Vec3 hitLoc = Vec3.atCenterOf(best).add(0, 0.5, 0);
+        Vec3d hitLoc = Vec3d.ofCenter(best).add(0, 0.5, 0);
         return new BlockHitResult(hitLoc, Direction.UP, best, false);
     }
 
@@ -266,13 +266,13 @@ public class InstantTnt extends Module {
         warnedNoRedstone = false;
 
         boolean swap = silentSwitch.get() && igniterSlot != realSlot;
-        if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(igniterSlot));
+        if (swap) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(igniterSlot));
 
         // Server-side "press": sends the use packet with proper block-prediction sequencing.
-        InteractionResult result = mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit);
-        if (result.consumesAction()) mc.player.swing(InteractionHand.MAIN_HAND);
+        ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hit);
+        if (result.isAccepted()) mc.player.swingHand(Hand.MAIN_HAND);
 
-        if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(realSlot));
+        if (swap) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
 
         cooldownTicks = cooldown.get();
     }
@@ -291,9 +291,9 @@ public class InstantTnt extends Module {
         }
 
         for (Direction direction : Direction.values()) {
-            BlockPos pos = tnt.relative(direction);
-            if (!mc.level.getBlockState(pos).canBeReplaced()) continue;
-            if (!mc.player.isWithinBlockInteractionRange(pos, mc.player.blockInteractionRange())) continue;
+            BlockPos pos = tnt.offset(direction);
+            if (!mc.world.getBlockState(pos).isReplaceable()) continue;
+            if (!mc.player.canInteractWithBlockAt(pos, mc.player.getBlockInteractionRange())) continue;
 
             if (BlockUtils.place(pos, item, false, 0, true, true, true)) {
                 warnedNoRedstone = false;
@@ -326,18 +326,18 @@ public class InstantTnt extends Module {
         miningPos = pos;
         miningTicks = 0;
         swingCounter = 0;
-        miningPick = mc.player.getInventory().getItem(pickSlot);
+        miningPick = mc.player.getInventory().getStack(pickSlot);
         miningRestoreSlot = mc.player.getInventory().getSelectedSlot();
 
-        mc.player.connection.send(new ServerboundSetCarriedItemPacket(pickSlot));
-        mc.player.connection.send(new ServerboundPlayerActionPacket(
-            ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP));
-        mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(pickSlot));
+        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
+            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP));
+        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
     }
 
     private void updateMining() {
         // Block already gone (server broke it or the explosion took it) - just restore the slot.
-        if (mc.level.getBlockState(miningPos).getBlock() != Blocks.REDSTONE_BLOCK) {
+        if (mc.world.getBlockState(miningPos).getBlock() != Blocks.REDSTONE_BLOCK) {
             finishMining();
             return;
         }
@@ -345,12 +345,12 @@ public class InstantTnt extends Module {
         miningTicks++;
         if (++swingCounter >= 5) {
             swingCounter = 0;
-            mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+            mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
         }
 
         if (miningTicks >= breakTicks(miningPos)) {
-            mc.player.connection.send(new ServerboundPlayerActionPacket(
-                ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, miningPos, Direction.UP));
+            mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
+                PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, miningPos, Direction.UP));
             finishMining();
         }
     }
@@ -358,15 +358,15 @@ public class InstantTnt extends Module {
     private void finishMining() {
         miningPos = null;
         if (miningRestoreSlot >= 0) {
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(miningRestoreSlot));
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(miningRestoreSlot));
             miningRestoreSlot = -1;
         }
     }
 
     private void stopMining() {
         if (miningPos == null) return;
-        mc.player.connection.send(new ServerboundPlayerActionPacket(
-            ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, miningPos, Direction.UP));
+        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
+            PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, miningPos, Direction.UP));
         finishMining();
     }
 
@@ -391,17 +391,17 @@ public class InstantTnt extends Module {
         bowTicks = 0;
         bowRestoreSlot = mc.player.getInventory().getSelectedSlot();
 
-        mc.player.connection.send(new ServerboundSetCarriedItemPacket(bowSlot));
-        mc.player.connection.send(new ServerboundUseItemPacket(InteractionHand.MAIN_HAND,
-            0, mc.player.getYRot(), mc.player.getXRot()));
+        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(bowSlot));
+        mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND,
+            0, mc.player.getYaw(), mc.player.getPitch()));
     }
 
     private void updateBowDraw() {
         bowTicks++;
 
         if (bowTicks >= 10) {
-            mc.player.connection.send(new ServerboundPlayerActionPacket(
-                ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM, BlockPos.ZERO, Direction.UP));
+            mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
+                PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.UP));
             finishBowDraw();
         }
     }
@@ -410,7 +410,7 @@ public class InstantTnt extends Module {
         bowDrawing = false;
         bowTicks = 0;
         if (bowRestoreSlot >= 0) {
-            mc.player.connection.send(new ServerboundSetCarriedItemPacket(bowRestoreSlot));
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(bowRestoreSlot));
             bowRestoreSlot = -1;
         }
         // one shot per second-ish so we don't machine-gun arrows at primed TNT
@@ -419,8 +419,8 @@ public class InstantTnt extends Module {
 
     private void stopBowDraw() {
         if (!bowDrawing) return;
-        mc.player.connection.send(new ServerboundPlayerActionPacket(
-            ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM, BlockPos.ZERO, Direction.UP));
+        mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
+            PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.UP));
         finishBowDraw();
     }
 
@@ -432,7 +432,7 @@ public class InstantTnt extends Module {
 
     private int findPickaxeSlot() {
         for (int i = 0; i < 9; i++) {
-            if (isPickaxe(mc.player.getInventory().getItem(i).getItem())) return i;
+            if (isPickaxe(mc.player.getInventory().getStack(i).getItem())) return i;
         }
         return -1;
     }
@@ -446,9 +446,9 @@ public class InstantTnt extends Module {
     private int breakTicks(BlockPos pos) {
         if (miningPick == null || miningPick.isEmpty()) return 10;
 
-        BlockState state = mc.level.getBlockState(pos);
-        float hardness = state.getDestroySpeed(mc.level, pos);
-        float speed = miningPick.getDestroySpeed(state);
+        BlockState state = mc.world.getBlockState(pos);
+        float hardness = state.getHardness(mc.world, pos);
+        float speed = miningPick.getMiningSpeedMultiplier(state);
         if (hardness <= 0 || speed <= 1) return 10;
 
         return Math.max(1, (int) Math.ceil(hardness * 30 / speed));
@@ -456,7 +456,7 @@ public class InstantTnt extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
 
         // progress the silent packet mine first; skip new ignitions while it runs
         if (miningPos != null) {

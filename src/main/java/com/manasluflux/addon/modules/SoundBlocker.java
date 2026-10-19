@@ -7,7 +7,7 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.settings.SoundEventListSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sound.SoundEvent;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class SoundBlocker extends Module {
     @EventHandler
     private void onPlaySound(PlaySoundEvent event) {
         for (SoundEvent sound : sounds.get()) {
-            if (event.sound.getIdentifier().equals(sound.location())) {
+            if (event.sound.getId().equals(sound.id())) {
                 event.cancel();
                 return;
             }

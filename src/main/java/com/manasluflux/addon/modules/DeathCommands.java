@@ -93,8 +93,8 @@ public class DeathCommands extends Module {
         if (deathDelayTicks >= 0 && pendingMessage != null) {
             if (deathDelayTicks == 0) {
                 String message = pendingMessage.trim();
-                if (message.startsWith("/")) mc.player.connection.sendCommand(message.substring(1));
-                else mc.player.connection.sendChat(message);
+                if (message.startsWith("/")) mc.player.networkHandler.sendChatCommand(message.substring(1));
+                else mc.player.networkHandler.sendChatMessage(message);
 
                 pendingMessage = null;
                 deathDelayTicks = -1;

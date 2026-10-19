@@ -8,10 +8,10 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.world.level.biome.Biome;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.world.biome.Biome;
 
 /**
  * World session info: in-game day number, clock time (HH:MM), weather and the biome
@@ -20,7 +20,7 @@ import net.minecraft.world.level.biome.Biome;
 public class SessionInfoHud extends HudElement {
     public static final HudElementInfo<SessionInfoHud> INFO = new HudElementInfo<>(AddonTemplate.HUD_GROUP, "session-info", "Shows the in-game day, clock time, weather and the biome you are standing in.", SessionInfoHud::new);
 
-    private static final Minecraft mc = Minecraft.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     private static final Color BACKGROUND = new Color(0, 0, 0, 140);
     private static final Color TITLE_COLOR = new Color(255, 210, 120);
@@ -67,7 +67,7 @@ public class SessionInfoHud extends HudElement {
         double rowGap = 3;
         double th = renderer.textHeight(true);
 
-        long dayTime = mc.level != null ? mc.level.getOverworldClockTime() : 0;
+        long dayTime = mc.world != null ? mc.world.getTime() : 0;
         long day = dayTime / 24000L + 1;
         long ticks = dayTime % 24000L;
         int hours = (int) ((ticks / 1000L + 6) % 24);
@@ -75,18 +75,18 @@ public class SessionInfoHud extends HudElement {
         String clock = String.format("%02d:%02d", hours, minutes);
 
         String weather;
-        if (mc.level == null) weather = "-";
-        else if (mc.level.isThundering()) weather = "Thunder";
-        else if (mc.level.isRaining()) weather = "Rain";
+        if (mc.world == null) weather = "-";
+        else if (mc.world.isThundering()) weather = "Thunder";
+        else if (mc.world.isRaining()) weather = "Rain";
         else weather = "Clear";
 
         String biome = "-";
-        if (mc.player != null && mc.level != null) {
-            BlockPos pos = mc.player.blockPosition();
-            Holder<Biome> holder = mc.level.getBiome(pos);
-            var key = holder.unwrapKey();
+        if (mc.player != null && mc.world != null) {
+            BlockPos pos = mc.player.getBlockPos();
+            RegistryEntry<Biome> holder = mc.world.getBiome(pos);
+            var key = holder.getKey();
             if (key.isPresent()) {
-                String path = key.get().identifier().getPath();
+                String path = key.get().getValue().getPath();
                 biome = path.replace('_', ' ');
             }
         }

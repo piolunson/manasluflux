@@ -8,8 +8,8 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.network.packet.s2c.play.DeathMessageS2CPacket;
 
 public class DeathCoords extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -34,20 +34,20 @@ public class DeathCoords extends Module {
 
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
-        if (!(event.packet instanceof ClientboundPlayerCombatKillPacket packet)) return;
-        if (mc.player == null || mc.level == null) return;
+        if (!(event.packet instanceof DeathMessageS2CPacket packet)) return;
+        if (mc.player == null || mc.world == null) return;
         if (packet.playerId() != mc.player.getId()) return;
 
-        BlockPos pos = BlockPos.containing(mc.player.position());
+        BlockPos pos = BlockPos.ofFloored(mc.player.getEntityPos());
         String coords = pos.getX() + " " + pos.getY() + " " + pos.getZ();
 
         if (includeDimension.get()) {
-            String dimension = mc.level.dimension().identifier().toString();
+            String dimension = mc.world.getRegistryKey().getValue().toString();
             Msg.info("You died at %s in %s.", coords, dimension);
         } else {
             Msg.info("You died at %s.", coords);
         }
 
-        if (copyToClipboard.get()) mc.keyboardHandler.setClipboard(coords);
+        if (copyToClipboard.get()) mc.keyboard.setClipboard(coords);
     }
 }

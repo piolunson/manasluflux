@@ -14,17 +14,17 @@ import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.TntBlock;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.block.TntBlock;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -138,13 +138,13 @@ public class TntPlacer extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
         if (timer > 0) {
             timer--;
             return;
         }
 
-        Player target = findTarget();
+        PlayerEntity target = findTarget();
         if (target == null) return;
 
         boolean acted = false;
@@ -155,20 +155,20 @@ public class TntPlacer extends Module {
         if (acted) timer = delay.get();
     }
 
-    private Player findTarget() {
-        Player best = null;
+    private PlayerEntity findTarget() {
+        PlayerEntity best = null;
         double bestDist = Double.MAX_VALUE;
 
-        // mc.level.players() misses Meteor fake players (they are added as plain client-side
+        // mc.world.getPlayers() misses Meteor fake players (they are added as plain client-side
         // entities, not through the player registry), so scan the full entity list too.
-        List<Player> candidates = new ArrayList<>(mc.level.players());
-        for (Entity entity : mc.level.entitiesForRendering()) {
-            if (entity instanceof Player player) candidates.add(player);
+        List<PlayerEntity> candidates = new ArrayList<>(mc.world.getPlayers());
+        for (Entity entity : mc.world.getEntities()) {
+            if (entity instanceof PlayerEntity player) candidates.add(player);
         }
 
-        for (Player player : candidates) {
+        for (PlayerEntity player : candidates) {
             if (player == mc.player) continue;
-            if (player.isDeadOrDying() || player.isSpectator() || player.isCreative()) continue;
+            if (player.isDead() || player.isSpectator() || player.isCreative()) continue;
             if (!Friends.get().shouldAttack(player)) continue;
 
             double dist = mc.player.distanceTo(player);
@@ -182,10 +182,10 @@ public class TntPlacer extends Module {
     }
 
     private boolean replaceable(BlockPos pos) {
-        return mc.level.getBlockState(pos).canBeReplaced();
+        return mc.world.getBlockState(pos).isReplaceable();
     }
 
-    private boolean trap(Player target) {
+    private boolean trap(PlayerEntity target) {
         FindItemResult block = InvUtils.findInHotbar(trapBlock.get().item);
         if (!block.found()) {
             if (!warnedNoTrapBlock) {
@@ -196,23 +196,23 @@ public class TntPlacer extends Module {
         }
         warnedNoTrapBlock = false;
 
-        BlockPos feet = target.blockPosition();
+        BlockPos feet = target.getBlockPos();
         boolean placed = false;
 
         // Ring around the head - blocks their body from stepping out of the column.
-        for (Direction dir : Direction.Plane.HORIZONTAL) {
-            BlockPos pos = feet.above().relative(dir);
+        for (Direction dir : Direction.Type.HORIZONTAL) {
+            BlockPos pos = feet.up().offset(dir);
             if (replaceable(pos)) placed |= BlockUtils.place(pos, block, true, 50);
         }
 
         // Cap above the head.
-        BlockPos cap = feet.above(2);
+        BlockPos cap = feet.up(2);
         if (replaceable(cap)) placed |= BlockUtils.place(cap, block, true, 50);
 
         return placed;
     }
 
-    private boolean placeTnt(Player target) {
+    private boolean placeTnt(PlayerEntity target) {
         FindItemResult tnt = InvUtils.findInHotbar(Items.TNT);
         if (!tnt.found()) {
             if (!warnedNoTnt) {
@@ -223,12 +223,12 @@ public class TntPlacer extends Module {
         }
         warnedNoTnt = false;
 
-        BlockPos feet = target.blockPosition();
+        BlockPos feet = target.getBlockPos();
 
         // Fill every open side at once - up to 4 TNT per cycle.
         boolean placed = false;
-        for (Direction dir : Direction.Plane.HORIZONTAL) {
-            BlockPos pos = feet.relative(dir);
+        for (Direction dir : Direction.Type.HORIZONTAL) {
+            BlockPos pos = feet.offset(dir);
             if (!replaceable(pos)) continue;
             placed |= BlockUtils.place(pos, tnt, true, 50);
         }
@@ -236,13 +236,13 @@ public class TntPlacer extends Module {
         return placed;
     }
 
-    private boolean igniteTnt(Player target) {
-        BlockPos feet = target.blockPosition();
+    private boolean igniteTnt(PlayerEntity target) {
+        BlockPos feet = target.getBlockPos();
         BlockPos tntPos = null;
 
-        for (Direction dir : Direction.Plane.HORIZONTAL) {
-            BlockPos pos = feet.relative(dir);
-            if (mc.level.getBlockState(pos).getBlock() instanceof TntBlock) {
+        for (Direction dir : Direction.Type.HORIZONTAL) {
+            BlockPos pos = feet.offset(dir);
+            if (mc.world.getBlockState(pos).getBlock() instanceof TntBlock) {
                 tntPos = pos;
                 break;
             }
@@ -250,7 +250,7 @@ public class TntPlacer extends Module {
         if (tntPos == null) return false;
 
         if (selfDamageGuard.get()) {
-            double dist = mc.player.position().distanceTo(Vec3.atCenterOf(tntPos));
+            double dist = mc.player.getEntityPos().distanceTo(Vec3d.ofCenter(tntPos));
             if (dist < minSelfDistance.get()) return false;
         }
 
@@ -268,13 +268,13 @@ public class TntPlacer extends Module {
         int igniterSlot = igniter.slot();
 
         boolean swap = igniterSlot != realSlot;
-        if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(igniterSlot));
+        if (swap) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(igniterSlot));
 
-        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(tntPos), Direction.UP, tntPos, false);
-        mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit);
-        mc.player.swing(InteractionHand.MAIN_HAND);
+        BlockHitResult hit = new BlockHitResult(Vec3d.ofCenter(tntPos), Direction.UP, tntPos, false);
+        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hit);
+        mc.player.swingHand(Hand.MAIN_HAND);
 
-        if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(realSlot));
+        if (swap) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
 
         return true;
     }

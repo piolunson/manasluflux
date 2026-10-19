@@ -12,12 +12,13 @@ import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.EnderpearlItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.item.EnderPearlItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Port of BlackOut's Auto Pearl (KassuK1/BlackOut, author OLEPOSSU):
@@ -101,13 +102,13 @@ public class PearlPhase extends Module {
     }
 
     private void start() {
-        if (!Utils.canUpdate() || mc.player == null || mc.level == null || mc.gameMode == null) {
+        if (!Utils.canUpdate() || mc.player == null || mc.world == null || mc.interactionManager == null) {
             toggle();
             return;
         }
 
         // Find a pearl to throw.
-        InteractionHand hand = getHand();
+        Hand hand = getHand();
 
         if (hand == null && switchMode.get() == SwitchMode.Silent) {
             FindItemResult pearl = InvUtils.findInHotbar(Items.ENDER_PEARL);
@@ -119,7 +120,7 @@ public class PearlPhase extends Module {
 
             InvUtils.swap(pearl.slot(), true);
             swapped = true;
-            hand = InteractionHand.MAIN_HAND;
+            hand = Hand.MAIN_HAND;
         }
 
         if (hand == null) {
@@ -129,26 +130,26 @@ public class PearlPhase extends Module {
         }
 
         // Aim at the center of our own block, rotated 180 degrees, steep pitch.
-        prevYaw = mc.player.getYRot();
-        prevPitch = mc.player.getXRot();
+        prevYaw = mc.player.getYaw();
+        prevPitch = mc.player.getPitch();
 
         double cx = Math.floor(mc.player.getX()) + 0.5;
         double cz = Math.floor(mc.player.getZ()) + 0.5;
 
-        Vec3 eye = mc.player.getEyePosition();
+        Vec3d eye = mc.player.getEyePos();
         double dx = cx - eye.x;
         double dz = cz - eye.z;
 
-        yaw = (float) Math.toDegrees(Math.atan2(-dx, dz)) + 180.0f;
+        yaw = (float) MathHelper.wrapDegrees(Math.atan2(-dx, dz)) + 180.0f;
         pit = pitch.get().floatValue();
 
-        mc.player.setYRot(yaw);
-        mc.player.setXRot(pit);
+        mc.player.setYaw(yaw);
+        mc.player.setPitch(pit);
 
         stage = Stage.Rotated;
 
         if (instant.get()) {
-            mc.player.connection.send(new ServerboundMovePlayerPacket.Rot(yaw, pit, mc.player.onGround(), false));
+            mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(yaw, pit, mc.player.isOnGround(), false));
             throwPearl(hand);
         }
         // Otherwise the vanilla movement packet sends our rotation this tick;
@@ -158,25 +159,25 @@ public class PearlPhase extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (stage == Stage.Rotated) {
-            throwPearl(InteractionHand.MAIN_HAND);
+            throwPearl(Hand.MAIN_HAND);
         }
     }
 
-    private void throwPearl(InteractionHand hand) {
-        if (mc.player == null || mc.gameMode == null) {
+    private void throwPearl(Hand hand) {
+        if (mc.player == null || mc.interactionManager == null) {
             toggle();
             return;
         }
 
-        ItemStack stack = mc.player.getItemInHand(hand);
-        if (!(stack.getItem() instanceof EnderpearlItem)) {
+        ItemStack stack = mc.player.getStackInHand(hand);
+        if (!(stack.getItem() instanceof EnderPearlItem)) {
             error("Pearl is no longer in hand.");
             toggle();
             return;
         }
 
-        mc.gameMode.useItem(mc.player, hand);
-        mc.player.swing(hand);
+        mc.interactionManager.interactItem(mc.player, hand);
+        mc.player.swingHand(hand);
 
         stage = Stage.Thrown;
         cleanup();
@@ -188,8 +189,8 @@ public class PearlPhase extends Module {
         stage = Stage.Idle;
 
         if (mc.player != null && !keepRotation.get()) {
-            mc.player.setYRot(prevYaw);
-            mc.player.setXRot(prevPitch);
+            mc.player.setYaw(prevYaw);
+            mc.player.setPitch(prevPitch);
         }
 
         if (swapped) {
@@ -198,9 +199,9 @@ public class PearlPhase extends Module {
         }
     }
 
-    private InteractionHand getHand() {
-        if (mc.player.getMainHandItem().getItem() == Items.ENDER_PEARL) return InteractionHand.MAIN_HAND;
-        if (mc.player.getOffhandItem().getItem() == Items.ENDER_PEARL) return InteractionHand.OFF_HAND;
+    private Hand getHand() {
+        if (mc.player.getMainHandStack().getItem() == Items.ENDER_PEARL) return Hand.MAIN_HAND;
+        if (mc.player.getOffHandStack().getItem() == Items.ENDER_PEARL) return Hand.OFF_HAND;
         return null;
     }
 }

@@ -9,9 +9,9 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 public class Path extends Module {
     private final SettingGroup sgRender = settings.createGroup("Render");
@@ -41,12 +41,12 @@ public class Path extends Module {
     private void onRender3D(Render3DEvent event) {
         if (target == null || mc.player == null) return;
 
-        Vec3 start = mc.player.getEyePosition();
+        Vec3d start = mc.player.getEyePos();
         event.renderer.line(
             start.x, start.y, start.z,
             target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5,
             color.get()
         );
-        event.renderer.box(new AABB(target), color.get(), color.get(), ShapeMode.Both, 0);
+        event.renderer.box(new Box(target), color.get(), color.get(), ShapeMode.Both, 0);
     }
 }

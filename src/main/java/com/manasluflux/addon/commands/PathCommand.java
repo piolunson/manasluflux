@@ -5,8 +5,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.manasluflux.addon.modules.Path;
 import meteordevelopment.meteorclient.commands.Command;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.core.BlockPos;
+import net.minecraft.command.CommandSource;
+import net.minecraft.util.math.BlockPos;
 
 public class PathCommand extends Command {
     public PathCommand() {
@@ -14,7 +14,7 @@ public class PathCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(argument("x", IntegerArgumentType.integer())
             .then(argument("y", IntegerArgumentType.integer())
                 .then(argument("z", IntegerArgumentType.integer()).executes(context -> {

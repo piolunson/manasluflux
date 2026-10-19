@@ -9,16 +9,17 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundAttackPacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemUseAnimation;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.util.Hand;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.consume.UseAction;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * Attacks the nearest target without rotating your camera - raw attack packets with a silent
@@ -107,15 +108,15 @@ public class SilentAura extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.level == null || mc.gameMode == null) return;
-        if (pauseOnMine.get() && mc.gameMode.isDestroying()) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
+        if (pauseOnMine.get() && mc.interactionManager.isBreakingBlock()) return;
         if (pauseOnEat.get() && isEatingOrDrinking()) return;
         if (timer > 0) {
             timer--;
             return;
         }
 
-        Player target = CombatTargets.findTarget(range.get());
+        PlayerEntity target = CombatTargets.findTarget(range.get());
         if (target == null) return;
 
         attack(target);
@@ -123,19 +124,19 @@ public class SilentAura extends Module {
         timer = delay.get();
     }
 
-    private void attack(Player target) {
+    private void attack(PlayerEntity target) {
         int realSlot = mc.player.getInventory().getSelectedSlot();
         int weaponSlot = autoWeapon.get() ? findWeaponSlot() : -1;
 
         boolean swap = weaponSlot != -1 && weaponSlot != realSlot;
-        if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(weaponSlot));
+        if (swap) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(weaponSlot));
 
         if (silentAim.get()) lookAtTarget(target);
 
-        mc.player.connection.send(new ServerboundAttackPacket(target.getId()));
-        mc.player.connection.send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
+        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(target, false));
+        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
 
-        if (swap) mc.player.connection.send(new ServerboundSetCarriedItemPacket(realSlot));
+        if (swap) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
     }
 
     /**
@@ -144,19 +145,19 @@ public class SilentAura extends Module {
      * rotation resets on the next vanilla movement packet, exactly like BlackOut-style
      * "instant rotation".
      */
-    private void lookAtTarget(Player target) {
-        Vec3 eye = mc.player.getEyePosition();
-        Vec3 aim = aimHead.get()
-            ? new Vec3(target.getX(), target.getEyeY(), target.getZ())
-            : new Vec3(target.getX(), target.getY() + target.getBbHeight() * 0.5, target.getZ());
+    private void lookAtTarget(PlayerEntity target) {
+        Vec3d eye = mc.player.getEyePos();
+        Vec3d aim = aimHead.get()
+            ? new Vec3d(target.getX(), target.getEyeY(), target.getZ())
+            : new Vec3d(target.getX(), target.getY() + target.getHeight() * 0.5, target.getZ());
 
-        Vec3 delta = aim.subtract(eye);
+        Vec3d delta = aim.subtract(eye);
         double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
 
-        float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
-        float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, horizontal));
+        float yaw = (float) MathHelper.wrapDegrees(Math.atan2(-delta.x, delta.z));
+        float pitch = (float) -MathHelper.wrapDegrees(Math.atan2(delta.y, horizontal));
 
-        mc.player.connection.send(new ServerboundMovePlayerPacket.Rot(yaw, pitch, mc.player.onGround(), mc.player.onGround()));
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround(), mc.player.isOnGround()));
     }
 
     /**
@@ -167,7 +168,7 @@ public class SilentAura extends Module {
         int bestScore = 0;
 
         for (int slot = 0; slot < 9; slot++) {
-            Item item = mc.player.getInventory().getItem(slot).getItem();
+            Item item = mc.player.getInventory().getStack(slot).getItem();
             int score = score(item);
             if (score > bestScore) {
                 bestScore = score;
@@ -205,7 +206,7 @@ public class SilentAura extends Module {
 
     private boolean isEatingOrDrinking() {
         if (!mc.player.isUsingItem()) return false;
-        ItemUseAnimation anim = mc.player.getUseItem().getUseAnimation();
-        return anim == ItemUseAnimation.EAT || anim == ItemUseAnimation.DRINK;
+        UseAction anim = mc.player.getActiveItem().getUseAction();
+        return anim == UseAction.EAT || anim == UseAction.DRINK;
     }
 }

@@ -2,8 +2,8 @@ package com.manasluflux.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.world.entity.player.PlayerSkin;
+import net.minecraft.command.CommandSource;
+import net.minecraft.entity.player.SkinTextures;
 
 public class SkinCommand extends Command {
     public SkinCommand() {
@@ -11,14 +11,14 @@ public class SkinCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             if (mc.player == null) {
                 Msg.error("Not in a world.");
                 return SINGLE_SUCCESS;
             }
 
-            PlayerSkin skin = mc.player.getSkin();
+            SkinTextures skin = mc.player.getSkin();
             Msg.info("Skin for %s:", mc.player.getName().getString());
             Msg.info("Body: %s", skin.body().texturePath());
             Msg.info("Cape: %s", skin.cape().texturePath());

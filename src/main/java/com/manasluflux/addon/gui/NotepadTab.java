@@ -8,6 +8,7 @@ import meteordevelopment.meteorclient.gui.widgets.containers.WHorizontalList;
 import meteordevelopment.meteorclient.gui.widgets.input.WTextBox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WMinus;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WPlus;
+import net.minecraft.client.gui.screen.Screen;
 
 /**
  * Notepad tab in the Meteor ClickGUI top bar: multiple free-text pages in one
@@ -25,7 +26,7 @@ public class NotepadTab extends Tab {
     }
 
     @Override
-    public boolean isScreen(net.minecraft.client.gui.screens.Screen screen) {
+    public boolean isScreen(Screen screen) {
         return screen instanceof NotepadScreen;
     }
 
@@ -67,12 +68,6 @@ public class NotepadTab extends Tab {
             WTextBox box = add(theme.textBox(notes.pages.get(page), (text, c) -> true)).expandX().widget();
             box.action = () -> notes.pages.set(page, box.get());
             box.actionOnUnfocused = notes::save;
-        }
-
-        @Override
-        public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
-            notes.save();
-            return super.keyReleased(event);
         }
 
         @Override

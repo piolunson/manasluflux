@@ -9,7 +9,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.world.item.Items;
+import net.minecraft.item.Items;
 
 /**
  * Refills your offhand with a totem of undying whenever it pops (or you use it),
@@ -40,13 +40,13 @@ public class AutoTotem extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (mc.player == null || mc.gameMode == null) return;
+        if (mc.player == null || mc.interactionManager == null) return;
         if (timer > 0) {
             timer--;
             return;
         }
 
-        if (mc.player.getOffhandItem().getItem() == Items.TOTEM_OF_UNDYING) return;
+        if (mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING) return;
 
         FindItemResult totem = InvUtils.find(Items.TOTEM_OF_UNDYING);
         if (!totem.found()) return;

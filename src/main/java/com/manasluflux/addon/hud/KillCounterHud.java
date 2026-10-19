@@ -11,10 +11,10 @@ import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.player.PlayerEntity;
 
 /**
  * Session combat tracker: counts entities killed and times you died since the last
@@ -24,7 +24,7 @@ import net.minecraft.world.entity.player.Player;
 public class KillCounterHud extends HudElement {
     public static final HudElementInfo<KillCounterHud> INFO = new HudElementInfo<>(AddonTemplate.HUD_GROUP, "kill-counter", "Session kills, deaths and K/D ratio, tracked from the moment you join a world.", KillCounterHud::new);
 
-    private static final Minecraft mc = Minecraft.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     private static final Color BACKGROUND = new Color(0, 0, 0, 140);
     private static final Color TITLE_COLOR = new Color(255, 120, 120);
@@ -36,7 +36,7 @@ public class KillCounterHud extends HudElement {
 
     private final Setting<Boolean> countPlayers = sgGeneral.add(new BoolSetting.Builder()
         .name("count-players")
-        .description("Player kills count towards the total.")
+        .description("PlayerEntity kills count towards the total.")
         .defaultValue(true)
         .build()
     );
@@ -71,8 +71,8 @@ public class KillCounterHud extends HudElement {
     }
 
     private String worldKey() {
-        if (mc.level == null) return "";
-        return mc.level.dimension().identifier().toString() + "|" + (mc.isLocalServer() ? "sp" : (mc.getCurrentServer() != null ? mc.getCurrentServer().ip : "mp"));
+        if (mc.world == null) return "";
+        return mc.world.getRegistryKey().getValue().toString() + "|" + (mc.isInSingleplayer() ? "sp" : (mc.getCurrentServerEntry() != null ? mc.getCurrentServerEntry().address : "mp"));
     }
 
     @Override
@@ -138,13 +138,13 @@ public class KillCounterHud extends HudElement {
         if (living == mc.player) return;
         if (living.getHealth() > 0) return; // not a death
 
-        var killer = living.getKillCredit();
-        if (killer != mc.player && !(killer instanceof Player p && p.getUUID().equals(mc.player.getUUID()))) return;
+        var killer = living.getPrimeAdversary();
+        if (killer != mc.player && !(killer instanceof PlayerEntity p && p.getUuid().equals(mc.player.getUuid()))) return;
 
-        if (living instanceof Player target) {
+        if (living instanceof PlayerEntity target) {
             if (!countPlayers.get()) return;
             if (Friends.get().shouldAttack(target)) kills++;
-        } else if (living instanceof Monster) {
+        } else if (living instanceof HostileEntity) {
             if (countMobs.get()) kills++;
         }
     }

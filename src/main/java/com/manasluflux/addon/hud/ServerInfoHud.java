@@ -8,8 +8,8 @@ import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ServerInfo;
 
 /**
  * Small info box for the multiplayer session: server name/address, online players
@@ -18,7 +18,7 @@ import net.minecraft.client.multiplayer.ServerData;
 public class ServerInfoHud extends HudElement {
     public static final HudElementInfo<ServerInfoHud> INFO = new HudElementInfo<>(AddonTemplate.HUD_GROUP, "server-info", "Shows the server you are on, online players and your live ping.", ServerInfoHud::new);
 
-    private static final Minecraft mc = Minecraft.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     private static final Color BACKGROUND = new Color(0, 0, 0, 140);
     private static final Color TITLE_COLOR = new Color(140, 220, 255);
@@ -62,16 +62,16 @@ public class ServerInfoHud extends HudElement {
         double rowGap = 3;
         double th = renderer.textHeight(true);
 
-        boolean singlePlayer = mc.isLocalServer();
+        boolean singlePlayer = mc.isInSingleplayer();
 
-        ServerData data = mc.getCurrentServer();
+        ServerInfo data = mc.getCurrentServerEntry();
         String serverName = singlePlayer ? "Singleplayer" : (data != null && data.name != null ? data.name : "Unknown");
-        String serverIp = singlePlayer ? "localhost" : (data != null && data.ip != null ? data.ip : "unknown");
+        String serverIp = singlePlayer ? "localhost" : (data != null && data.address != null ? data.address : "unknown");
 
-        int playerCount = mc.getConnection() != null ? mc.getConnection().getOnlinePlayers().size() : 0;
+        int playerCount = mc.getNetworkHandler() != null ? mc.getNetworkHandler().getPlayerList().size() : 0;
         int ping = 0;
-        if (!singlePlayer && mc.player != null && mc.getConnection() != null) {
-            var info = mc.getConnection().getPlayerInfo(mc.player.getUUID());
+        if (!singlePlayer && mc.player != null && mc.getNetworkHandler() != null) {
+            var info = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
             if (info != null) ping = info.getLatency();
         }
 

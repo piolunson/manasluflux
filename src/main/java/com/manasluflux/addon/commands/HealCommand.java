@@ -2,8 +2,8 @@ package com.manasluflux.addon.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import net.minecraft.client.multiplayer.ClientSuggestionProvider;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.command.CommandSource;
+import net.minecraft.item.ItemStack;
 
 public class HealCommand extends Command {
     public HealCommand() {
@@ -11,7 +11,7 @@ public class HealCommand extends Command {
     }
 
     @Override
-    public void build(LiteralArgumentBuilder<ClientSuggestionProvider> builder) {
+    public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.executes(context -> {
             if (mc.player == null) {
                 Msg.error("Not in a world.");
@@ -19,10 +19,10 @@ public class HealCommand extends Command {
             }
 
             float missing = mc.player.getMaxHealth() - mc.player.getHealth();
-            int missingFood = 20 - mc.player.getFoodData().getFoodLevel();
+            int missingFood = 20 - mc.player.getHungerManager().getFoodLevel();
 
-            ItemStack offhand = mc.player.getOffhandItem();
-            boolean hasGoldenApple = !offhand.isEmpty() && offhand.getItem().getDescriptionId().contains("golden_apple");
+            ItemStack offhand = mc.player.getOffHandStack();
+            boolean hasGoldenApple = !offhand.isEmpty() && offhand.getItem().getTranslationKey().contains("golden_apple");
 
             if (missing <= 0 && missingFood == 0) {
                 Msg.info("You are at full health and food.");
