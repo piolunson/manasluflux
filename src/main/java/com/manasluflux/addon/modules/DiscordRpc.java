@@ -62,7 +62,7 @@ public class DiscordRpc extends Module {
     private final Setting<String> largeImageName = sgImages.add(new StringSetting.Builder()
         .name("image-name")
         .description("Key of the large image inside your Discord application's Art Assets tab.")
-        .defaultValue("meteor_client")
+        .defaultValue("manasluflux")
         .onChanged(v -> forceUpdate = true)
         .build()
     );
@@ -123,8 +123,8 @@ public class DiscordRpc extends Module {
 
     private final Setting<String> appId = sgGeneral.add(new StringSetting.Builder()
         .name("application-id")
-        .description("Discord Application ID (number only). Default is Meteor's - the NAME under your presence comes from this Discord application!")
-        .defaultValue("835240968533049424")
+        .description("Discord Application ID (number only). This app's name & icon are what Discord shows as your presence name!")
+        .defaultValue("1563969889968988291")
         .onChanged(v -> appIdChanged = true)
         .build()
     );

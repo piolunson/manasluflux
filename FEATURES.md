@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.7.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.7.1 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -166,6 +166,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 0.7.1 | **Discord RPC defaults re-pointed to the Manaslu Flux application** (App ID `1563969889968988291`): the name + round logo shown by Discord now come from your own app — upload the [ManasluFlux logo](discord-assets/manasluflux.png) into its Art Assets tab under the key `manasluflux` for the big image too (new default `image-name`). |
 | 0.7.0 | **New module: Discord RPC** (`discord-rpc`) — fully customizable Rich Presence with one-click **presets** (Crystals, PvP, Mining, Exploring, Building, AFK), editable **Line 1 / Line 2** with placeholders (`{player}` `{server}` `{ping}` `{pos}` `{dimension}` `{cps}` `{version}` `{health}`), large image name & text, optional small image, elapsed-time timer, update interval, and a built-in **crystals-per-second counter**. Custom **Application ID** setting lets you change the name shown by Discord and use your own Art-Assets images (default: Meteor's app). Counts 44 modules. |
 | 0.6.0 | **Full port to Minecraft 1.21.11 + Meteor Client 1.21.11-SNAPSHOT**: every module, command, HUD element and both mixins were re-mapped to the Yarn 1.21.11 mappings (1.21.11+build.3) and Meteor's 1.21.11 API — rendering now uses the resolved Meteor `Renderer2D`/`HudRenderer` calls plus the new blaze3d device texture path behind the Image/GIF HUD elements (async file decoding, linear/nearest filtering), all client packets, enchantment/food data component reads, registry lookups, keybinding and interaction-manager calls were converted to the 1.21.11 names, and the bundled Baritone jar was swapped to the 1.21.11 Fabric build. Settings builder clamp fixes and the HUD texture wrapper were rewritten against the new API. No features were added or removed — beyond 1.21.11 compatibility this is a hardening release: async HUD image loading and per-frame GIF re-upload checks. |
 | 0.5.3 | New **Anti Drop Lagback** module (Client Side, Hazey-style): watches the server's position-sync teleports and count "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side, packets are observed but never modified or cancelled. |
