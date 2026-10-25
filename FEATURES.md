@@ -71,7 +71,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
 
-### Category: Manaslu Flux Utility (12)
+### Category: Manaslu Flux Utility (13)
 
 | Module | ID | What it does |
 |---|---|---|
