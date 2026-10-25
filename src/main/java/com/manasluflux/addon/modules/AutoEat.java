@@ -45,7 +45,7 @@ public class AutoEat extends Module {
     private int usingTicks;
 
     public AutoEat() {
-        super(AddonTemplate.CATEGORY, "auto-eat", "Automatically eats food from your hotbar when hungry.");
+        super(AddonTemplate.PLAYER_CATEGORY, "auto-eat", "Automatically eats food from your hotbar when hungry.");
     }
 
     public void setThreshold(int value) {

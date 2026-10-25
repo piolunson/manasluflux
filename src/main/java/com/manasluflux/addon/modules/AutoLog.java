@@ -24,7 +24,7 @@ public class AutoLog extends Module {
     );
 
     public AutoLog() {
-        super(AddonTemplate.CATEGORY, "auto-log", "Automatically disconnects when your health drops below a threshold.");
+        super(AddonTemplate.PLAYER_CATEGORY, "auto-log", "Automatically disconnects when your health drops below a threshold.");
     }
 
     public void setThreshold(int percent) {

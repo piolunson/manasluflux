@@ -128,7 +128,7 @@ public class InstantTnt extends Module {
     private ItemStack miningPick;
 
     public InstantTnt() {
-        super(AddonTemplate.CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, a self-mining redstone block fallback, or a Flame-bow shot as a last resort.");
+        super(AddonTemplate.COMBAT_CATEGORY, "instant-tnt", "Automatically ignites TNT just by looking at it (or through walls with click through walls) - silent server-side switch to your flint & steel, a self-mining redstone block fallback, or a Flame-bow shot as a last resort.");
     }
 
     /**

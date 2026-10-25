@@ -35,7 +35,7 @@ public class ModuleExample extends Module {
     );
 
     public ModuleExample() {
-        super(AddonTemplate.CATEGORY, "world-origin", "An example module that highlights the center of the world.");
+        super(AddonTemplate.UTILITY_CATEGORY, "world-origin", "An example module that highlights the center of the world.");
     }
 
     @EventHandler

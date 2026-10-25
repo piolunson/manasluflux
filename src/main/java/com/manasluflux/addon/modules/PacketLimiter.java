@@ -38,7 +38,7 @@ public class PacketLimiter extends Module {
     private int debugTimer;
 
     public PacketLimiter() {
-        super(AddonTemplate.REWRITE_CATEGORY, "packet-limiter", "Limits the packets you send per tick to prevent packet-flood kicks.");
+        super(AddonTemplate.CLIENT_SIDE_CATEGORY, "packet-limiter", "Limits the packets you send per tick to prevent packet-flood kicks.");
     }
 
     @Override

@@ -45,7 +45,7 @@ public class TabLogger extends Module {
     private Set<Snapshot> lastSnapshots = new HashSet<>();
 
     public TabLogger() {
-        super(AddonTemplate.REWRITE_CATEGORY, "tab-logger", "Logs the tab list (uuid, name, ping history) to a per-server text file.");
+        super(AddonTemplate.UTILITY_CATEGORY, "tab-logger", "Logs the tab list (uuid, name, ping history) to a per-server text file.");
     }
 
     @Override

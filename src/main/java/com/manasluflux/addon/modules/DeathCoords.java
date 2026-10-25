@@ -29,7 +29,7 @@ public class DeathCoords extends Module {
     );
 
     public DeathCoords() {
-        super(AddonTemplate.CATEGORY, "death-coords", "Prints (and optionally copies) your coordinates the moment you die.");
+        super(AddonTemplate.UTILITY_CATEGORY, "death-coords", "Prints (and optionally copies) your coordinates the moment you die.");
     }
 
     @EventHandler

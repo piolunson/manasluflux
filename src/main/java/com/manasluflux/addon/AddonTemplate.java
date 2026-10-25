@@ -34,6 +34,7 @@ import com.manasluflux.addon.hud.KillCounterHud;
 import com.manasluflux.addon.hud.PlayerListHud;
 import com.manasluflux.addon.hud.ServerInfoHud;
 import com.manasluflux.addon.hud.SessionInfoHud;
+import com.manasluflux.addon.modules.AcPacketFlood;
 import com.manasluflux.addon.modules.AddText;
 import com.manasluflux.addon.modules.AutoLogin;
 import com.manasluflux.addon.modules.AutoTotem;
@@ -93,11 +94,16 @@ import org.slf4j.Logger;
 public class AddonTemplate extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
     // Icons: plain ItemStacks are safe in yarn 1.21.11 (components bind lazily there).
-    public static final Category CATEGORY = new Category("Manaslu Flux", new ItemStack(Items.NETHER_STAR));
     public static final HudGroup HUD_GROUP = new HudGroup("Manaslu Flux");
-    public static final Category CLIENT_SIDE_CATEGORY = new Category("Manaslu Flux Client Side", new ItemStack(Items.OAK_SIGN));
+
+    // Modules are grouped by what they actually do: fighting, getting around, keeping you alive,
+    // changing the world, changing what you see, and the rest (chat, logs, tools).
     public static final Category COMBAT_CATEGORY = new Category("Manaslu Flux Combat", new ItemStack(Items.END_CRYSTAL));
-    public static final Category REWRITE_CATEGORY = new Category("Manaslu Flux Rewrite", new ItemStack(Items.ENCHANTED_BOOK));
+    public static final Category MOVEMENT_CATEGORY = new Category("Manaslu Flux Movement", new ItemStack(Items.FEATHER));
+    public static final Category PLAYER_CATEGORY = new Category("Manaslu Flux Player", new ItemStack(Items.GOLDEN_APPLE));
+    public static final Category WORLD_CATEGORY = new Category("Manaslu Flux World", new ItemStack(Items.GRASS_BLOCK));
+    public static final Category CLIENT_SIDE_CATEGORY = new Category("Manaslu Flux Client Side", new ItemStack(Items.OAK_SIGN));
+    public static final Category UTILITY_CATEGORY = new Category("Manaslu Flux Utility", new ItemStack(Items.COMPASS));
 
     @Override
     public void onInitialize() {
@@ -156,6 +162,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new TntPlacer());
         Modules.get().add(new SilentAura());
         Modules.get().add(new CrystalAura());
+        Modules.get().add(new AcPacketFlood());
         Modules.get().add(new AutoTotem());
 
         // Example module & HUD kept from the template
@@ -198,10 +205,12 @@ public class AddonTemplate extends MeteorAddon {
 
     @Override
     public void onRegisterCategories() {
-        Modules.registerCategory(CATEGORY);
-        Modules.registerCategory(CLIENT_SIDE_CATEGORY);
         Modules.registerCategory(COMBAT_CATEGORY);
-        Modules.registerCategory(REWRITE_CATEGORY);
+        Modules.registerCategory(MOVEMENT_CATEGORY);
+        Modules.registerCategory(PLAYER_CATEGORY);
+        Modules.registerCategory(WORLD_CATEGORY);
+        Modules.registerCategory(CLIENT_SIDE_CATEGORY);
+        Modules.registerCategory(UTILITY_CATEGORY);
     }
 
     @Override

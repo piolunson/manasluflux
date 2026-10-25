@@ -36,7 +36,7 @@ public class BoatFlight extends Module {
     );
 
     public BoatFlight() {
-        super(AddonTemplate.CATEGORY, "boat-flight", "Fly while riding a boat - horizontal and vertical speed settings, jump = up, sneak = down.");
+        super(AddonTemplate.MOVEMENT_CATEGORY, "boat-flight", "Fly while riding a boat - horizontal and vertical speed settings, jump = up, sneak = down.");
     }
 
     @Override

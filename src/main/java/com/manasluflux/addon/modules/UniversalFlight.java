@@ -40,7 +40,7 @@ public class UniversalFlight extends Module {
     private float savedFlyingSpeed;
 
     public UniversalFlight() {
-        super(AddonTemplate.CATEGORY, "universal-flight", "Enables flight - force it on all the time, or only get the permission and toggle it with a double-jump like creative.");
+        super(AddonTemplate.MOVEMENT_CATEGORY, "universal-flight", "Enables flight - force it on all the time, or only get the permission and toggle it with a double-jump like creative.");
     }
 
     @Override

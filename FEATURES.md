@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.8.1 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.9.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,75 +12,84 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (44)
+## Modules (45)
 
-### Category: Manaslu Flux (main)
+### Category: Manaslu Flux Combat (8)
+
+| Module | ID | What it does |
+|---|---|---|
+| AC PacketFlood | `ac-pcktflood` | **Crystal aura on the packet timeline** — place and break are raw packets fired by a millisecond scheduler instead of the 50 ms game tick. **Place** (`place`, `place-delay-ms` 1, `place-retries` 0, `place-retry-delay-ms` 2, `bases-per-tick`, `place-range`, `place-walls-range`, `support-blocks`), **Break** (`break`, `break-delay-ms` 1, `break-retries` 0, `break-retry-delay-ms` 2, `break-range`, `break-walls-range`), **General** (`target-range`, `predict-movement`, `min-damage`, `max-self-damage`, `anti-suicide`, `rotate`, `face-place` + health/durability/missing-armor), **Packet** (`max-packets-per-second` 60, `debug-mode`). Retries are dropped the moment the server's spawn/destroy packet confirms the action, so with `place-delay-ms` 1 and `place-retries` 2 the timeline is `1ms:packet 3ms:retry 5ms:retry … 6ms:packet`. |
+| Auto Totem | `auto-totem` | Instantly refills a totem of undying into your offhand whenever it is used or pops. Settings: `delay`; **Packet** group — `packet-level` (refill through raw inventory click packets and detect the pop from the entity status packet, removing the inventory/tick delay), `packet-retries`, `packet-retry-delay`, `max-packets-per-second`. |
+| Clicker | `clicker` | Left/right auto clicker with Nothing/Hold/Click modes and per-action tick delays. |
+| Crystal Aura | `crystal-aura` | **Port of Meteor Client's CrystalAura** — simulates the crystal explosion for every obsidian/bedrock base in range and places/pops only the most damaging one. Settings: target-range, predict-movement, min-damage, max-self-damage, anti-suicide, silent rotate; **Place** (place, place-delay, place-range, place-walls-range, support-blocks + support-delay); **Face Place** (face-place, health, durability, missing-armor); **Break** (break, break-delay, break-range, break-walls-range, attack-frequency); **Pause** (pause-on-mine, pause-on-eat); **Packet** (packet-level, packet-retries, packet-retry-delay, max-packets-per-second — raw place/break packets, crystal spawn/destroy read straight from the packet stream so a crystal is popped the moment the server confirms it, unconfirmed packets resent, every send capped per second). All silent: server-side hotbar swaps and look packets — no visible rotation or hotbar movement. |
+| Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. **Redstone Block** (default on): when no igniter is in the inventory, silently places a redstone block next to the TNT instead — redstone power primes TNT. **Mine Redstone Block** (default on): the placed redstone block is packet-mined again during the TNT's fuse with a silent hotbar-pickaxe swap, so the dust lands back in your inventory. **Bow Fallback** (default on): last resort when there is no igniter and no redstone block either — silently swaps to a bow, draws and releases after 10 ticks, and shoots the TNT; only fires when the TNT is in your crosshair (arrows fly where you look) and only with a **Flame** bow (or any bow in creative) plus an arrow, since flaming arrows ignite TNT on contact. |
+| Pearl Phase | `pearl-phase` | Ported from BlackOut's Auto Pearl — one-shot pearl throw at your own block (yaw +180°, steep pitch) to clip inside walls. Tick-based: rotates, throws on the next tick so the server sees the rotation, restores your view and hotbar, auto-toggles off. Settings: pitch, switch mode (Normal/Silent hotbar swap), instant rotation (direct rotation packet), keep rotation. |
+| Silent Aura | `silent-aura` | Attacks the nearest player without rotating or swinging your visible hand — **silent aim** (server-side-only look rotation at the target, body or head) plus a silent weapon switch. **Pause** group: `pause-on-mine` and `pause-on-eat` temporarily stop the aura while you mine or eat/drink. |
+| TNT Placer | `tnt-placer` | Traps the nearest player in (crying) obsidian, buries them in TNT and ignites it — non-stop. |
+
+### Category: Manaslu Flux Movement (5)
+
+| Module | ID | What it does |
+|---|---|---|
+| Auto Walk Hold | `auto-walk-hold` | Holds a configurable key (default **2**) down while enabled — keeps it pressed even after screens open or window focus changes. |
+| Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
+| Click TP | `mf-click-tp` | Hold use while looking at a block to teleport there in configurable steps, with max distance, step size, delay and an optional safe-landing check. |
+| Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
+| Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
+
+### Category: Manaslu Flux Player (6)
 
 | Module | ID | What it does |
 |---|---|---|
 | Auto Eat | `auto-eat` | Automatically eats food from your hotbar when hungry. |
 | Auto Fish | `auto-fish` | Automatically throws the rod, reels in fish, looks up and recasts. |
 | Auto Log | `auto-log` | Automatically disconnects when your health drops below a threshold. |
-| Auto Walk Hold | `auto-walk-hold` | Holds a configurable key (default **2**) down while enabled — keeps it pressed even after screens open or window focus changes. |
-| Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
-| Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
-| Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
-| Discord RPC | `discord-rpc` | Fully customizable Discord Rich Presence via Meteor's bundled discord-ipc — **presets** (Crystals, PvP, Mining, Exploring, Building, AFK) one-click fill everything, and **Custom** lets you edit each field yourself: **Line 1** and **Line 2** with placeholders `{player}` `{server}` `{ping}` `{pos}` `{dimension}` `{cps}` `{version}` `{health}`, large **image name & text**, optional small image (name & text), **show timer**, **update interval**, and a **crystals-per-second counter** (counts crystals blown up, appends " | <n> CPS" to line 1 and feeds `{cps}`). Application ID setting: use your own Discord app (discord.com/developers) to change the NAME shown by Discord and upload your own images; default points at Meteor's app. Runs in the main menu too. |
-| Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
-| Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. **Redstone Block** (default on): when no igniter is in the inventory, silently places a redstone block next to the TNT instead — redstone power primes TNT. **Mine Redstone Block** (default on): the placed redstone block is packet-mined again during the TNT's fuse with a silent hotbar-pickaxe swap, so the dust lands back in your inventory. **Bow Fallback** (default on): last resort when there is no igniter and no redstone block either — silently swaps to a bow, draws and releases after 10 ticks, and shoots the TNT; only fires when the TNT is in your crosshair (arrows fly where you look) and only with a **Flame** bow (or any bow in creative) plus an arrow, since flaming arrows ignite TNT on contact. |
-| Auto Map Part | `auto-map-part` | When you place an item frame, it automatically fills it with a randomly chosen filled map from your hotbar — map-art building made instant. **Instant** by default: the map goes in the same tick the frame spawns; a configurable **Delay** (0–20 ticks, slider) slows it down if wanted (vanilla click-feel is 3). **Silent** (default on): the map is taken with a server-side hotbar swap, so your visible hotbar slot never changes. Remembers already-filled frames so nothing is placed twice, and shows how many frames it has filled in the HUD. |
-| Auto Wither | `auto-wither` | Aim anywhere and **right-click to build a full wither** at the aimed spot — 2 soul sand columns plus the middle block, 3 wither skulls on top (center skull optional), placed via silent hotbar swaps. **Range** (default 4.5, up to 20): how far away the aimed build spot is allowed to be. **Air place** supported, **rotation lock** to a cardinal direction, live ghost preview with shrunk skull boxes and custom colors, **delay** (ticks between blocks, 0 = all in one tick). Optionally **nametags** the spawned wither right after it appears: creative mode writes your configured name onto the tag client-side, survival uses an already-renamed tag; **nametag-delay** is configurable (0 = instant). Ported from Trouser-Streak (which skidded it from Germanminer). |
-| Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
-| Pearl Phase | `pearl-phase` | Ported from BlackOut's Auto Pearl — one-shot pearl throw at your own block (yaw +180°, steep pitch) to clip inside walls. Tick-based: rotates, throws on the next tick so the server sees the rotation, restores your view and hotbar, auto-toggles off. Settings: pitch, switch mode (Normal/Silent hotbar swap), instant rotation (direct rotation packet), keep rotation. |
-| Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
-| Ping Spoofer | `ping-spoofer` | Changes your ping with three modes: **Real** (no change), **More** (genuinely adds latency by delaying keep-alive/pong replies, so the server sees real extra ms) or **Spoof** (replies sent instantly, only the tab-list ping is patched). Amount, jitter and a debug readout are configurable. |
-| Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
-| Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
+| Auto Login | `auto-login` | Sends `/<command> <password>` (default `/login 12345678`) automatically after joining a server — or when chat shows a trigger word like "register". Settings: command, password, mode (Always/Trigger), triggers, delay, repeat-on-trigger, cooldown. The password is stored in plain text in the Meteor config — don't reuse an important one. |
+| Auto Respawn | `mf-auto-respawn` | Auto-clicks respawn on the death screen, then optionally runs commands/chat lines (one per tick) after respawning. |
 | Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
-| Mute | `mute` | Module backing `.mfmute`: client-side chat filter by player name and/or phrase.
-| World Origin | `world-origin` | Example module that highlights the center of the world. |
-| Module Example | `module-example` | Template example module (kept from the addon template). |
 
-### Category: Manaslu Flux Client Side
+### Category: Manaslu Flux World (4)
 
 | Module | ID | What it does |
 |---|---|---|
-| Add Text | `add-text` | Local-only chat lines added with `.mfaddtext`, optionally kept across relogs. |
-| Auto Login | `auto-login` | Sends `/<command> <password>` (default `/login 12345678`) automatically after joining a server — or when chat shows a trigger word like "register". Settings: command, password, mode (Always/Trigger), triggers, delay, repeat-on-trigger, cooldown. The password is stored in plain text in the Meteor config — don't reuse an important one. |
-| Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
-| Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Like Crystal Optimizer but for any block entity. Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
+| Auto Map Part | `auto-map-part` | When you place an item frame, it automatically fills it with a randomly chosen filled map from your hotbar — map-art building made instant. **Instant** by default: the map goes in the same tick the frame spawns; a configurable **Delay** (0–20 ticks, slider) slows it down if wanted (vanilla click-feel is 3). **Silent** (default on): the map is taken with a server-side hotbar swap, so your visible hotbar slot never changes. Remembers already-filled frames so nothing is placed twice, and shows how many frames it has filled in the HUD. |
+| Auto Wither | `auto-wither` | Aim anywhere and **right-click to build a full wither** at the aimed spot — 2 soul sand columns plus the middle block, 3 wither skulls on top (center skull optional), placed via silent hotbar swaps. **Range** (default 4.5, up to 20): how far away the aimed build spot is allowed to be. **Air place** supported, **rotation lock** to a cardinal direction, live ghost preview with shrunk skull boxes and custom colors, **delay** (ticks between blocks, 0 = all in one tick). Optionally **nametags** the spawned wither right after it appears: creative mode writes your configured name onto the tag client-side, survival uses an already-renamed tag; **nametag-delay** is configurable (0 = instant). Ported from Trouser-Streak (which skidded it from Germanminer). |
+| Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
+| Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
+
+### Category: Manaslu Flux Client Side (9)
+
+| Module | ID | What it does |
+|---|---|---|
 | Anti Drop Lagback | `anti-drop-lagback` | Watches the server's position-sync teleports and counts "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side. |
+| Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Like Crystal Optimizer but for any block entity. Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
+| Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
 | Crystal Optimizer | `crystal-optimizer` | Replaces every end crystal's full animated model (outer cube, inner core, bedrock base, beam) with a single static box — or hides crystals entirely — a big FPS boost with lots of crystals on screen. Purely client-side rendering via a tiny renderer mixin: nothing is sent to the server and crystals behave exactly the same. Settings: mode (simple box / hide), box shape (fill/lines), box color. |
+| Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |
+| Ping Spoofer | `ping-spoofer` | Changes your ping with three modes: **Real** (no change), **More** (genuinely adds latency by delaying keep-alive/pong replies, so the server sees real extra ms) or **Spoof** (replies sent instantly, only the tab-list ping is patched). Amount, jitter and a debug readout are configurable. |
+| Sound Muter | `sound-muter` | Mutes specific sounds picked from a sound list, client-side. |
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
 
-### Category: Manaslu Flux Combat
+### Category: Manaslu Flux Utility (12)
 
 | Module | ID | What it does |
 |---|---|---|
-| Auto Totem | `auto-totem` | Instantly refills a totem of undying into your offhand whenever it is used or pops. Settings: `delay`; **Packet** group — `packet-level` (refill through raw inventory click packets and detect the pop from the entity status packet, removing the inventory/tick delay), `packet-retries`, `packet-retry-delay`, `max-packets-per-second`. |
-| Crystal Aura | `crystal-aura` | **Port of Meteor Client's CrystalAura** — simulates the crystal explosion for every obsidian/bedrock base in range and places/pops only the most damaging one. Settings: target-range, predict-movement, min-damage, max-self-damage, anti-suicide, silent rotate; **Place** (place, place-delay, place-range, place-walls-range, support-blocks + support-delay); **Face Place** (face-place, health, durability, missing-armor); **Break** (break, break-delay, break-range, break-walls-range, attack-frequency); **Pause** (pause-on-mine, pause-on-eat); **Packet** (packet-level, packet-retries, packet-retry-delay, max-packets-per-second — raw place/break packets, crystal spawn/destroy read straight from the packet stream so a crystal is popped the moment the server confirms it, unconfirmed packets resent, every send capped per second). All silent: server-side hotbar swaps and look packets — no visible rotation or hotbar movement. |
-| Silent Aura | `silent-aura` | Attacks the nearest player without rotating or swinging your visible hand — **silent aim** (server-side-only look rotation at the target, body or head) plus a silent weapon switch. **Pause** group: `pause-on-mine` and `pause-on-eat` temporarily stop the aura while you mine or eat/drink. |
-| TNT Placer | `tnt-placer` | Traps the nearest player in (crying) obsidian, buries them in TNT and ignites it — non-stop. |
-
-### Category: Manaslu Flux Rewrite
-
-Meteor built-ins rewritten for ManasluFlux (MC 1.21.11, own ClickGUI category). Note: module IDs that collide with Meteor's built-ins are prefixed/renamed (`mf-auto-respawn`, `mf-click-tp`, `sound-muter`) — an ID collision makes Meteor's internal mixin crash the game.
-
-| Module | ID | What it does |
-|---|---|---|
-| Auto Respawn | `mf-auto-respawn` | Auto-clicks respawn on the death screen, then optionally runs commands/chat lines (one per tick) after respawning. |
-| Auto Responder | `auto-responder` | Replies to chat automatically via trigger=response pairs (random pick on multiple matches), with an anti-loop cooldown. |
+| Mute | `mute` | Module backing `.mfmute`: client-side chat filter by player name and/or phrase. |
+| Add Text | `add-text` | Local-only chat lines added with `.mfaddtext`, optionally kept across relogs. |
 | Auto Chat Clear | `auto-chat-clear` | Automatically does the vanilla **F3+D chat clear** after every N received messages (default 20, 1–100). By default the visible backlog is emptied but scrollback history is preserved; an optional `clear-recent-history` toggle wipes that too. Own messages can be excluded from the count, and an optional chat line confirms each clear. Purely client-side. |
+| Auto Responder | `auto-responder` | Replies to chat automatically via trigger=response pairs (random pick on multiple matches), with an anti-loop cooldown. |
 | Chat Logger | `chat-logger` | Logs incoming and outgoing chat (including commands) to a file, new log per game join, path with %date%/%time%/%player%/%server% placeholders. |
-| Click TP | `mf-click-tp` | Hold use while looking at a block to teleport there in configurable steps, with max distance, step size, delay and an optional safe-landing check. |
-| Clicker | `clicker` | Left/right auto clicker with Nothing/Hold/Click modes and per-action tick delays. |
 | Death Commands | `death-commands` | Sends a random message/command from a list when you die, with delay range and chance settings. |
-| Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |
-| Sound Muter | `sound-muter` | Mutes specific sounds picked from a sound list, client-side. |
+| Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
+| Discord RPC | `discord-rpc` | Fully customizable Discord Rich Presence via Meteor's bundled discord-ipc — **presets** (Crystals, PvP, Mining, Exploring, Building, AFK) one-click fill everything, and **Custom** lets you edit each field yourself: **Line 1** and **Line 2** with placeholders `{player}` `{server}` `{ping}` `{pos}` `{dimension}` `{cps}` `{version}` `{health}`, large **image name & text**, optional small image (name & text), **show timer**, **update interval**, and a **crystals-per-second counter** (counts crystals blown up, appends " | <n> CPS" to line 1 and feeds `{cps}`). Application ID setting: use your own Discord app (discord.com/developers) to change the NAME shown by Discord and upload your own images; default points at Meteor's app. Runs in the main menu too. |
+| Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
 | Tab Complete Privacy | `tab-complete-privacy` | Cancels tab-complete suggestion packets that would leak private commands: block-all, blocked prefixes, blocked words or symbols. |
 | Tab Logger | `tab-logger` | Keeps a per-server history file of every tab-list player (uuid, name, ping history), written on a background thread. |
+| Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
+| World Origin | `world-origin` | Example module that highlights the center of the world. |
 
+> Modules whose ID would collide with a Meteor built-in are prefixed with `mf-` (`mf-auto-respawn`, `mf-click-tp`) so Meteor's own copy keeps working.
 ---
 
 ## HUD Elements (7)
@@ -135,10 +144,14 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 ## Module categories registered
 
-- **Manaslu Flux** — general/utility modules (main category, nether star icon)
-- **Manaslu Flux Client Side** — purely client-side/visual modules (oak sign icon)
-- **Manaslu Flux Combat** — combat modules (end crystal icon)
-- **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux (enchanted book icon)
+Modules are grouped by what they do, so nothing shares a grab-bag category any more:
+
+- **Manaslu Flux Combat** (8) — fighting: auras, autocrystal, totem, TNT, pearl phase, clicker (end crystal icon)
+- **Manaslu Flux Movement** (5) — getting around: the three flights, auto walk, click TP (feather icon)
+- **Manaslu Flux Player** (6) — keeping you alive and fed: eat, fish, log, respawn, login, fast use (golden apple icon)
+- **Manaslu Flux World** (4) — changing blocks around you: placer, auto wither, map part, block replacer (grass block icon)
+- **Manaslu Flux Client Side** (9) — what you see and what the server sees: crystal optimizer, block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
+- **Manaslu Flux Utility** (13) — chat, logs and tools: waypoint, path, death coords, chat/tab loggers, tab privacy, RPC, and the rewritten chat modules (compass icon)
 - **Manaslu Flux** HUD group — HUD elements
 
 ## Bundled Baritone
@@ -167,6 +180,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 0.9.0 | **New module: AC PacketFlood** (`ac-pcktflood`) — a crystal aura that lives on the packet timeline instead of the game tick. Every place and break is a raw packet (use-block / attack / silent look) fired by a millisecond scheduler, with per-action **delay in ms**, **retries** and **retry delay in ms** (`place-delay-ms` 1, `place-retries` 0, `place-retry-delay-ms` 2, and the same trio for break), `bases-per-tick` so several bases can be hit in one cycle spaced by the delay, all the usual aura settings (target/min/max-self damage, anti-suicide, silent rotate, face place with health/durability/missing armor, place & break ranges and walls ranges, support blocks) and a `max-packets-per-second` cap. Retries are dropped the moment the server's crystal spawn/destroy packet confirms the action, so `1ms:packet 3ms:retry 5ms:retry … 6ms:packet` is exactly what runs. **Modules re-categorised**: the old grab-bag "Manaslu Flux" and "Manaslu Flux Rewrite" categories are gone — modules now sit in Combat (8), Movement (5), Player (6), World (4), Client Side (9) and Utility (13). Counts: 45 modules. |
 | 0.8.1 | **Every numeric setting now goes from 0 to 10000** — all 40 int settings and 29 double settings (69 total, across every module and HUD element) declare `range(0, 10000)` + `sliderRange(0, 10000)` instead of their old per-setting limits. A few internals are clamped so a dialled-up value can't freeze the game: Crystal Aura's place scan, Placer's fill scan and Instant TNT's through-walls scan cap their loop radius at 8 blocks (the reach/range checks still use your value), the Discord RPC update interval is guarded against 0, and Auto Fish's `look-up-pitch` is now a plain 0–10000 angle (60 = look 60° up) so it works without negative numbers. |
 | 0.8.0 | **Packet level for Crystal Aura and Auto Totem** — new **Packet** settings group in both modules. `packet-level` sends the interactions as raw packets and reads the result from the server's packet stream instead of waiting for game ticks: Crystal Aura sends its own use-block/attack packets (no interaction-manager sequence or client prediction) and reacts to `EntitySpawnS2CPacket`/`EntitiesDestroyS2CPacket` of end crystals, so a crystal is popped the instant the server confirms it; Auto Totem sends the two inventory `ClickSlotC2SPacket`s of the offhand swap itself (both in the same millisecond, no inventory sync wait) and refills the moment `USE_TOTEM_OF_UNDYING` arrives. Both get **packet-retries** (`packet-retry-delay`) that resend until the server visibly reacts, and a **max-packets-per-second** cap so packet level can never flood the connection. Packet level is off by default — turn it on per module. |
 | 0.7.2 | **Discord RPC: presets removed, built-in tutorial added** — the preset dropdown is gone (edit Line 1 / Line 2 yourself), and a new command **`.mfhelp`** prints a full placeholder tutorial in chat: every `{}` with live values (`{player}`, `{server}`, `{ping}`, `{pos}`, `{dimension}`, `{cps}`, `{version}`, `{health}`), example lines ready to paste, and where the Discord name/logo/images come from. Now 44 modules and 25 commands. |

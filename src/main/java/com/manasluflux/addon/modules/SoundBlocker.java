@@ -25,7 +25,7 @@ public class SoundBlocker extends Module {
     );
 
     public SoundBlocker() {
-        super(AddonTemplate.REWRITE_CATEGORY, "sound-muter", "Blocks specific sounds from playing on your client.");
+        super(AddonTemplate.CLIENT_SIDE_CATEGORY, "sound-muter", "Blocks specific sounds from playing on your client.");
     }
 
     @EventHandler

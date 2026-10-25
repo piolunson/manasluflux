@@ -53,7 +53,7 @@ public class AutoMapPart extends Module {
     private final Random random = new Random();
 
     public AutoMapPart() {
-        super(AddonTemplate.CATEGORY, "auto-map-part", "When you place an item frame, it automatically fills it with a random filled map from your hotbar. Instant by default (same tick the frame spawns) - a configurable delay is available. Maps are taken silently, so your visible hotbar slot stays the same.");
+        super(AddonTemplate.WORLD_CATEGORY, "auto-map-part", "When you place an item frame, it automatically fills it with a random filled map from your hotbar. Instant by default (same tick the frame spawns) - a configurable delay is available. Maps are taken silently, so your visible hotbar slot stays the same.");
     }
 
     @EventHandler

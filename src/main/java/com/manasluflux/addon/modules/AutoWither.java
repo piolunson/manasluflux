@@ -141,7 +141,7 @@ public class AutoWither extends Module {
     );
 
     public AutoWither() {
-        super(AddonTemplate.CATEGORY, "auto-wither", "Automatically builds a wither where you look (right-click to place the projected skeleton) and optionally nametags it. Ported from Trouser-Streak.");
+        super(AddonTemplate.WORLD_CATEGORY, "auto-wither", "Automatically builds a wither where you look (right-click to place the projected skeleton) and optionally nametags it. Ported from Trouser-Streak.");
     }
 
     // ===== Nametag tracking =====

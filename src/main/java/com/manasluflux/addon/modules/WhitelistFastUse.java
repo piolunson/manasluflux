@@ -40,7 +40,7 @@ public class WhitelistFastUse extends Module {
     private boolean forcedOn;
 
     public WhitelistFastUse() {
-        super(AddonTemplate.CATEGORY, "whitelist-fast-use", "Toggles Meteor's FastUse automatically based on the item you are holding.");
+        super(AddonTemplate.PLAYER_CATEGORY, "whitelist-fast-use", "Toggles Meteor's FastUse automatically based on the item you are holding.");
     }
 
     private boolean isWhitelisted(ItemStack stack) {

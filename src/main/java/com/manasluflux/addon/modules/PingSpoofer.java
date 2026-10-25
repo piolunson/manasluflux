@@ -84,7 +84,7 @@ public class PingSpoofer extends Module {
     private int debugTimer;
 
     public PingSpoofer() {
-        super(AddonTemplate.CATEGORY, "ping-spoofer", "Shows a different ping in the tab list. Modes: Real (no change), More (actually adds latency by delaying replies) or Spoof (only fakes the displayed ping).");
+        super(AddonTemplate.CLIENT_SIDE_CATEGORY, "ping-spoofer", "Shows a different ping in the tab list. Modes: Real (no change), More (actually adds latency by delaying replies) or Spoof (only fakes the displayed ping).");
     }
 
     @Override

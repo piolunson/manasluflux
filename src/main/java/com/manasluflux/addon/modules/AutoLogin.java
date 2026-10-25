@@ -89,7 +89,7 @@ public class AutoLogin extends Module {
     private long lastSentMs;
 
     public AutoLogin() {
-        super(AddonTemplate.CLIENT_SIDE_CATEGORY, "auto-login", "Sends your login command with a password automatically after joining a server.");
+        super(AddonTemplate.PLAYER_CATEGORY, "auto-login", "Sends your login command with a password automatically after joining a server.");
     }
 
     @Override

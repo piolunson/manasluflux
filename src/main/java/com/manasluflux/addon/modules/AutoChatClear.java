@@ -56,7 +56,7 @@ public class AutoChatClear extends Module {
     private int counter;
 
     public AutoChatClear() {
-        super(AddonTemplate.REWRITE_CATEGORY, "auto-chat-clear", "Automatically does the F3+D chat clear after every N received messages - keeps chat clean on busy servers without manual keypresses. Purely client-side.");
+        super(AddonTemplate.UTILITY_CATEGORY, "auto-chat-clear", "Automatically does the F3+D chat clear after every N received messages - keeps chat clean on busy servers without manual keypresses. Purely client-side.");
     }
 
     @Override

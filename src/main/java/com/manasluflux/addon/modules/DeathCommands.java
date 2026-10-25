@@ -61,7 +61,7 @@ public class DeathCommands extends Module {
     private String pendingMessage;
 
     public DeathCommands() {
-        super(AddonTemplate.REWRITE_CATEGORY, "death-commands", "Sends a random message or command when you die.");
+        super(AddonTemplate.UTILITY_CATEGORY, "death-commands", "Sends a random message or command when you die.");
     }
 
     @Override

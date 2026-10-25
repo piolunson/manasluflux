@@ -33,7 +33,7 @@ public class AutoRespawn extends Module {
     private boolean worldActive;
 
     public AutoRespawn() {
-        super(AddonTemplate.REWRITE_CATEGORY, "mf-auto-respawn", "Automatically respawns you on the death screen and can run commands afterwards.");
+        super(AddonTemplate.PLAYER_CATEGORY, "mf-auto-respawn", "Automatically respawns you on the death screen and can run commands afterwards.");
     }
 
     @Override

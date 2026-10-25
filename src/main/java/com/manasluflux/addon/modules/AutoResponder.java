@@ -42,7 +42,7 @@ public class AutoResponder extends Module {
     private long lastResponseMs;
 
     public AutoResponder() {
-        super(AddonTemplate.REWRITE_CATEGORY, "auto-responder", "Reads chat and automatically responds to messages containing your trigger words.");
+        super(AddonTemplate.UTILITY_CATEGORY, "auto-responder", "Reads chat and automatically responds to messages containing your trigger words.");
     }
 
     @Override

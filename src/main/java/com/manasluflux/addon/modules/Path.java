@@ -26,7 +26,7 @@ public class Path extends Module {
     private BlockPos target;
 
     public Path() {
-        super(AddonTemplate.CATEGORY, "path", "Draws a line from you to a target set with .mfpath. (Doesn`t work yet)");
+        super(AddonTemplate.UTILITY_CATEGORY, "path", "Draws a line from you to a target set with .mfpath. (Doesn`t work yet)");
     }
 
     public void setTarget(BlockPos pos) {

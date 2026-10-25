@@ -88,7 +88,7 @@ public class PearlPhase extends Module {
     private boolean swapped;
 
     public PearlPhase() {
-        super(AddonTemplate.CATEGORY, "pearl-phase", "Easily clip inside walls with pearls (ported from BlackOut's Auto Pearl).");
+        super(AddonTemplate.COMBAT_CATEGORY, "pearl-phase", "Easily clip inside walls with pearls (ported from BlackOut's Auto Pearl).");
     }
 
     @Override

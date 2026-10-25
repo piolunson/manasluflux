@@ -33,7 +33,7 @@ public class Waypoint extends Module {
     private boolean needsRender;
 
     public Waypoint() {
-        super(AddonTemplate.CATEGORY, "waypoint", "Stores waypoints added with .mfwaypoint and renders beacon-like beams to them.");
+        super(AddonTemplate.UTILITY_CATEGORY, "waypoint", "Stores waypoints added with .mfwaypoint and renders beacon-like beams to them.");
     }
 
     public void add(String name, BlockPos pos) {

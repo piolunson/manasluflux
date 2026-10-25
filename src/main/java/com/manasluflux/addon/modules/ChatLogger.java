@@ -38,7 +38,7 @@ public class ChatLogger extends Module {
     private boolean sessionInitialized;
 
     public ChatLogger() {
-        super(AddonTemplate.REWRITE_CATEGORY, "chat-logger", "Logs incoming and outgoing chat to a file with session support.");
+        super(AddonTemplate.UTILITY_CATEGORY, "chat-logger", "Logs incoming and outgoing chat to a file with session support.");
     }
 
     @Override

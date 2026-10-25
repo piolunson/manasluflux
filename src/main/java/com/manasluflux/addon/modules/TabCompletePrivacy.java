@@ -50,7 +50,7 @@ public class TabCompletePrivacy extends Module {
     );
 
     public TabCompletePrivacy() {
-        super(AddonTemplate.REWRITE_CATEGORY, "tab-complete-privacy", "Blocks tab completion packets containing private or dangerous input.");
+        super(AddonTemplate.UTILITY_CATEGORY, "tab-complete-privacy", "Blocks tab completion packets containing private or dangerous input.");
     }
 
     @EventHandler

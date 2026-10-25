@@ -73,7 +73,7 @@ public class BlockReplacer extends Module {
     private final LinkedHashMap<BlockPos, Block> tracked = new LinkedHashMap<>();
 
     public BlockReplacer() {
-        super(AddonTemplate.CATEGORY, "block-replacer", "Places back the same block when one of your placed blocks gets mined or removed.");
+        super(AddonTemplate.WORLD_CATEGORY, "block-replacer", "Places back the same block when one of your placed blocks gets mined or removed.");
     }
 
     @Override

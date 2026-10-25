@@ -31,7 +31,7 @@ public class Mute extends Module {
     );
 
     public Mute() {
-        super(AddonTemplate.CATEGORY, "mute", "Hides chat messages from muted players or containing muted phrases (client-side).");
+        super(AddonTemplate.UTILITY_CATEGORY, "mute", "Hides chat messages from muted players or containing muted phrases (client-side).");
     }
 
     public boolean mute(String name) {

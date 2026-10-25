@@ -39,7 +39,7 @@ public class AddText extends Module {
     private final Deque<String> lines = new ArrayDeque<>();
 
     public AddText() {
-        super(AddonTemplate.CLIENT_SIDE_CATEGORY, "add-text", "Local-only chat lines added with .mfaddtext, optionally kept across relogs.");
+        super(AddonTemplate.UTILITY_CATEGORY, "add-text", "Local-only chat lines added with .mfaddtext, optionally kept across relogs.");
     }
 
     @Override

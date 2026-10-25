@@ -69,7 +69,7 @@ public class Placer extends Module {
     );
 
     public Placer() {
-        super(AddonTemplate.CATEGORY, "placer", "Places whitelisted blocks everywhere around you - fills nearby air with the selected blocks from your inventory.");
+        super(AddonTemplate.WORLD_CATEGORY, "placer", "Places whitelisted blocks everywhere around you - fills nearby air with the selected blocks from your inventory.");
     }
 
     @EventHandler

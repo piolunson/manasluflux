@@ -120,7 +120,7 @@ public class DiscordRpc extends Module {
     private int cps;
 
     public DiscordRpc() {
-        super(AddonTemplate.CATEGORY, "discord-rpc", "Fully customizable Discord Rich Presence: custom line 1 / line 2, images, name, and a crystals-per-second counter. Type .mfhelp for a placeholder tutorial.");
+        super(AddonTemplate.UTILITY_CATEGORY, "discord-rpc", "Fully customizable Discord Rich Presence: custom line 1 / line 2, images, name, and a crystals-per-second counter. Type .mfhelp for a placeholder tutorial.");
         runInMainMenu = true;
     }
 

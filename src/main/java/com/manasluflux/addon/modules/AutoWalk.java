@@ -26,7 +26,7 @@ public class AutoWalk extends Module {
     private InputUtil.Key heldKey;
 
     public AutoWalk() {
-        super(AddonTemplate.CATEGORY, "auto-walk-hold", "Automatically holds the configured key (default 2) down while enabled.");
+        super(AddonTemplate.MOVEMENT_CATEGORY, "auto-walk-hold", "Automatically holds the configured key (default 2) down while enabled.");
     }
 
     @Override

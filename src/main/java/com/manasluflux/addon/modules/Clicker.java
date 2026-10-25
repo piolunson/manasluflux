@@ -60,7 +60,7 @@ public class Clicker extends Module {
     private int rightTicks;
 
     public Clicker() {
-        super(AddonTemplate.REWRITE_CATEGORY, "clicker", "Simple left/right auto clicker using tick delays.");
+        super(AddonTemplate.COMBAT_CATEGORY, "clicker", "Simple left/right auto clicker using tick delays.");
     }
 
     @Override

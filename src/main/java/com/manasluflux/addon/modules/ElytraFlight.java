@@ -44,7 +44,7 @@ public class ElytraFlight extends Module {
     );
 
     public ElytraFlight() {
-        super(AddonTemplate.CATEGORY, "elytra-flight", "Controlled elytra flight without fireworks - horizontal and vertical speed settings, jump = up, sneak = down. Toggle auto-forward off to steer yourself with the forward key.");
+        super(AddonTemplate.MOVEMENT_CATEGORY, "elytra-flight", "Controlled elytra flight without fireworks - horizontal and vertical speed settings, jump = up, sneak = down. Toggle auto-forward off to steer yourself with the forward key.");
     }
 
     @EventHandler

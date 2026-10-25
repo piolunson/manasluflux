@@ -67,7 +67,7 @@ public class AutoFish extends Module {
     private int settleTicks;
 
     public AutoFish() {
-        super(AddonTemplate.CATEGORY, "auto-fish", "Automatically throws the rod, reels in fish, looks up and recasts.");
+        super(AddonTemplate.PLAYER_CATEGORY, "auto-fish", "Automatically throws the rod, reels in fish, looks up and recasts.");
     }
 
     @Override
