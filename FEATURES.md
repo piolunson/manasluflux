@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.9.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.10.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -108,12 +108,13 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
 ---
 
-## Commands (25)
+## Commands (26)
 
 All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
 
 | Command | What it does |
 |---|---|
+| `.mffakeplayer` | Spawns a **fake player the client treats as a real player** — own player-list entry (so tab list, skins and name lookups work) and registered in `world.getPlayers()` like a joining player, so auras, player counts and anything else that only reacts to real players targets it. Subcommands: `add [name]` (spawns where you look), `remove <name>`, `clear`, `list`, `tp` (move to your crosshair), `health <hp>`. `add` also copies your inventory so the damage simulation sees real armor. |
 | `.mfhelp` | Built-in tutorial for Discord RPC: prints every `{}` placeholder with a live value, example Line 1 / Line 2 you can paste into the module, and where the Discord name / logo / images come from. |
 | `.mfaddtext` | Local chat: `mfaddtext <text>` shows text only for you, nothing is sent to the server. |
 | `.mfautoeat` | Configures the AutoEat module: `mfautoeat <food threshold>` \| `mfautoeat off`. |
@@ -180,6 +181,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 0.10.0 | **New command: `.mffakeplayer`** — a fake player the client genuinely believes is real, unlike Meteor's `.fake-player`. It gets its own `PlayerListEntry` (so tab list, nametags, skins and `getPlayerListEntry(uuid)` all resolve), it is added to `world.getPlayers()` exactly like a joining player, and it is a normal `OtherClientPlayerEntity` in the entity list — so auras, target finding, player counts and every "real players only" check pick it up. Subcommands: `add [name]` (spawns where you look, copies your inventory so armor counts in damage), `remove <name>`, `clear`, `list`, `tp`, `health <hp>`. Now 26 commands. |
 | 0.9.0 | **New module: AC PacketFlood** (`ac-pcktflood`) — a crystal aura that lives on the packet timeline instead of the game tick. Every place and break is a raw packet (use-block / attack / silent look) fired by a millisecond scheduler, with per-action **delay in ms**, **retries** and **retry delay in ms** (`place-delay-ms` 1, `place-retries` 0, `place-retry-delay-ms` 2, and the same trio for break), `bases-per-tick` so several bases can be hit in one cycle spaced by the delay, all the usual aura settings (target/min/max-self damage, anti-suicide, silent rotate, face place with health/durability/missing armor, place & break ranges and walls ranges, support blocks) and a `max-packets-per-second` cap. Retries are dropped the moment the server's crystal spawn/destroy packet confirms the action, so `1ms:packet 3ms:retry 5ms:retry … 6ms:packet` is exactly what runs. **Modules re-categorised**: the old grab-bag "Manaslu Flux" and "Manaslu Flux Rewrite" categories are gone — modules now sit in Combat (8), Movement (5), Player (6), World (4), Client Side (9) and Utility (13). Counts: 45 modules. |
 | 0.8.1 | **Every numeric setting now goes from 0 to 10000** — all 40 int settings and 29 double settings (69 total, across every module and HUD element) declare `range(0, 10000)` + `sliderRange(0, 10000)` instead of their old per-setting limits. A few internals are clamped so a dialled-up value can't freeze the game: Crystal Aura's place scan, Placer's fill scan and Instant TNT's through-walls scan cap their loop radius at 8 blocks (the reach/range checks still use your value), the Discord RPC update interval is guarded against 0, and Auto Fish's `look-up-pitch` is now a plain 0–10000 angle (60 = look 60° up) so it works without negative numbers. |
 | 0.8.0 | **Packet level for Crystal Aura and Auto Totem** — new **Packet** settings group in both modules. `packet-level` sends the interactions as raw packets and reads the result from the server's packet stream instead of waiting for game ticks: Crystal Aura sends its own use-block/attack packets (no interaction-manager sequence or client prediction) and reacts to `EntitySpawnS2CPacket`/`EntitiesDestroyS2CPacket` of end crystals, so a crystal is popped the instant the server confirms it; Auto Totem sends the two inventory `ClickSlotC2SPacket`s of the offhand swap itself (both in the same millisecond, no inventory sync wait) and refills the moment `USE_TOTEM_OF_UNDYING` arrives. Both get **packet-retries** (`packet-retry-delay`) that resend until the server visibly reacts, and a **max-packets-per-second** cap so packet level can never flood the connection. Packet level is off by default — turn it on per module. |

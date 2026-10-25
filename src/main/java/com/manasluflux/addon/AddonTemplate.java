@@ -15,6 +15,7 @@ import com.manasluflux.addon.commands.FpsCommand;
 import com.manasluflux.addon.commands.HealCommand;
 import com.manasluflux.addon.commands.JavaScriptCommand;
 import com.manasluflux.addon.commands.KillCommand;
+import com.manasluflux.addon.commands.MfFakePlayerCommand;
 import com.manasluflux.addon.commands.MfHelpCommand;
 import com.manasluflux.addon.commands.MuteCommand;
 import com.manasluflux.addon.commands.PathCommand;
@@ -201,6 +202,7 @@ public class AddonTemplate extends MeteorAddon {
         Commands.add(new AddTextCommand());
         Commands.add(new KillCommand());
         Commands.add(new MfHelpCommand());
+        Commands.add(new MfFakePlayerCommand());
     }
 
     @Override
