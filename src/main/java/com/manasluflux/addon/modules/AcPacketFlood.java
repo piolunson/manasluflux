@@ -49,19 +49,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 /**
  * AC PacketFlood - a crystal aura that lives on the packet timeline instead of the game tick.
  *
- * Every place and every break is a raw packet (use-block / attack / look) that the module builds
- * itself and fires through a millisecond scheduler, so packets can be spaced 1 ms apart instead of
- * 50 ms. Each action has its own delay, its own retry count and its own retry spacing, e.g.
- * <pre>
- *   place-delay 1 ms, place-retries 0  ->  1ms:packet
- *   place-delay 1 ms, place-retries 2  ->  1ms:packet 3ms:retry 5ms:retry 6ms:packet
- * </pre>
- * Crystals are confirmed from the spawn/destroy packets, so a retry (or the next place) is dropped
- * the moment the server already did what was asked.
+ * Two things make it fast:
+ * <ul>
+ *     <li>every place and break is a raw packet (use-block / attack / silent look) built by the
+ *     module, so nothing waits for the interaction manager;</li>
+ *     <li>packets are not sent once per tick - a 1 ms loop on {@link MsScheduler} keeps firing the
+ *     current place/break plan at your configured delay until the server confirms it, so
+ *     <code>place-delay-ms 1</code> really is about a thousand packets per second (bounded only by
+ *     <code>max-packets-per-second</code>).</li>
+ * </ul>
+ * The plans themselves (which base, which crystal, damage numbers) are rebuilt on the game thread
+ * every tick, because that part needs the world; the loop only sends prebuilt packets.
  */
 public class AcPacketFlood extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -165,7 +168,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Double> placeDelayMs = sgPlace.add(new DoubleSetting.Builder()
         .name("place-delay-ms")
-        .description("Milliseconds between two place packets (1 = one packet every millisecond).")
+        .description("Milliseconds between two place packets (1 = about a thousand per second, 0 = every loop step).")
         .defaultValue(1)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
@@ -174,7 +177,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Integer> placeRetries = sgPlace.add(new IntSetting.Builder()
         .name("place-retries")
-        .description("How many extra place packets are sent when the server did not spawn the crystal (0 = none).")
+        .description("Extra place packets sent after place-retry-delay-ms while the base still has no crystal.")
         .defaultValue(0)
         .range(0, 10000)
         .sliderRange(0, 10000)
@@ -183,7 +186,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Double> placeRetryDelayMs = sgPlace.add(new DoubleSetting.Builder()
         .name("place-retry-delay-ms")
-        .description("Milliseconds between a place packet and its retry.")
+        .description("Milliseconds before the first retry of a place packet.")
         .defaultValue(2)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
@@ -192,7 +195,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Integer> basesPerTick = sgPlace.add(new IntSetting.Builder()
         .name("bases-per-tick")
-        .description("How many different bases get a place packet each cycle, spaced by place-delay-ms.")
+        .description("How many bases are kept as active place plans (the flood loop cycles through them).")
         .defaultValue(1)
         .range(0, 10000)
         .sliderRange(0, 10000)
@@ -235,7 +238,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Double> breakDelayMs = sgBreak.add(new DoubleSetting.Builder()
         .name("break-delay-ms")
-        .description("Milliseconds between two break packets (1 = one packet every millisecond).")
+        .description("Milliseconds between two break packets (1 = about a thousand per second, 0 = every loop step).")
         .defaultValue(1)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
@@ -244,7 +247,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Integer> breakRetries = sgBreak.add(new IntSetting.Builder()
         .name("break-retries")
-        .description("How many extra attack packets are sent while the crystal still exists (0 = none).")
+        .description("Extra attack packets sent after break-retry-delay-ms while the crystal still exists.")
         .defaultValue(0)
         .range(0, 10000)
         .sliderRange(0, 10000)
@@ -253,7 +256,7 @@ public class AcPacketFlood extends Module {
 
     private final Setting<Double> breakRetryDelayMs = sgBreak.add(new DoubleSetting.Builder()
         .name("break-retry-delay-ms")
-        .description("Milliseconds between an attack packet and its retry.")
+        .description("Milliseconds before the first retry of an attack packet.")
         .defaultValue(2)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
@@ -296,9 +299,16 @@ public class AcPacketFlood extends Module {
         .build()
     );
 
+    private record PlacePlan(BlockPos base, List<Packet<?>> batch) {}
+
     private final Map<Long, Long> confirmedBases = new ConcurrentHashMap<>();
     private final Map<Integer, Long> destroyedIds = new ConcurrentHashMap<>();
     private final AtomicInteger windowCount = new AtomicInteger();
+    private final AtomicInteger placeCursor = new AtomicInteger();
+
+    private volatile List<PlacePlan> placePlans = List.of();
+    private volatile List<Packet<?>> breakPlan = List.of();
+    private volatile int breakPlanId = -1;
 
     private MsScheduler scheduler;
     private volatile long windowStart;
@@ -309,7 +319,7 @@ public class AcPacketFlood extends Module {
 
     public AcPacketFlood() {
         super(AddonTemplate.COMBAT_CATEGORY, "ac-pcktflood",
-            "Crystal aura on the packet timeline: raw place/break packets with a millisecond delay, per-action retries and a packet-per-second cap.");
+            "Crystal aura on the packet timeline: raw place/break packets fired by a millisecond loop with a packet-per-second cap.");
     }
 
     @Override
@@ -317,12 +327,18 @@ public class AcPacketFlood extends Module {
         scheduler = new MsScheduler("manasluflux-ac-pcktflood");
         confirmedBases.clear();
         destroyedIds.clear();
+        placePlans = List.of();
+        breakPlan = List.of();
+        breakPlanId = -1;
         windowCount.set(0);
         windowStart = System.currentTimeMillis();
         nextPlaceAt = 0;
         nextBreakAt = 0;
         sequence = 0;
         debugTicks = 0;
+
+        // The flood loop: independent of the game tick, keeps sending the current plans.
+        scheduler.scheduleRepeating(1, this::flood);
     }
 
     @Override
@@ -331,13 +347,16 @@ public class AcPacketFlood extends Module {
             scheduler.close();
             scheduler = null;
         }
+
+        placePlans = List.of();
+        breakPlan = List.of();
+        breakPlanId = -1;
         confirmedBases.clear();
         destroyedIds.clear();
     }
 
     /**
-     * Packet-side confirmation: a spawn packet for a crystal tells us a base is done, a destroy
-     * packet tells us a break landed. Retries read these without touching the world.
+     * Server confirmations. Retries and the flood loop read these without touching the world.
      */
     @EventHandler
     private void onReceive(PacketEvent.Receive event) {
@@ -355,11 +374,12 @@ public class AcPacketFlood extends Module {
         }
     }
 
+    /**
+     * Game thread: rebuild the plans (this is the only part that needs the world).
+     */
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.world == null) return;
-
-        long now = System.currentTimeMillis();
 
         if (debugMode.get() && ++debugTicks >= 20) {
             debugTicks = 0;
@@ -367,15 +387,91 @@ public class AcPacketFlood extends Module {
         }
 
         PlayerEntity target = CombatTargets.findTarget(targetRange.get());
-        if (target == null) return;
+        if (target == null) {
+            placePlans = List.of();
+            breakPlan = List.of();
+            breakPlanId = -1;
+            return;
+        }
 
-        if (doBreak.get() && now >= nextBreakAt) runBreak(target);
-        if (doPlace.get() && now >= nextPlaceAt) runPlace(target);
+        if (doBreak.get()) planBreak(target);
+        else {
+            breakPlan = List.of();
+            breakPlanId = -1;
+        }
+
+        if (doPlace.get()) planPlace(target);
+        else placePlans = List.of();
     }
 
-    // Break
+    // Flood loop (millisecond thread - only sends prebuilt packets)
 
-    private void runBreak(PlayerEntity target) {
+    private static final int MAX_BURST_PER_STEP = 512;
+
+    private void flood() {
+        if (!isActive()) return;
+
+        long now = System.currentTimeMillis();
+
+        if (now >= nextBreakAt) {
+            long delay = breakDelayMs.get().longValue();
+            nextBreakAt = delay <= 0 ? now : now + delay;
+
+            // delay 0 means "as fast as the packet cap allows": burst until the cap says stop.
+            if (delay <= 0) {
+                for (int i = 0; i < MAX_BURST_PER_STEP && sendBreak(); i++);
+            } else {
+                sendBreak();
+            }
+        }
+
+        if (now >= nextPlaceAt) {
+            long delay = placeDelayMs.get().longValue();
+            nextPlaceAt = delay <= 0 ? now : now + delay;
+
+            if (delay <= 0) {
+                for (int i = 0; i < MAX_BURST_PER_STEP && sendPlace(); i++);
+            } else {
+                sendPlace();
+            }
+        }
+    }
+
+    /**
+     * @return true when a break batch was actually sent (used by the delay-0 burst loop).
+     */
+    private boolean sendBreak() {
+        List<Packet<?>> batch = breakPlan;
+        if (batch.isEmpty()) return false;
+
+        int id = breakPlanId;
+        if (id != -1 && isDestroyed(id)) return false;
+
+        if (!sendBatch(batch)) return false;
+
+        scheduleRetries(batch, breakRetries.get(), breakRetryDelayMs.get(), () -> id != -1 && isDestroyed(id));
+        return true;
+    }
+
+    /**
+     * @return true when a place batch was actually sent (used by the delay-0 burst loop).
+     */
+    private boolean sendPlace() {
+        List<PlacePlan> plans = placePlans;
+        if (plans.isEmpty()) return false;
+
+        PlacePlan plan = plans.get(Math.floorMod(placeCursor.getAndIncrement(), plans.size()));
+        if (isBaseConfirmed(plan.base())) return false;
+
+        if (!sendBatch(plan.batch())) return false;
+
+        scheduleRetries(plan.batch(), placeRetries.get(), placeRetryDelayMs.get(), () -> isBaseConfirmed(plan.base()));
+        return true;
+    }
+
+    // Planning (game thread)
+
+    private void planBreak(PlayerEntity target) {
         EndCrystalEntity best = null;
         float bestDamage = 0;
 
@@ -389,84 +485,44 @@ public class AcPacketFlood extends Module {
             }
         }
 
-        if (best == null) return;
-
-        int id = best.getId();
-        List<Packet<?>> batch = buildAttack(best);
-        if (batch.isEmpty()) return;
-
-        nextBreakAt = System.currentTimeMillis() + Math.max(1L, breakDelayMs.get().longValue());
-
-        sendBatch(batch);
-        scheduleRetries(batch, breakRetries.get(), breakRetryDelayMs.get(), () -> destroyedIds.containsKey(id));
-    }
-
-    private List<Packet<?>> buildAttack(EndCrystalEntity crystal) {
-        List<Packet<?>> batch = new ArrayList<>(3);
-
-        if (rotate.get()) {
-            Vec3d look = lookAngles(crystal.getEntityPos());
-            batch.add(new PlayerMoveC2SPacket.LookAndOnGround((float) look.x, (float) look.y, mc.player.isOnGround(), mc.player.isOnGround()));
+        if (best == null) {
+            breakPlan = List.of();
+            breakPlanId = -1;
+            return;
         }
 
-        batch.add(PlayerInteractEntityC2SPacket.attack(crystal, false));
-        batch.add(new HandSwingC2SPacket(Hand.MAIN_HAND));
-
-        return batch;
+        breakPlan = buildAttack(best);
+        breakPlanId = best.getId();
     }
 
-    private float breakDamage(EndCrystalEntity crystal, PlayerEntity target) {
-        BlockPos base = crystal.getBlockPos().down();
-
-        if (!inRange(crystal.getEntityPos(), crystal.getBlockPos(), breakRange.get(), breakWallsRange.get())) return 0;
-
-        float selfDamage = DamageUtils.crystalDamage(mc.player, crystal.getEntityPos(), predictMovement.get(), base);
-        if (selfDamage > maxSelfDamage.get() || (antiSuicide.get() && selfDamage >= EntityUtils.getTotalHealth(mc.player))) return 0;
-
-        float damage = DamageUtils.crystalDamage(target, crystal.getEntityPos(), predictMovement.get(), base);
-        double minimum = shouldFacePlace(target) ? Math.min(minDamage.get(), 1.5) : minDamage.get();
-        return damage < minimum ? 0 : damage;
-    }
-
-    // Place
-
-    private void runPlace(PlayerEntity target) {
+    private void planPlace(PlayerEntity target) {
         FindItemResult crystals = InvUtils.findInHotbar(Items.END_CRYSTAL);
-        if (!crystals.found()) return;
+        if (!crystals.found()) {
+            placePlans = List.of();
+            return;
+        }
 
-        int limit = Math.min(basesPerTick.get(), 16);
-        if (limit <= 0) return;
+        int limit = Math.min(basesPerTick.get(), 64);
+        if (limit <= 0) {
+            placePlans = List.of();
+            return;
+        }
 
         List<BaseCandidate> bases = findBases(target, limit);
 
         if (bases.isEmpty()) {
+            placePlans = List.of();
             if (support.get()) placeSupport(target);
             return;
         }
 
-        long delay = placeDelayMs.get().longValue();
-
-        for (int i = 0; i < bases.size(); i++) {
-            BlockPos base = bases.get(i).pos;
-            long offset = delay * i;
-
-            // Packets are built here on the game thread (world access) and only *sent* from the
-            // millisecond scheduler, so the scheduler never touches the world.
-            List<Packet<?>> batch = buildPlace(base);
-            if (batch.isEmpty()) continue;
-
-            Runnable send = () -> {
-                if (!isActive() || isBaseConfirmed(base)) return;
-
-                sendBatch(batch);
-                scheduleRetries(batch, placeRetries.get(), placeRetryDelayMs.get(), () -> isBaseConfirmed(base));
-            };
-
-            if (offset <= 0) send.run();
-            else scheduler.schedule(offset, send);
+        List<PlacePlan> plans = new ArrayList<>(bases.size());
+        for (BaseCandidate candidate : bases) {
+            List<Packet<?>> batch = buildPlace(candidate.pos());
+            if (!batch.isEmpty()) plans.add(new PlacePlan(candidate.pos(), batch));
         }
 
-        nextPlaceAt = System.currentTimeMillis() + Math.max(1, delay * bases.size());
+        placePlans = plans;
     }
 
     private List<BaseCandidate> findBases(PlayerEntity target, int limit) {
@@ -503,6 +559,22 @@ public class AcPacketFlood extends Module {
         found.sort(Comparator.comparingDouble((BaseCandidate candidate) -> candidate.damage).reversed());
 
         return found.size() > limit ? new ArrayList<>(found.subList(0, limit)) : found;
+    }
+
+    // Packet building (game thread - they read the player and the world once)
+
+    private List<Packet<?>> buildAttack(EndCrystalEntity crystal) {
+        List<Packet<?>> batch = new ArrayList<>(3);
+
+        if (rotate.get()) {
+            Vec3d look = lookAngles(crystal.getEntityPos());
+            batch.add(new PlayerMoveC2SPacket.LookAndOnGround((float) look.x, (float) look.y, mc.player.isOnGround(), mc.player.isOnGround()));
+        }
+
+        batch.add(PlayerInteractEntityC2SPacket.attack(crystal, false));
+        batch.add(new HandSwingC2SPacket(Hand.MAIN_HAND));
+
+        return batch;
     }
 
     private List<Packet<?>> buildPlace(BlockPos base) {
@@ -594,17 +666,29 @@ public class AcPacketFlood extends Module {
         if (realSlot != -1) batch.add(new UpdateSelectedSlotC2SPacket(realSlot));
 
         sendBatch(batch);
-        nextPlaceAt = System.currentTimeMillis() + Math.max(1L, placeDelayMs.get().longValue());
+    }
+
+    private float breakDamage(EndCrystalEntity crystal, PlayerEntity target) {
+        BlockPos base = crystal.getBlockPos().down();
+
+        if (!inRange(crystal.getEntityPos(), crystal.getBlockPos(), breakRange.get(), breakWallsRange.get())) return 0;
+
+        float selfDamage = DamageUtils.crystalDamage(mc.player, crystal.getEntityPos(), predictMovement.get(), base);
+        if (selfDamage > maxSelfDamage.get() || (antiSuicide.get() && selfDamage >= EntityUtils.getTotalHealth(mc.player))) return 0;
+
+        float damage = DamageUtils.crystalDamage(target, crystal.getEntityPos(), predictMovement.get(), base);
+        double minimum = shouldFacePlace(target) ? Math.min(minDamage.get(), 1.5) : minDamage.get();
+        return damage < minimum ? 0 : damage;
     }
 
     // Sending
 
-    private void scheduleRetries(List<Packet<?>> batch, int retries, double retryDelayMs, java.util.function.BooleanSupplier done) {
+    private void scheduleRetries(List<Packet<?>> batch, int retries, double retryDelayMs, BooleanSupplier done) {
         if (retries <= 0) return;
         scheduleRetry(batch, retries - 1, Math.max(1, (long) retryDelayMs), done);
     }
 
-    private void scheduleRetry(List<Packet<?>> batch, int retriesLeft, long delay, java.util.function.BooleanSupplier done) {
+    private void scheduleRetry(List<Packet<?>> batch, int retriesLeft, long delay, BooleanSupplier done) {
         scheduler.schedule(delay, () -> {
             if (!isActive() || done.getAsBoolean()) return;
 
@@ -614,26 +698,32 @@ public class AcPacketFlood extends Module {
         });
     }
 
-    private void sendBatch(List<Packet<?>> batch) {
-        if (!isActive()) return;
+    /**
+     * Sends a whole batch or nothing: a batch cut in half (look packet without the attack) would
+     * be useless, so it is skipped for this loop step instead.
+     */
+    private boolean sendBatch(List<Packet<?>> batch) {
+        if (batch.isEmpty() || !isActive()) return false;
 
         var handler = mc.getNetworkHandler();
-        if (handler == null) return;
+        if (handler == null) return false;
+        if (!allowBatch(batch.size())) return false;
 
-        for (Packet<?> packet : batch) {
-            if (!allowPacket()) return;
-            handler.sendPacket(packet);
-        }
+        for (Packet<?> packet : batch) handler.sendPacket(packet);
+        return true;
     }
 
-    private boolean allowPacket() {
+    private boolean allowBatch(int size) {
         long now = System.currentTimeMillis();
         if (now - windowStart >= 1000) {
             windowStart = now;
             windowCount.set(0);
         }
 
-        return windowCount.incrementAndGet() <= maxPacketsPerSecond.get();
+        if (windowCount.get() + size > maxPacketsPerSecond.get()) return false;
+
+        windowCount.addAndGet(size);
+        return true;
     }
 
     private int sentLastSecond() {
@@ -650,6 +740,11 @@ public class AcPacketFlood extends Module {
 
     private boolean isBaseConfirmed(BlockPos base) {
         Long at = confirmedBases.get(base.asLong());
+        return at != null && System.currentTimeMillis() - at < 1000;
+    }
+
+    private boolean isDestroyed(int entityId) {
+        Long at = destroyedIds.get(entityId);
         return at != null && System.currentTimeMillis() - at < 1000;
     }
 

@@ -38,6 +38,22 @@ public final class MsScheduler implements AutoCloseable {
         executor.schedule(task, delayMs, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Runs the task over and over every interval. Exceptions are swallowed so the repeating task
+     * is never cancelled by the pool - a broken tick must not kill the packet loop.
+     */
+    public void scheduleRepeating(long intervalMs, Runnable task) {
+        if (executor.isShutdown()) return;
+
+        executor.scheduleAtFixedRate(() -> {
+            try {
+                task.run();
+            } catch (Throwable ignored) {
+                // keep the loop alive
+            }
+        }, Math.max(1, intervalMs), Math.max(1, intervalMs), TimeUnit.MILLISECONDS);
+    }
+
     public void cancelAll() {
         ScheduledThreadPoolExecutor pool = (ScheduledThreadPoolExecutor) executor;
         pool.getQueue().clear();
