@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.6.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.7.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (43)
+## Modules (44)
 
 ### Category: Manaslu Flux (main)
 
@@ -25,6 +25,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
 | Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
 | Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
+| Discord RPC | `discord-rpc` | Fully customizable Discord Rich Presence via Meteor's bundled discord-ipc — **presets** (Crystals, PvP, Mining, Exploring, Building, AFK) one-click fill everything, and **Custom** lets you edit each field yourself: **Line 1** and **Line 2** with placeholders `{player}` `{server}` `{ping}` `{pos}` `{dimension}` `{cps}` `{version}` `{health}`, large **image name & text**, optional small image (name & text), **show timer**, **update interval**, and a **crystals-per-second counter** (counts crystals blown up, appends " | <n> CPS" to line 1 and feeds `{cps}`). Application ID setting: use your own Discord app (discord.com/developers) to change the NAME shown by Discord and upload your own images; default points at Meteor's app. Runs in the main menu too. |
 | Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
 | Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. **Redstone Block** (default on): when no igniter is in the inventory, silently places a redstone block next to the TNT instead — redstone power primes TNT. **Mine Redstone Block** (default on): the placed redstone block is packet-mined again during the TNT's fuse with a silent hotbar-pickaxe swap, so the dust lands back in your inventory. **Bow Fallback** (default on): last resort when there is no igniter and no redstone block either — silently swaps to a bow, draws and releases after 10 ticks, and shoots the TNT; only fires when the TNT is in your crosshair (arrows fly where you look) and only with a **Flame** bow (or any bow in creative) plus an arrow, since flaming arrows ignite TNT on contact. |
 | Auto Map Part | `auto-map-part` | When you place an item frame, it automatically fills it with a randomly chosen filled map from your hotbar — map-art building made instant. **Instant** by default: the map goes in the same tick the frame spawns; a configurable **Delay** (0–20 ticks, slider) slows it down if wanted (vanilla click-feel is 3). **Silent** (default on): the map is taken with a server-side hotbar swap, so your visible hotbar slot never changes. Remembers already-filled frames so nothing is placed twice, and shows how many frames it has filled in the HUD. |
@@ -165,6 +166,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 0.7.0 | **New module: Discord RPC** (`discord-rpc`) — fully customizable Rich Presence with one-click **presets** (Crystals, PvP, Mining, Exploring, Building, AFK), editable **Line 1 / Line 2** with placeholders (`{player}` `{server}` `{ping}` `{pos}` `{dimension}` `{cps}` `{version}` `{health}`), large image name & text, optional small image, elapsed-time timer, update interval, and a built-in **crystals-per-second counter**. Custom **Application ID** setting lets you change the name shown by Discord and use your own Art-Assets images (default: Meteor's app). Counts 44 modules. |
 | 0.6.0 | **Full port to Minecraft 1.21.11 + Meteor Client 1.21.11-SNAPSHOT**: every module, command, HUD element and both mixins were re-mapped to the Yarn 1.21.11 mappings (1.21.11+build.3) and Meteor's 1.21.11 API — rendering now uses the resolved Meteor `Renderer2D`/`HudRenderer` calls plus the new blaze3d device texture path behind the Image/GIF HUD elements (async file decoding, linear/nearest filtering), all client packets, enchantment/food data component reads, registry lookups, keybinding and interaction-manager calls were converted to the 1.21.11 names, and the bundled Baritone jar was swapped to the 1.21.11 Fabric build. Settings builder clamp fixes and the HUD texture wrapper were rewritten against the new API. No features were added or removed — beyond 1.21.11 compatibility this is a hardening release: async HUD image loading and per-frame GIF re-upload checks. |
 | 0.5.3 | New **Anti Drop Lagback** module (Client Side, Hazey-style): watches the server's position-sync teleports and count "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side, packets are observed but never modified or cancelled. |
 | 0.5.2 | **Crash fix** in the Client Block Entities mixin: the `tryExtractRenderState` injection's parameter was declared as `Object` where vanilla expects `ModelFeatureRenderer$CrumblingOverlay` (and the return as a raw `Object` instead of `BlockEntityRenderState`), so the mixin failed to apply at startup and crashed the game on launch (0.5.0/0.5.1). Now uses the exact descriptor — the compiled handler signature byte-for-byte matches what the mixin injector expects. |

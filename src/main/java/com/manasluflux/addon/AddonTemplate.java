@@ -56,6 +56,7 @@ import com.manasluflux.addon.modules.ClientSideNightVision;
 import com.manasluflux.addon.modules.CrystalAura;
 import com.manasluflux.addon.modules.CrystalOptimizer;
 import com.manasluflux.addon.modules.DeathCoords;
+import com.manasluflux.addon.modules.DiscordRpc;
 import com.manasluflux.addon.modules.ElytraFlight;
 import com.manasluflux.addon.modules.InstantTnt;
 import com.manasluflux.addon.modules.ModuleExample;
@@ -145,6 +146,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new CrystalOptimizer());
         Modules.get().add(new UniversalColoredChat());
         Modules.get().add(new DeathCoords());
+        Modules.get().add(new DiscordRpc());
         Modules.get().add(new WhitelistFastUse());
         Modules.get().add(new AddText());
         Modules.get().add(new AutoLogin());
