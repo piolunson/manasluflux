@@ -44,8 +44,8 @@ public class PingSpoofer extends Module {
         .name("amount")
         .description("More: milliseconds added on top of your real ping. Spoof: the fake ping shown in the tab list.")
         .defaultValue(150)
-        .min(0)
-        .sliderMax(2000)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -53,8 +53,8 @@ public class PingSpoofer extends Module {
         .name("jitter")
         .description("Random +- milliseconds added to each delay, so it looks less artificial. Only used in More mode.")
         .defaultValue(20)
-        .min(0)
-        .sliderMax(500)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

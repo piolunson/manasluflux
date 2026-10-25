@@ -40,8 +40,8 @@ public class Placer extends Module {
         .name("radius")
         .description("How far around you to fill with blocks.")
         .defaultValue(3)
-        .min(1)
-        .sliderMax(6)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -49,8 +49,8 @@ public class Placer extends Module {
         .name("blocks-per-tick")
         .description("How many blocks to place per tick.")
         .defaultValue(2)
-        .min(1)
-        .sliderMax(10)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -83,7 +83,8 @@ public class Placer extends Module {
         if (!item.found()) return;
 
         BlockPos feet = mc.player.getBlockPos();
-        int r = radius.get();
+        // radius can be set up to 10000, but a bigger scan cube than this would hang the tick.
+        int r = Math.min(radius.get(), 8);
 
         List<BlockPos> positions = new ArrayList<>();
         for (BlockPos pos : BlockPos.iterate(feet.add(-r, -r, -r), feet.add(r, r, r))) {

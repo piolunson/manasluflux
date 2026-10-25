@@ -70,8 +70,8 @@ public class CrystalAura extends Module {
         .name("target-range")
         .description("Range in which to target players.")
         .defaultValue(10)
-        .range(0, 16)
-        .sliderRange(0, 16)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -86,8 +86,8 @@ public class CrystalAura extends Module {
         .name("min-damage")
         .description("Minimum damage the crystal needs to deal to the target.")
         .defaultValue(6)
-        .range(0, 36)
-        .sliderRange(0, 20)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -95,8 +95,8 @@ public class CrystalAura extends Module {
         .name("max-self-damage")
         .description("Maximum damage crystals can deal to yourself.")
         .defaultValue(6)
-        .range(0, 36)
-        .sliderRange(0, 36)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -127,8 +127,8 @@ public class CrystalAura extends Module {
         .name("place-delay")
         .description("Ticks to wait between placing crystals.")
         .defaultValue(0)
-        .range(0, 20)
-        .sliderRange(0, 20)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -136,8 +136,8 @@ public class CrystalAura extends Module {
         .name("place-range")
         .description("Range in which to place crystals.")
         .defaultValue(4.5)
-        .range(0, 6)
-        .sliderRange(0, 6)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -145,8 +145,8 @@ public class CrystalAura extends Module {
         .name("place-walls-range")
         .description("Range in which to place crystals when behind blocks.")
         .defaultValue(4.5)
-        .range(0, 6)
-        .sliderRange(0, 6)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -161,8 +161,8 @@ public class CrystalAura extends Module {
         .name("support-delay")
         .description("Ticks to wait after placing a support block before placing the crystal on it.")
         .defaultValue(1)
-        .range(0, 10)
-        .sliderRange(0, 10)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(support::get)
         .build()
     );
@@ -180,8 +180,8 @@ public class CrystalAura extends Module {
         .name("face-place-health")
         .description("The health the target has to be at to start face placing.")
         .defaultValue(8)
-        .range(1, 36)
-        .sliderRange(1, 36)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .visible(facePlace::get)
         .build()
     );
@@ -190,8 +190,8 @@ public class CrystalAura extends Module {
         .name("face-place-durability")
         .description("The armor durability percentage the target has to be below to start face placing.")
         .defaultValue(2)
-        .range(1, 100)
-        .sliderRange(1, 100)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .visible(facePlace::get)
         .build()
     );
@@ -217,8 +217,8 @@ public class CrystalAura extends Module {
         .name("break-delay")
         .description("Ticks to wait between breaking crystals.")
         .defaultValue(0)
-        .range(0, 20)
-        .sliderRange(0, 20)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -226,8 +226,8 @@ public class CrystalAura extends Module {
         .name("break-range")
         .description("Range in which to break crystals.")
         .defaultValue(4.5)
-        .range(0, 6)
-        .sliderRange(0, 6)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -235,8 +235,8 @@ public class CrystalAura extends Module {
         .name("break-walls-range")
         .description("Range in which to break crystals when behind blocks.")
         .defaultValue(4.5)
-        .range(0, 6)
-        .sliderRange(0, 6)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -244,8 +244,8 @@ public class CrystalAura extends Module {
         .name("attack-frequency")
         .description("Maximum hits to do per second.")
         .defaultValue(25)
-        .range(1, 30)
-        .sliderRange(1, 30)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -280,8 +280,8 @@ public class CrystalAura extends Module {
         .name("packet-retries")
         .description("How many times a place/break packet is resent when the server did not react.")
         .defaultValue(2)
-        .range(0, 5)
-        .sliderRange(0, 5)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(packetLevel::get)
         .build()
     );
@@ -290,8 +290,8 @@ public class CrystalAura extends Module {
         .name("packet-retry-delay")
         .description("Milliseconds to wait for the server to confirm before resending.")
         .defaultValue(60)
-        .range(10, 500)
-        .sliderRange(10, 250)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(packetLevel::get)
         .build()
     );
@@ -300,8 +300,8 @@ public class CrystalAura extends Module {
         .name("max-packets-per-second")
         .description("Hard cap on packets the aura may send per second - keeps packet level safe from packet-flood kicks.")
         .defaultValue(40)
-        .range(1, 200)
-        .sliderRange(1, 100)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(packetLevel::get)
         .build()
     );
@@ -489,7 +489,9 @@ public class CrystalAura extends Module {
             if (entity instanceof EndCrystalEntity existing && getBreakDamage(existing, target) > 0) return;
         }
 
-        int r = (int) Math.ceil(placeRange.get());
+        // The setting can be dialled up to 10000, but scanning more than a server-reach halo
+        // would freeze the client - clamp the loop radius, the range check below still applies.
+        int r = Math.min((int) Math.ceil(placeRange.get()), 8);
         BlockPos origin = mc.player.getBlockPos();
 
         BlockPos bestBase = null;

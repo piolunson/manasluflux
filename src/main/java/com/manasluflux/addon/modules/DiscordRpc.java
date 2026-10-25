@@ -99,8 +99,8 @@ public class DiscordRpc extends Module {
         .name("update-interval")
         .description("Ticks between Discord updates. Lower = fresher numbers, but sends more packets to Discord.")
         .defaultValue(40)
-        .min(20)
-        .sliderRange(20, 200)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -211,7 +211,8 @@ public class DiscordRpc extends Module {
             explosionCount = 0;
         }
 
-        if (ticks % updateInterval.get() != 0) return;
+        // update-interval can be dialled down to 0, which would be a divide-by-zero here.
+        if (ticks % Math.max(1, updateInterval.get()) != 0) return;
 
         // Restart IPC if the App ID changed.
         long id = parseAppId();

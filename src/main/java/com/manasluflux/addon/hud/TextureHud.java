@@ -52,8 +52,8 @@ abstract class TextureHud extends HudElement {
             .name("scale")
             .description("Scale of the image relative to its native size.")
             .defaultValue(1)
-            .min(0.1)
-            .sliderRange(0.1, 5)
+            .range(0.0, 10000.0)
+            .sliderRange(0.0, 10000.0)
             .onChanged(ignored -> applySize())
             .build()
         );
@@ -62,8 +62,8 @@ abstract class TextureHud extends HudElement {
             .name("opacity")
             .description("Opacity of the image.")
             .defaultValue(1)
-            .min(0)
-            .sliderMax(1)
+            .range(0.0, 10000.0)
+            .sliderRange(0.0, 10000.0)
             .build()
         );
 

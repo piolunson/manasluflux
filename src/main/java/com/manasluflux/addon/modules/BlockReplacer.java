@@ -41,8 +41,8 @@ public class BlockReplacer extends Module {
         .name("range")
         .description("Tracked positions farther than this from you are forgotten.")
         .defaultValue(8.0)
-        .range(3.0, 32.0)
-        .sliderRange(3.0, 16.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -50,8 +50,8 @@ public class BlockReplacer extends Module {
         .name("max-blocks")
         .description("Maximum number of placed blocks to keep track of. Oldest ones are dropped first.")
         .defaultValue(128)
-        .range(8, 1024)
-        .sliderRange(8, 512)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

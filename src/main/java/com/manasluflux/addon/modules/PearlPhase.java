@@ -37,8 +37,8 @@ public class PearlPhase extends Module {
         .name("pitch")
         .description("How deep down to look.")
         .defaultValue(85)
-        .range(-90, 90)
-        .sliderRange(0, 90)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

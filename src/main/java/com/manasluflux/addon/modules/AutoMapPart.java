@@ -42,8 +42,8 @@ public class AutoMapPart extends Module {
         .name("delay")
         .description("Ticks to wait before the map is placed into a freshly placed frame. 0 = instant (same tick the frame spawns); vanilla click-feel delay is 3.")
         .defaultValue(0)
-        .min(0)
-        .sliderMax(20)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

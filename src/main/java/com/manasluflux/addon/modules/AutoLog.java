@@ -18,8 +18,8 @@ public class AutoLog extends Module {
         .name("health-threshold")
         .description("Disconnect when health drops below this percentage.")
         .defaultValue(10)
-        .range(1, 99)
-        .sliderRange(1, 99)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

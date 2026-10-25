@@ -23,8 +23,8 @@ public class UniversalFlight extends Module {
         .name("flying-speed")
         .description("Vanilla creative flight speed (vanilla default 0.05). Applies to all directions.")
         .defaultValue(0.05)
-        .range(0.01, 1.0)
-        .sliderRange(0.01, 0.3)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 

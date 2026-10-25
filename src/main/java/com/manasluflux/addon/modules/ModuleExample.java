@@ -22,7 +22,8 @@ public class ModuleExample extends Module {
         .name("scale")
         .description("The size of the marker.")
         .defaultValue(2.0d)
-        .range(0.5d, 10.0d)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 

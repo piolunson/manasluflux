@@ -33,8 +33,8 @@ public class AutoResponder extends Module {
         .name("cooldown")
         .description("Seconds to wait between responses so you don't end up in a reply loop.")
         .defaultValue(3)
-        .min(0)
-        .sliderMax(30)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

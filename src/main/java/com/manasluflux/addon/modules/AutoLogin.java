@@ -63,8 +63,8 @@ public class AutoLogin extends Module {
         .name("delay-ticks")
         .description("Ticks to wait after joining before sending the command (20 ticks = 1 second).")
         .defaultValue(20)
-        .min(0)
-        .sliderMax(200)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -80,8 +80,8 @@ public class AutoLogin extends Module {
         .name("cooldown-seconds")
         .description("Minimum seconds between two sends so the server never sees spam.")
         .defaultValue(10)
-        .min(1)
-        .sliderMax(120)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

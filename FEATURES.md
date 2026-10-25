@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.8.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.8.1 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -167,6 +167,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 0.8.1 | **Every numeric setting now goes from 0 to 10000** — all 40 int settings and 29 double settings (69 total, across every module and HUD element) declare `range(0, 10000)` + `sliderRange(0, 10000)` instead of their old per-setting limits. A few internals are clamped so a dialled-up value can't freeze the game: Crystal Aura's place scan, Placer's fill scan and Instant TNT's through-walls scan cap their loop radius at 8 blocks (the reach/range checks still use your value), the Discord RPC update interval is guarded against 0, and Auto Fish's `look-up-pitch` is now a plain 0–10000 angle (60 = look 60° up) so it works without negative numbers. |
 | 0.8.0 | **Packet level for Crystal Aura and Auto Totem** — new **Packet** settings group in both modules. `packet-level` sends the interactions as raw packets and reads the result from the server's packet stream instead of waiting for game ticks: Crystal Aura sends its own use-block/attack packets (no interaction-manager sequence or client prediction) and reacts to `EntitySpawnS2CPacket`/`EntitiesDestroyS2CPacket` of end crystals, so a crystal is popped the instant the server confirms it; Auto Totem sends the two inventory `ClickSlotC2SPacket`s of the offhand swap itself (both in the same millisecond, no inventory sync wait) and refills the moment `USE_TOTEM_OF_UNDYING` arrives. Both get **packet-retries** (`packet-retry-delay`) that resend until the server visibly reacts, and a **max-packets-per-second** cap so packet level can never flood the connection. Packet level is off by default — turn it on per module. |
 | 0.7.2 | **Discord RPC: presets removed, built-in tutorial added** — the preset dropdown is gone (edit Line 1 / Line 2 yourself), and a new command **`.mfhelp`** prints a full placeholder tutorial in chat: every `{}` with live values (`{player}`, `{server}`, `{ping}`, `{pos}`, `{dimension}`, `{cps}`, `{version}`, `{health}`), example lines ready to paste, and where the Discord name/logo/images come from. Now 44 modules and 25 commands. |
 | 0.7.1 | **Discord RPC defaults re-pointed to the Manaslu Flux application** (App ID `1563969889968988291`): the name + round logo shown by Discord now come from your own app — upload the [ManasluFlux logo](discord-assets/manasluflux.png) into its Art Assets tab under the key `manasluflux` for the big image too (new default `image-name`). |

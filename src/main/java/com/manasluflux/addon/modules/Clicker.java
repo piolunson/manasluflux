@@ -33,8 +33,8 @@ public class Clicker extends Module {
         .name("left-delay-ticks")
         .description("Ticks between left clicks in CLICK mode.")
         .defaultValue(5)
-        .min(1)
-        .sliderMax(40)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(() -> leftMode.get() == Mode.CLICK)
         .build()
     );
@@ -50,8 +50,8 @@ public class Clicker extends Module {
         .name("right-delay-ticks")
         .description("Ticks between right clicks in CLICK mode.")
         .defaultValue(5)
-        .min(1)
-        .sliderMax(40)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(() -> rightMode.get() == Mode.CLICK)
         .build()
     );

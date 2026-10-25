@@ -29,8 +29,8 @@ public class ClickTp extends Module {
         .name("max-distance")
         .description("The maximum distance you can teleport.")
         .defaultValue(100)
-        .min(0)
-        .max(1000)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -38,8 +38,8 @@ public class ClickTp extends Module {
         .name("step-size")
         .description("Distance to move per step when teleporting.")
         .defaultValue(7)
-        .min(1)
-        .max(10)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -54,8 +54,8 @@ public class ClickTp extends Module {
         .name("teleport-delay")
         .description("Delay in ticks after a finished teleport before you can start the next one.")
         .defaultValue(20)
-        .min(1)
-        .max(40)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

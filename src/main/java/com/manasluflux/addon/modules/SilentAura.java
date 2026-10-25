@@ -50,8 +50,8 @@ public class SilentAura extends Module {
         .name("range")
         .description("Maximum distance to the target. Vanilla servers only accept hits within ~3 blocks.")
         .defaultValue(3.0)
-        .range(1.0, 6.0)
-        .sliderRange(1.0, 4.5)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -59,8 +59,8 @@ public class SilentAura extends Module {
         .name("delay")
         .description("Ticks between attacks. 10 = 2 hits per second.")
         .defaultValue(10)
-        .range(0, 40)
-        .sliderRange(0, 40)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

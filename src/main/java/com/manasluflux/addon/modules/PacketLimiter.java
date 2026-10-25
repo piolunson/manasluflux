@@ -21,8 +21,8 @@ public class PacketLimiter extends Module {
         .name("max-packets")
         .description("Maximum packets allowed per tick.")
         .defaultValue(100)
-        .min(1)
-        .sliderMax(1000)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

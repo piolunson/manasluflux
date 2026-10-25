@@ -21,8 +21,8 @@ public class AutoEat extends Module {
         .name("food-threshold")
         .description("Start eating when the food level drops below this.")
         .defaultValue(14)
-        .range(1, 19)
-        .sliderRange(1, 19)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

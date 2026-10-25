@@ -74,8 +74,8 @@ public class PlayerListHud extends HudElement {
         .name("max-rows")
         .description("Maximum number of players to show. 0 shows everyone.")
         .defaultValue(15)
-        .min(0)
-        .sliderMax(100)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

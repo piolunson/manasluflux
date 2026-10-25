@@ -37,8 +37,8 @@ public class AntiDropLagBack extends Module {
         .name("rubberbands")
         .description("How many correction teleports inside the window it takes before modules are paused.")
         .defaultValue(3)
-        .min(1)
-        .sliderMax(50)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -46,8 +46,8 @@ public class AntiDropLagBack extends Module {
         .name("window-seconds")
         .description("Sliding window in real seconds that the rubberband count is measured in.")
         .defaultValue(5)
-        .min(1)
-        .sliderMax(60)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -55,8 +55,8 @@ public class AntiDropLagBack extends Module {
         .name("pause-ticks")
         .description("How many ticks the other modules stay paused once the limit triggers.")
         .defaultValue(40)
-        .min(1)
-        .sliderMax(400)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -64,8 +64,8 @@ public class AntiDropLagBack extends Module {
         .name("min-distance")
         .description("Minimum displacement (blocks) between your client position and the server's position for a sync to count as a rubberband — filters harmless small corrections.")
         .defaultValue(1.5)
-        .min(0.0)
-        .sliderMax(20.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 

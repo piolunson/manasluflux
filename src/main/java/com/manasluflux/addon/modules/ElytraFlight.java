@@ -29,7 +29,8 @@ public class ElytraFlight extends Module {
         .name("horizontal-speed")
         .description("Flight speed in blocks per tick along your look direction.")
         .defaultValue(1.0)
-        .range(0.1, 5.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -37,7 +38,8 @@ public class ElytraFlight extends Module {
         .name("vertical-speed")
         .description("Maximum up/down speed in blocks per tick when holding jump/sneak.")
         .defaultValue(0.75)
-        .range(0.1, 3.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 

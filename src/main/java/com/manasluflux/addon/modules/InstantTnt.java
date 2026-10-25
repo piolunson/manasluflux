@@ -71,8 +71,8 @@ public class InstantTnt extends Module {
         .name("ctw-range")
         .description("How far away TNT can be ignited with click through walls. Servers only accept interactions within ~4.5 blocks.")
         .defaultValue(4.5)
-        .range(2.0, 8.0)
-        .sliderRange(2.0, 6.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .visible(clickThroughWalls::get)
         .build()
     );
@@ -81,8 +81,8 @@ public class InstantTnt extends Module {
         .name("cooldown")
         .description("Ticks between ignitions.")
         .defaultValue(8)
-        .range(1, 40)
-        .sliderRange(1, 40)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -203,7 +203,9 @@ public class InstantTnt extends Module {
         BlockPos best = null;
         double bestDist = Double.MAX_VALUE;
 
-        int r = (int) Math.ceil(range);
+        // Clamp the through-walls scan: the range setting goes up to 10000, a scan cube that
+        // big would freeze the client.
+        int r = (int) Math.min(Math.ceil(range), 8);
         BlockPos eyePos = BlockPos.ofFloored(eye);
 
         for (BlockPos pos : BlockPos.iterate(

@@ -21,7 +21,8 @@ public class BoatFlight extends Module {
         .name("horizontal-speed")
         .description("Horizontal speed in blocks per tick.")
         .defaultValue(0.6)
-        .range(0.1, 5.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -29,7 +30,8 @@ public class BoatFlight extends Module {
         .name("vertical-speed")
         .description("Up/down speed in blocks per tick.")
         .defaultValue(0.4)
-        .range(0.1, 3.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 

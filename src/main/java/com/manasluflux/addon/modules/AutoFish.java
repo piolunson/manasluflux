@@ -39,9 +39,10 @@ public class AutoFish extends Module {
 
     private final Setting<Double> lookUpPitch = sgGeneral.add(new DoubleSetting.Builder()
         .name("look-up-pitch")
-        .description("The pitch to look at when looking up (negative values = up, -90 is straight up).")
-        .defaultValue(-60.0)
-        .range(-90.0, 90.0)
+        .description("How far up to look before casting, in degrees (0 = straight ahead, 90 = straight up).")
+        .defaultValue(60.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -56,7 +57,8 @@ public class AutoFish extends Module {
         .name("recast-delay")
         .description("Seconds to wait after reeling in before casting again.")
         .defaultValue(4.5)
-        .range(0.0, 10.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -104,7 +106,8 @@ public class AutoFish extends Module {
     }
 
     private void lookUp() {
-        mc.player.setPitch(lookUpPitch.get().floatValue());
+        // Minecraft pitch is negative when looking up, the setting is a plain 0..10000 angle.
+        mc.player.setPitch(-lookUpPitch.get().floatValue());
     }
 
     @EventHandler

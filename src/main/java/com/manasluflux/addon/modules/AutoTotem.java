@@ -39,8 +39,8 @@ public class AutoTotem extends Module {
         .name("delay")
         .description("Ticks between offhand refills.")
         .defaultValue(2)
-        .range(0, 40)
-        .sliderRange(0, 20)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -55,8 +55,8 @@ public class AutoTotem extends Module {
         .name("packet-retries")
         .description("How many times the click pair is resent when the offhand still has no totem.")
         .defaultValue(2)
-        .range(0, 5)
-        .sliderRange(0, 5)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(packetLevel::get)
         .build()
     );
@@ -65,8 +65,8 @@ public class AutoTotem extends Module {
         .name("packet-retry-delay")
         .description("Milliseconds to wait before resending the clicks.")
         .defaultValue(50)
-        .range(10, 500)
-        .sliderRange(10, 250)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(packetLevel::get)
         .build()
     );
@@ -75,8 +75,8 @@ public class AutoTotem extends Module {
         .name("max-packets-per-second")
         .description("Hard cap on inventory packets per second, so a broken sync can never flood the server.")
         .defaultValue(20)
-        .range(1, 100)
-        .sliderRange(1, 40)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .visible(packetLevel::get)
         .build()
     );

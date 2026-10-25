@@ -27,8 +27,8 @@ public class AutoChatClear extends Module {
         .name("every-messages")
         .description("Clear the chat after this many messages have been received.")
         .defaultValue(20)
-        .min(1)
-        .sliderMax(100)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 

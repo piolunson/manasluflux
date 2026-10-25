@@ -42,8 +42,8 @@ public class TntPlacer extends Module {
         .name("range")
         .description("Maximum distance to the target player.")
         .defaultValue(4.5)
-        .range(1.0, 6.0)
-        .sliderRange(1.0, 6.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
@@ -51,8 +51,8 @@ public class TntPlacer extends Module {
         .name("delay")
         .description("Ticks between action cycles. 0 = every tick (non-stop).")
         .defaultValue(0)
-        .range(0, 20)
-        .sliderRange(0, 20)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -95,8 +95,8 @@ public class TntPlacer extends Module {
         .name("min-self-distance")
         .description("How far away from the TNT you must be before it is ignited.")
         .defaultValue(5.0)
-        .range(0.0, 12.0)
-        .sliderRange(0.0, 12.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .visible(selfDamageGuard::get)
         .build()
     );

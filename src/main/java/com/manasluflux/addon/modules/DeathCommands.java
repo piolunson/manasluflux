@@ -24,8 +24,8 @@ public class DeathCommands extends Module {
         .name("min-delay-ticks")
         .description("Minimum ticks to wait before sending the message (20 ticks = 1 second).")
         .defaultValue(0)
-        .min(0)
-        .sliderMax(200)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -33,8 +33,8 @@ public class DeathCommands extends Module {
         .name("max-delay-ticks")
         .description("Maximum ticks to wait before sending the message (20 ticks = 1 second).")
         .defaultValue(40)
-        .min(0)
-        .sliderMax(200)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
@@ -42,9 +42,8 @@ public class DeathCommands extends Module {
         .name("chance")
         .description("Chance to send the message when you die (0.0 = never, 1.0 = always).")
         .defaultValue(1.0)
-        .min(0.0)
-        .max(1.0)
-        .sliderMax(1.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
         .build()
     );
 
