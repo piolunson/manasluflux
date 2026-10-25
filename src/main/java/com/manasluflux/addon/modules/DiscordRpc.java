@@ -6,7 +6,6 @@ import meteordevelopment.discordipc.RichPresence;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
-import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -18,42 +17,26 @@ import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
 import net.minecraft.util.math.BlockPos;
 
 public class DiscordRpc extends Module {
-    // Discord's default (Meteor Client) application. For a custom NAME shown by Discord
-    // ("Playing <your name>"), create an app at discord.com/developers, paste its
-    // Application ID here, and upload your images in the app's Art Assets tab.
-    private static final long DEFAULT_APP_ID = 835240968533049424L;
+    // The NAME and logo shown by Discord come from the Discord application whose
+    // ID is set below (Manaslu Flux). Class name kept for .mfhelp examples.
+    private static final long DEFAULT_APP_ID = 1563969889968988291L;
 
-    public enum Preset {
-        Crystals, PvP, Mining, Exploring, Building, AFK, Custom
-    }
-
-    private static boolean loading = true;
-
-    private final SettingGroup sgPreset = settings.createGroup("Preset");
     private final SettingGroup sgLine1 = settings.createGroup("Line 1");
     private final SettingGroup sgLine2 = settings.createGroup("Line 2");
     private final SettingGroup sgImages = settings.createGroup("Images");
     private final SettingGroup sgGeneral = settings.createGroup("General");
 
-    private final Setting<Preset> preset = sgPreset.add(new EnumSetting.Builder<Preset>()
-        .name("preset")
-        .description("One-click preset that fills every field below. Pick Custom to edit everything yourself.")
-        .defaultValue(Preset.Crystals)
-        .onChanged(v -> { if (v != Preset.Custom && !loading) applyPreset(v); })
-        .build()
-    );
-
     private final Setting<String> line1 = sgLine1.add(new StringSetting.Builder()
         .name("line-1")
-        .description("First line. Placeholders: {player} {server} {ping} {pos} {dimension} {cps} {version} {health}")
-        .defaultValue("Crasting on {server}")
+        .description("First line. Placeholders: {player} {server} {ping} {pos} {dimension} {cps} {version} {health} (see .mfhelp)")
+        .defaultValue("Crystaling on {server}")
         .onChanged(v -> forceUpdate = true)
         .build()
     );
 
     private final Setting<String> line2 = sgLine2.add(new StringSetting.Builder()
         .name("line-2")
-        .description("Second line. Same placeholders as line 1.")
+        .description("Second line. Same placeholders as line 1 (see .mfhelp).")
         .defaultValue("{cps} CPS | {ping} ms")
         .onChanged(v -> forceUpdate = true)
         .build()
@@ -130,7 +113,6 @@ public class DiscordRpc extends Module {
     );
 
     private RichPresence rpc;
-    private long lastAppId = -1;
     private boolean forceUpdate;
     private boolean appIdChanged;
     private int ticks;
@@ -138,21 +120,19 @@ public class DiscordRpc extends Module {
     private int cps;
 
     public DiscordRpc() {
-        super(AddonTemplate.CATEGORY, "discord-rpc", "Fully customizable Discord Rich Presence: presets, custom line 1 / line 2, image name & text, and a crystals-per-second counter.");
+        super(AddonTemplate.CATEGORY, "discord-rpc", "Fully customizable Discord Rich Presence: custom line 1 / line 2, images, name, and a crystals-per-second counter. Type .mfhelp for a placeholder tutorial.");
         runInMainMenu = true;
     }
 
     @Override
     public void onActivate() {
-        loading = false;
-        forceUpdate = true;
         explosionCount = 0;
         cps = 0;
         ticks = 0;
         rpc = new RichPresence();
         rpc.setStart(System.currentTimeMillis() / 1000L);
-        lastAppId = parseAppId();
-        DiscordIPC.start(lastAppId, null);
+        long id = parseAppId();
+        DiscordIPC.start(id, null);
     }
 
     @Override
@@ -166,36 +146,6 @@ public class DiscordRpc extends Module {
             return Long.parseLong(appId.get().trim());
         } catch (NumberFormatException e) {
             return DEFAULT_APP_ID;
-        }
-    }
-
-    private void applyPreset(Preset p) {
-        switch (p) {
-            case Crystals -> {
-                line1.set("Crystaling on {server}");
-                line2.set("{cps} CPS | {ping} ms");
-            }
-            case PvP -> {
-                line1.set("Fighting on {server}");
-                line2.set("{ping} ms | {health} HP");
-            }
-            case Mining -> {
-                line1.set("Mining in {dimension}");
-                line2.set("XYZ {pos}");
-            }
-            case Exploring -> {
-                line1.set("Exploring {dimension}");
-                line2.set("XYZ {pos}");
-            }
-            case Building -> {
-                line1.set("Building on {server}");
-                line2.set("XYZ {pos}");
-            }
-            case AFK -> {
-                line1.set("AFK on {server}");
-                line2.set("Doing nothing useful");
-            }
-            default -> {}
         }
     }
 
@@ -265,13 +215,11 @@ public class DiscordRpc extends Module {
 
         // Restart IPC if the App ID changed.
         long id = parseAppId();
-        if (id != lastAppId || appIdChanged) {
+        if (appIdChanged) {
             appIdChanged = false;
-            lastAppId = id;
             DiscordIPC.stop();
-            DiscordIPC.start(id, null);
         }
-        if (!DiscordIPC.isConnected() && !DiscordIPC.start(lastAppId, null)) return;
+        if (!DiscordIPC.isConnected() && !DiscordIPC.start(id, null)) return;
 
         String raw1 = line1.get();
         if (showCps.get() && cps > 0 && !raw1.toLowerCase().contains("{cps}") && !raw1.toLowerCase().contains("cps")) {
@@ -289,4 +237,5 @@ public class DiscordRpc extends Module {
         DiscordIPC.setActivity(rpc);
         forceUpdate = false;
     }
+
 }
