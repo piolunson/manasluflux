@@ -1,6 +1,8 @@
 package com.manasluflux.addon.modules;
 
 import com.manasluflux.addon.AddonTemplate;
+import com.manasluflux.addon.util.PacketLevel;
+import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
@@ -17,11 +19,15 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.util.Hand;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
@@ -36,6 +42,9 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Port of Meteor Client's CrystalAura (skid), adapted to ManasluFlux's silent packet style.
@@ -256,6 +265,51 @@ public class CrystalAura extends Module {
         .build()
     );
 
+    // Packet level
+
+    private final SettingGroup sgPacket = settings.createGroup("Packet");
+
+    private final Setting<Boolean> packetLevel = sgPacket.add(new BoolSetting.Builder()
+        .name("packet-level")
+        .description("Sends place/break as raw packets and reads crystal spawn/destroy straight from the packet stream, so a crystal is popped the moment the server confirms it instead of on the next game tick.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Integer> packetRetries = sgPacket.add(new IntSetting.Builder()
+        .name("packet-retries")
+        .description("How many times a place/break packet is resent when the server did not react.")
+        .defaultValue(2)
+        .range(0, 5)
+        .sliderRange(0, 5)
+        .visible(packetLevel::get)
+        .build()
+    );
+
+    private final Setting<Integer> packetRetryDelay = sgPacket.add(new IntSetting.Builder()
+        .name("packet-retry-delay")
+        .description("Milliseconds to wait for the server to confirm before resending.")
+        .defaultValue(60)
+        .range(10, 500)
+        .sliderRange(10, 250)
+        .visible(packetLevel::get)
+        .build()
+    );
+
+    private final Setting<Integer> maxPacketsPerSecond = sgPacket.add(new IntSetting.Builder()
+        .name("max-packets-per-second")
+        .description("Hard cap on packets the aura may send per second - keeps packet level safe from packet-flood kicks.")
+        .defaultValue(40)
+        .range(1, 200)
+        .sliderRange(1, 100)
+        .visible(packetLevel::get)
+        .build()
+    );
+
+    private final PacketLevel packets = new PacketLevel();
+    private final Map<Integer, BlockPos> packetCrystals = new HashMap<>();
+    private int sequence;
+
     private int breakTimer;
     private int placeTimer;
     private int ticksPassed;
@@ -271,6 +325,54 @@ public class CrystalAura extends Module {
         placeTimer = 0;
         ticksPassed = 0;
         attacks = 0;
+        sequence = 0;
+        packets.reset();
+        packetCrystals.clear();
+    }
+
+    @Override
+    public void onDeactivate() {
+        packets.reset();
+        packetCrystals.clear();
+    }
+
+    /**
+     * Packet level detection: the server tells us about every crystal it spawns and every entity
+     * it removes. Reading that stream means we know about a crystal the instant it exists (before
+     * the client entity is even added) and can drop our own place/break retries when it is gone.
+     */
+    @EventHandler
+    private void onReceive(PacketEvent.Receive event) {
+        if (!packetLevel.get()) return;
+
+        if (event.packet instanceof EntitySpawnS2CPacket spawn) {
+            if (spawn.getEntityType() != EntityType.END_CRYSTAL) return;
+
+            if (packetCrystals.size() > 512) packetCrystals.clear();
+            packetCrystals.put(spawn.getEntityId(), BlockPos.ofFloored(spawn.getX(), spawn.getY() - 1, spawn.getZ()));
+
+            // Pop it now instead of waiting for the next tick: the spawn packet is the server's
+            // confirmation of our place, so the break can go out in the same tick.
+            if (mc.player != null && mc.world != null) mc.execute(this::instantBreak);
+        } else if (event.packet instanceof EntitiesDestroyS2CPacket destroy) {
+            for (int id : destroy.getEntityIds()) packetCrystals.remove(id);
+        }
+    }
+
+    private void instantBreak() {
+        if (!isActive() || !packetLevel.get() || !doBreak.get()) return;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
+        if (pauseOnMine.get() && mc.interactionManager.isBreakingBlock()) return;
+        if (pauseOnEat.get() && isEatingOrDrinking()) return;
+
+        packets.tick();
+
+        if (breakTimer > 0 || attacks >= attackFrequency.get()) return;
+
+        PlayerEntity target = CombatTargets.findTarget(targetRange.get());
+        if (target == null) return;
+
+        doBreak(target);
     }
 
     @EventHandler
@@ -278,6 +380,9 @@ public class CrystalAura extends Module {
         if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
         if (pauseOnMine.get() && mc.interactionManager.isBreakingBlock()) return;
         if (pauseOnEat.get() && isEatingOrDrinking()) return;
+
+        // Packet level: resend unconfirmed place/break packets.
+        packets.tick();
 
         // Attack frequency counter (resets every second)
         if (ticksPassed < 20) ticksPassed++;
@@ -316,13 +421,40 @@ public class CrystalAura extends Module {
 
         if (best == null) return;
 
-        if (rotate.get()) lookAt(best.getEntityPos());
-
-        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(best, false));
-        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        if (!attackCrystal(best)) return;
 
         attacks++;
         breakTimer = breakDelay.get();
+    }
+
+    /**
+     * Attacks a crystal. In packet level the attack packet goes out directly and is resent until
+     * the server removes the entity; every send goes through the per-second packet cap.
+     */
+    private boolean attackCrystal(EndCrystalEntity crystal) {
+        if (mc.player == null) return false;
+        if (packetLevel.get() && !packets.allow(maxPacketsPerSecond.get())) return false;
+
+        if (rotate.get()) lookAt(crystal.getEntityPos());
+
+        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(crystal, false));
+        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+
+        if (packetLevel.get()) {
+            int id = crystal.getId();
+            packets.retry(packetRetries.get(), packetRetryDelay.get(), () -> mc.world == null || mc.world.getEntityById(id) == null, () -> resendAttack(id));
+        }
+
+        return true;
+    }
+
+    private void resendAttack(int entityId) {
+        if (mc.player == null || mc.world == null) return;
+        if (!(mc.world.getEntityById(entityId) instanceof EndCrystalEntity crystal)) return;
+        if (!packets.allow(maxPacketsPerSecond.get())) return;
+
+        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(crystal, false));
+        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
     }
 
     /**
@@ -426,14 +558,73 @@ public class CrystalAura extends Module {
             mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(crystal.slot()));
         }
 
-        if (rotate.get()) lookAt(hit.getPos());
-
-        mc.interactionManager.interactBlock(mc.player, hand, hit);
-        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(hand));
+        boolean sent = sendUseBlock(hand, hit);
 
         if (realSlot != -1) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
+        if (!sent) return false;
+
+        if (packetLevel.get()) {
+            BlockPos placedBase = base.toImmutable();
+            packets.retry(packetRetries.get(), packetRetryDelay.get(), () -> crystalOn(placedBase), () -> resendPlace(placedBase));
+        }
 
         return true;
+    }
+
+    /**
+     * Sends the use-block action. Packet level bypasses the interaction manager entirely: the
+     * use-block packet is built and sent by us, so no client-side prediction or sequence wait
+     * delays the next place.
+     */
+    private boolean sendUseBlock(Hand hand, BlockHitResult hit) {
+        if (mc.player == null) return false;
+        if (packetLevel.get() && !packets.allow(maxPacketsPerSecond.get())) return false;
+
+        if (rotate.get()) lookAt(hit.getPos());
+
+        if (packetLevel.get()) mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(hand, hit, sequence++));
+        else mc.interactionManager.interactBlock(mc.player, hand, hit);
+
+        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(hand));
+        return true;
+    }
+
+    /**
+     * Resends the crystal place packet for a base that still has no crystal on top of it.
+     */
+    private void resendPlace(BlockPos base) {
+        if (mc.player == null || mc.world == null) return;
+
+        BlockState state = mc.world.getBlockState(base);
+        if (!state.isOf(Blocks.OBSIDIAN) && !state.isOf(Blocks.BEDROCK)) return;
+
+        FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
+        if (!crystal.found()) return;
+
+        Hand hand = Hand.MAIN_HAND;
+        int realSlot = -1;
+
+        if (crystal.isOffhand()) {
+            hand = Hand.OFF_HAND;
+        } else if (crystal.isHotbar() && crystal.slot() != mc.player.getInventory().getSelectedSlot()) {
+            realSlot = mc.player.getInventory().getSelectedSlot();
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(crystal.slot()));
+        }
+
+        sendUseBlock(hand, getPlaceInfo(base));
+
+        if (realSlot != -1) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
+    }
+
+    /**
+     * @return true when a crystal already stands on the given base (client entity or spawn packet).
+     */
+    private boolean crystalOn(BlockPos base) {
+        BlockPos above = base.up();
+        if (packetCrystals.containsValue(above)) return true;
+        if (mc.world == null) return false;
+
+        return !mc.world.getEntitiesByClass(EndCrystalEntity.class, new Box(above), e -> e.getBlockPos().equals(above)).isEmpty();
     }
 
     /**
@@ -458,10 +649,7 @@ public class CrystalAura extends Module {
             mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(obsidian.slot()));
         }
 
-        if (rotate.get()) lookAt(hit.getPos());
-
-        mc.interactionManager.interactBlock(mc.player, hand, hit);
-        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(hand));
+        sendUseBlock(hand, hit);
 
         if (realSlot != -1) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
 
