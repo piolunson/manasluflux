@@ -73,6 +73,7 @@ import com.manasluflux.addon.modules.Mute;
 import com.manasluflux.addon.modules.Path;
 import com.manasluflux.addon.modules.PearlPhase;
 import com.manasluflux.addon.modules.PingSpoofer;
+import com.manasluflux.addon.modules.PlaceTravel;
 import com.manasluflux.addon.modules.Placer;
 import com.manasluflux.addon.modules.SilentAura;
 import com.manasluflux.addon.modules.TntPlacer;
@@ -133,6 +134,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new Placer());
         Modules.get().add(new PingSpoofer());
         Modules.get().add(new InventoryKeeper());
+        Modules.get().add(new PlaceTravel());
 
         // Rewrite category (Meteor built-ins, rewritten for ManasluFlux)
         Modules.get().add(new AutoRespawn());
