@@ -62,6 +62,7 @@ import com.manasluflux.addon.modules.DeathCoords;
 import com.manasluflux.addon.modules.DiscordRpc;
 import com.manasluflux.addon.modules.ElytraFlight;
 import com.manasluflux.addon.modules.InstantTnt;
+import com.manasluflux.addon.modules.InventoryKeeper;
 import com.manasluflux.addon.modules.ModuleExample;
 import com.manasluflux.addon.modules.PacketLimiter;
 import com.manasluflux.addon.modules.SoundBlocker;
@@ -131,6 +132,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new AutoWither());
         Modules.get().add(new Placer());
         Modules.get().add(new PingSpoofer());
+        Modules.get().add(new InventoryKeeper());
 
         // Rewrite category (Meteor built-ins, rewritten for ManasluFlux)
         Modules.get().add(new AutoRespawn());

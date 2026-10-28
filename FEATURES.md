@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.10.1 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v0.11.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (45)
+## Modules (46)
 
 ### Category: Manaslu Flux Combat (8)
 
@@ -37,7 +37,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
 
-### Category: Manaslu Flux Player (6)
+### Category: Manaslu Flux Player (7)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -46,6 +46,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Auto Log | `auto-log` | Automatically disconnects when your health drops below a threshold. |
 | Auto Login | `auto-login` | Sends `/<command> <password>` (default `/login 12345678`) automatically after joining a server — or when chat shows a trigger word like "register". Settings: command, password, mode (Always/Trigger), triggers, delay, repeat-on-trigger, cooldown. The password is stored in plain text in the Meteor config — don't reuse an important one. |
 | Auto Respawn | `mf-auto-respawn` | Auto-clicks respawn on the death screen, then optionally runs commands/chat lines (one per tick) after respawning. |
+| Inventory Keeper | `inventory-keeper` | Keeps your inventory in the layout you saved. Press the **Save layout** button on the module screen and the occupied slots become the reference; every `refresh-rate` ms the module re-reads the inventory and swaps anything that drifted back into place — the item that was sitting in a saved slot is swapped out to where the wanted item came from, so nothing is dropped and nothing leaves the inventory. `only-hotbar` restricts the kept slots to the nine hotbar slots. Items that were used up, dropped or left in a container are skipped. Checks only run with no screen open and an empty cursor, so it never fights a drag, and at most 8 swaps happen per check (a badly scrambled inventory settles over a few refreshes). The layout is saved in the Meteor config and survives restarts. |
 | Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
 
 ### Category: Manaslu Flux World (4)
@@ -149,7 +150,7 @@ Modules are grouped by what they do, so nothing shares a grab-bag category any m
 
 - **Manaslu Flux Combat** (8) — fighting: auras, autocrystal, totem, TNT, pearl phase, clicker (end crystal icon)
 - **Manaslu Flux Movement** (5) — getting around: the three flights, auto walk, click TP (feather icon)
-- **Manaslu Flux Player** (6) — keeping you alive and fed: eat, fish, log, respawn, login, fast use (golden apple icon)
+- **Manaslu Flux Player** (7) — keeping you alive and stocked: eat, fish, log, respawn, login, fast use, inventory keeper (golden apple icon)
 - **Manaslu Flux World** (4) — changing blocks around you: placer, auto wither, map part, block replacer (grass block icon)
 - **Manaslu Flux Client Side** (9) — what you see and what the server sees: crystal optimizer, block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
 - **Manaslu Flux Utility** (13) — chat, logs and tools: waypoint, path, death coords, chat/tab loggers, tab privacy, RPC, and the rewritten chat modules (compass icon)
@@ -181,6 +182,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 0.11.0 | **New module: Inventory Keeper** (`inventory-keeper`) — a save/restore layout keeper for your inventory. The module screen gets a **Save layout** button: it snapshots which item sits in each of the 36 playable slots (or just the nine hotbar slots with `only-hotbar`). Then every `refresh-rate` ms (default 200, 0 = every tick) it re-reads the inventory and swaps the saved items back into their slots; the item occupying a wrong slot is swapped out to where the wanted one came from, so nothing is dropped, consumed or moved out of the inventory. Items that no longer exist are skipped, checks only run with no screen open and an empty cursor, and at most 8 swaps happen per check so a scrambled inventory settles over a few refreshes instead of one burst. The layout persists in the Meteor config. Counts: 46 modules, Player 7. |
 | 0.10.1 | **AC PacketFlood no longer waits for the game tick** — the place/break packets are now fired by a continuous 1 ms loop on the scheduler instead of once per tick, so the configured `place-delay-ms` / `break-delay-ms` really are packets-per-millisecond: `1` is roughly 1000 packets/s per action and `0` bursts until `max-packets-per-second` is reached. Plans (which base, which crystal, damage) are still rebuilt every tick on the game thread, only the sending runs in the loop. Batches are sent whole (a look packet without its attack would be useless), and the loop survives exceptions instead of dying. |
 | 0.10.0 | **New command: `.mffakeplayer`** — a fake player the client genuinely believes is real, unlike Meteor's `.fake-player`. It gets its own `PlayerListEntry` (so tab list, nametags, skins and `getPlayerListEntry(uuid)` all resolve), it is added to `world.getPlayers()` exactly like a joining player, and it is a normal `OtherClientPlayerEntity` in the entity list — so auras, target finding, player counts and every "real players only" check pick it up. Subcommands: `add [name]` (spawns where you look, copies your inventory so armor counts in damage), `remove <name>`, `clear`, `list`, `tp`, `health <hp>`. Now 26 commands. |
 | 0.9.0 | **New module: AC PacketFlood** (`ac-pcktflood`) — a crystal aura that lives on the packet timeline instead of the game tick. Every place and break is a raw packet (use-block / attack / silent look) fired by a millisecond scheduler, with per-action **delay in ms**, **retries** and **retry delay in ms** (`place-delay-ms` 1, `place-retries` 0, `place-retry-delay-ms` 2, and the same trio for break), `bases-per-tick` so several bases can be hit in one cycle spaced by the delay, all the usual aura settings (target/min/max-self damage, anti-suicide, silent rotate, face place with health/durability/missing armor, place & break ranges and walls ranges, support blocks) and a `max-packets-per-second` cap. Retries are dropped the moment the server's crystal spawn/destroy packet confirms the action, so `1ms:packet 3ms:retry 5ms:retry … 6ms:packet` is exactly what runs. **Modules re-categorised**: the old grab-bag "Manaslu Flux" and "Manaslu Flux Rewrite" categories are gone — modules now sit in Combat (8), Movement (5), Player (6), World (4), Client Side (9) and Utility (13). Counts: 45 modules. |
