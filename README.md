@@ -1,17 +1,19 @@
 # ManasluFlux
 
-A [Meteor Client](https://meteorclient.com) addon for **Minecraft 26.2 (Fabric)** by **piolunson**.
+A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabric)** by **piolunson**.
 
 🌐 **Website & downloads:** [github.com/piolunson/ManasluFluxMeteorWebsite](https://github.com/piolunson/ManasluFluxMeteorWebsite)
 
 ## About
 
-ManasluFlux adds **40 modules**, **24 commands** and **7 HUD elements** on top of Meteor Client, organized in four ClickGUI categories:
+ManasluFlux adds **47 modules**, **26 commands** and **7 HUD elements** on top of Meteor Client, organized in six ClickGUI categories:
 
-- **Manaslu Flux** — general/utility modules
-- **Manaslu Flux Client Side** — purely client-side/visual modules
-- **Manaslu Flux Combat** — combat modules
-- **Manaslu Flux Rewrite** — Meteor built-ins rewritten for ManasluFlux
+- **Manaslu Flux Combat** (8) — crystal aura, silent aura, auto totem, instant TNT, pearl phase, packet flood
+- **Manaslu Flux Movement** (6) — universal/elytra/boat flight, auto walk, click TP, Place Travel
+- **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
+- **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
+- **Manaslu Flux Client Side** (9) — purely client-side/visual modules
+- **Manaslu Flux Utility** (13) — chat, logs and tools
 
 Highlights:
 
@@ -28,15 +30,19 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (38)</summary>
+<summary>Full module list (47)</summary>
 
-**Manaslu Flux:** Auto Eat, Auto Fish, Auto Log, Auto Map Part, Auto Wither, Auto Walk Hold, Block Replacer, Boat Flight, Death Coords, Elytra Flight, Instant TNT, Mute, Path, Pearl Phase, Ping Spoofer, Placer, Universal Flight, Waypoint, Whitelist Fast Use, World Origin
+**Manaslu Flux Combat (8):** `ac-pcktflood`, `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `pearl-phase`, `silent-aura`, `tnt-placer`
 
-**Manaslu Flux Client Side:** Add Text, Auto Login, Client-Side Night Vision, Crystal Optimizer, Toggle Tab, Universal Colored Chat
+**Manaslu Flux Movement (6):** `auto-walk-hold`, `boat-flight`, `mf-click-tp`, `elytra-flight`, `place-travel`, `universal-flight`
 
-**Manaslu Flux Combat:** Auto Totem, Crystal Aura, Silent Aura, TNT Placer
+**Manaslu Flux Player (7):** `auto-eat`, `auto-fish`, `auto-log`, `auto-login`, `mf-auto-respawn`, `inventory-keeper`, `whitelist-fast-use`
 
-**Manaslu Flux Rewrite:** Auto Respawn, Auto Responder, Chat Logger, Click TP, Clicker, Death Commands, Packet Limiter, Sound Muter, Tab Complete Privacy, Tab Logger
+**Manaslu Flux World (4):** `auto-map-part`, `auto-wither`, `block-replacer`, `placer`
+
+**Manaslu Flux Client Side (9):** `anti-drop-lagback`, `client-block-entities`, `client-side-night-vision`, `crystal-optimizer`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
+
+**Manaslu Flux Utility (13):** `add-text`, `auto-chat-clear`, `auto-responder`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `path`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 
 </details>
 
@@ -52,7 +58,7 @@ The jar appears in `build/libs/manasluflux-<version>.jar`.
 
 ## Bundled Baritone
 
-ManasluFlux ships with **Baritone v1.19.0** built in — the unmodified official Fabric build for Minecraft 26.2, bundled jar-in-jar under `META-INF/jars/`. It loads automatically with the addon: no separate download needed. All of Baritone's `#` commands work in chat (`#goto x y z`, `#mine diamond_ore`, `#follow player`, …) and Meteor's Baritone integration detects it.
+ManasluFlux ships with **Baritone** built in — the unmodified official Fabric build (`baritone-meteor 1.21.11-SNAPSHOT`) for Minecraft 1.21.11, bundled jar-in-jar under `META-INF/jars/`. It loads automatically with the addon: no separate download needed. All of Baritone's `#` commands work in chat (`#goto x y z`, `#mine diamond_ore`, `#follow player`, …) and Meteor's Baritone integration detects it.
 
 Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed under **LGPL-3.0**, bundled unmodified with attribution.
 
@@ -61,7 +67,7 @@ Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed
 
 ## Installing
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 26.2.
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
 2. Drop [Meteor Client](https://meteorclient.com) and `manasluflux-<version>.jar` into your `mods` folder.
 3. Launch the game — the new categories appear in Meteor's ClickGUI (Right Shift).
 
@@ -73,7 +79,7 @@ See [FEATURES.md](FEATURES.md) for the complete changelog — the addon version 
 
 This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE), consistent with Meteor Client's licensing.
 
-Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare); all code in this repository is a clean-room rewrite for Minecraft 26.2 and this addon's conventions. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
+Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare); all code in this repository is a clean-room rewrite for Minecraft 1.21.11 and this addon's conventions. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
 
 ## Disclaimer
 
