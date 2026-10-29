@@ -2,6 +2,7 @@ package com.manasluflux.addon.modules;
 
 import com.manasluflux.addon.AddonTemplate;
 import com.manasluflux.addon.commands.Msg;
+import com.manasluflux.addon.util.Formula;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -10,6 +11,7 @@ import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
+import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.world.Timer;
@@ -142,12 +144,42 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    public enum TimerMode { Constant, Graph }
+
+    private final Setting<TimerMode> timerMode = sgTimer.add(new EnumSetting.Builder<TimerMode>()
+        .name("timer-mode")
+        .description("Constant uses timer-multiplier. Graph follows graph-formula over the time you have spent in this web, so the speed can ramp instead of being one number.")
+        .defaultValue(TimerMode.Graph)
+        .build()
+    );
+
     private final Setting<Double> timerMultiplier = sgTimer.add(new DoubleSetting.Builder()
         .name("timer-multiplier")
-        .description("Runs Meteor's Timer while you are inside a real cobweb and turns it back off the moment you leave it (1.0 = off, 2.0 = everything runs twice as fast).")
+        .description("Constant mode: the multiplier Meteor's Timer gets while you are inside a real cobweb (1.0 = off, 2.0 = everything runs twice as fast).")
         .defaultValue(1.0)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
+        .visible(() -> timerMode.get() == TimerMode.Constant)
+        .build()
+    );
+
+    private final Setting<String> graphFormula = sgTimer.add(new StringSetting.Builder()
+        .name("graph-formula")
+        .description("Graph mode: the curve, with t = seconds spent in this web. + - * / ^ ( ) and exp, log, sqrt, abs, min, max, floor, round, sin, cos, tan, e, pi all work. A value of 0 means the normal 1x timer, 1 means graph-scale of extra speed.")
+        .defaultValue("1 - exp(-t / 1.5)")
+        .placeholder("1 - exp(-t / 1.5)")
+        .wide()
+        .visible(() -> timerMode.get() == TimerMode.Graph)
+        .build()
+    );
+
+    private final Setting<Double> graphScale = sgTimer.add(new DoubleSetting.Builder()
+        .name("graph-scale")
+        .description("Graph mode: how much a formula value of 1 multiplies the timer by. Scale 1 turns a value of 1 into the 2x timer, 0.5 into 1.5x, 0 into nothing.")
+        .defaultValue(0.5)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .visible(() -> timerMode.get() == TimerMode.Graph)
         .build()
     );
 
@@ -223,6 +255,8 @@ public class CobwebBypass extends Module {
     private double tuneSavedV;
     private double tuneSavedCap;
     private double tuneSavedTimer;
+    private TimerMode tuneSavedMode;
+    private double tuneSavedMultiplier;
     private int tuneSavedBurst;
     private Profile tuneSavedProfile;
     private boolean tuneSavedForward;
@@ -231,6 +265,10 @@ public class CobwebBypass extends Module {
     private boolean tuneVerbose;
     /** True while this module is the one driving Meteor's Timer. */
     private boolean timerOverridden;
+    /** Ticks spent in the current web - the graph timer's {@code t}. */
+    private int webTicks;
+    /** Last formula we warned about, so a broken one prints once instead of every tick. */
+    private String graphWarnedFor;
 
     public CobwebBypass() {
         super(AddonTemplate.BYPASS_CATEGORY, "cobweb-bypass",
@@ -245,6 +283,7 @@ public class CobwebBypass extends Module {
         pauseLeft = 0;
         lagbacks = 0;
         loggedFailure = false;
+        webTicks = 0;
     }
 
     @Override
@@ -252,6 +291,7 @@ public class CobwebBypass extends Module {
         ticksInWeb = 0;
         softenedThisTick = false;
         pauseLeft = 0;
+        webTicks = 0;
         stopTuning(false);
         releaseTimer();
     }
@@ -370,6 +410,10 @@ public class CobwebBypass extends Module {
 
         softenedThisTick = false;
 
+        // The graph timer's clock: real time spent in this web, reset the moment you are out.
+        if (insideWeb()) webTicks++;
+        else webTicks = 0;
+
         updateWebTimer();
 
         // Second pass: the client re-evaluates sprint during its own tick, so the tweak also has
@@ -424,9 +468,33 @@ public class CobwebBypass extends Module {
         return false;
     }
 
+    /** What Meteor's Timer should run at right now: a fixed multiplier, or the graph curve. */
+    private double timerSpeed() {
+        if (timerMode.get() == TimerMode.Constant) return timerMultiplier.get();
+
+        // 1 + scale * f(t): the formula floors at 0, so the timer never dips below normal speed
+        // and a formula that starts at 0 starts the boost from 1x instead of from 0.
+        return 1.0 + Math.max(0.0, graphValue()) * graphScale.get();
+    }
+
+    /** Evaluates graph-formula for the current time in the web, warning once if it does not parse. */
+    private double graphValue() {
+        String formula = graphFormula.get();
+
+        try {
+            return Formula.eval(formula, webTicks / 20.0);
+        } catch (RuntimeException e) {
+            if (!formula.equals(graphWarnedFor)) {
+                graphWarnedFor = formula;
+                warning("graph-formula does not work (%s) - the timer stays at 1x until it is fixed.", e.getMessage());
+            }
+            return 0;
+        }
+    }
+
     /** Meteor's Timer, on only while you actually stand in a cobweb. */
     private void updateWebTimer() {
-        double multiplier = timerMultiplier.get();
+        double multiplier = timerSpeed();
         boolean enabled = multiplier > 0 && Math.abs(multiplier - 1.0) > 1.0E-4 && insideWeb();
 
         if (!enabled) {
@@ -584,6 +652,8 @@ public class CobwebBypass extends Module {
         tuneSavedCap = maxSpeed.get();
         tuneSavedTimer = webTimer.get();
         tuneSavedBurst = burstTicks.get();
+        tuneSavedMode = timerMode.get();
+        tuneSavedMultiplier = timerMultiplier.get();
         tuneSavedForward = mc.options.forwardKey.isPressed();
         tuneSavedJump = mc.options.jumpKey.isPressed();
 
@@ -593,6 +663,10 @@ public class CobwebBypass extends Module {
         maxSpeed.set(0.0);
         webTimer.set(1.0);
         burstTicks.set(0);
+
+        // Both timers off: the sweep has to measure the percentages, not the speed boost.
+        timerMode.set(TimerMode.Constant);
+        timerMultiplier.set(1.0);
 
         tuneIndex = 0;
         tuneTested = 0;
@@ -620,6 +694,8 @@ public class CobwebBypass extends Module {
             webTimer.set(tuneSavedTimer);
             burstTicks.set(tuneSavedBurst);
             profile.set(tuneSavedProfile);
+            timerMultiplier.set(tuneSavedMultiplier);
+            timerMode.set(tuneSavedMode);
         }
 
         tuneStage = TuneStage.Off;
@@ -728,6 +804,8 @@ public class CobwebBypass extends Module {
         maxSpeed.set(tuneSavedCap);
         webTimer.set(tuneSavedTimer);
         burstTicks.set(tuneSavedBurst);
+        timerMultiplier.set(tuneSavedMultiplier);
+        timerMode.set(tuneSavedMode);
 
         if (tuneHaveBest) {
             horizontal.set(tuneBestH);
