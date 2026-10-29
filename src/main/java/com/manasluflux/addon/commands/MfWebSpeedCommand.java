@@ -21,7 +21,7 @@ public class MfWebSpeedCommand extends Command {
     private static final double DEFAULT_STEP = 20.0;
 
     public MfWebSpeedCommand() {
-        super("mfwebspeed", "Autoconfig for Cobweb Bypass: walks into cobwebs and tries every horizontal/vertical pair from 0 to your max (optionally -5..-1), keeping the fastest one the server does not lag you back on.");
+        super("mfwebspeed", "Autoconfig for Cobweb Bypass: walks into cobwebs and tries every horizontal/vertical pair from 0 to your max (optionally -5..-1), keeping the fastest one the server does not lag you back on. 'verbose' prints every combo as it is tested.");
     }
 
     @Override
@@ -29,10 +29,11 @@ public class MfWebSpeedCommand extends Command {
         builder.executes(context -> {
             CobwebBypass module = Modules.get().get(CobwebBypass.class);
 
-            Msg.info("Usage: .mfwebspeed <max> [step] [negative] | .mfwebspeed stop");
+            Msg.info("Usage: .mfwebspeed <max> [step] [negative] [verbose] | .mfwebspeed stop");
             Msg.info("  <max>      highest percentage to try (0-<max>, both horizontal and vertical)");
             Msg.info("  [step]     gap between values, default 20");
             Msg.info("  [negative] also try -5..-1 (stickier than vanilla), off by default");
+            Msg.info("  [verbose]  print every combo as it is tested, with OK / FAILED / stuck");
             Msg.info("Walks you into the nearest cobweb and keeps the fastest combo the server does not pull you back on.");
             if (module != null) Msg.info("Status: %s", module.tuneStatus());
 
@@ -52,18 +53,24 @@ public class MfWebSpeedCommand extends Command {
         }));
 
         builder.then(argument("max", DoubleArgumentType.doubleArg(0, 10000))
-            .executes(context -> start(context, "max", DEFAULT_STEP, false))
-            .then(literal("negative").executes(context -> start(context, "max", DEFAULT_STEP, true)))
+            .executes(context -> start(context, "max", DEFAULT_STEP, false, false))
+            .then(literal("verbose").executes(context -> start(context, "max", DEFAULT_STEP, false, true)))
+            .then(literal("negative")
+                .executes(context -> start(context, "max", DEFAULT_STEP, true, false))
+                .then(literal("verbose").executes(context -> start(context, "max", DEFAULT_STEP, true, true))))
             .then(argument("step", DoubleArgumentType.doubleArg(1, 10000))
-                .executes(context -> start(context, "step", false))
-                .then(literal("negative").executes(context -> start(context, "step", true)))));
+                .executes(context -> start(context, "step", false, false))
+                .then(literal("verbose").executes(context -> start(context, "step", false, true)))
+                .then(literal("negative")
+                    .executes(context -> start(context, "step", true, false))
+                    .then(literal("verbose").executes(context -> start(context, "step", true, true))))));
     }
 
-    private int start(CommandContext<CommandSource> context, String stepArg, boolean negative) {
-        return start(context, stepArg, DoubleArgumentType.getDouble(context, stepArg), negative);
+    private int start(CommandContext<CommandSource> context, String stepArg, boolean negative, boolean verbose) {
+        return start(context, stepArg, DoubleArgumentType.getDouble(context, stepArg), negative, verbose);
     }
 
-    private int start(CommandContext<CommandSource> context, String stepArg, double step, boolean negative) {
+    private int start(CommandContext<CommandSource> context, String stepArg, double step, boolean negative, boolean verbose) {
         CobwebBypass module = Modules.get().get(CobwebBypass.class);
         if (module == null) {
             Msg.error("Cobweb Bypass is not registered.");
@@ -84,7 +91,7 @@ public class MfWebSpeedCommand extends Command {
         // Tick events only reach active modules, so the sweep has to run with the module on.
         if (!module.isActive()) module.toggle();
 
-        module.startTuning(max, step, negative);
+        module.startTuning(max, step, negative, verbose);
         return SINGLE_SUCCESS;
     }
 }

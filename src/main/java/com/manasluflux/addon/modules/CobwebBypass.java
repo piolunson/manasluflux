@@ -187,6 +187,7 @@ public class CobwebBypass extends Module {
     private boolean tuneSavedForward;
     private boolean tuneSavedJump;
     private boolean tuneKeysHeld;
+    private boolean tuneVerbose;
 
     public CobwebBypass() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "cobweb-bypass",
@@ -400,13 +401,15 @@ public class CobwebBypass extends Module {
      * plus {@code -5 .. -1} when {@code negative} is set. The module has to be active for the
      * tick events to arrive.
      */
-    public boolean startTuning(double max, double step, boolean negative) {
+    public boolean startTuning(double max, double step, boolean negative, boolean verbose) {
         if (mc.player == null || mc.world == null) {
             Msg.error("Not in a world.");
             return false;
         }
 
         if (isTuning()) stopTuning(false);
+
+        tuneVerbose = verbose;
 
         List<Double> values = new ArrayList<>();
         if (negative) {
@@ -456,6 +459,7 @@ public class CobwebBypass extends Module {
 
         Msg.info("Web speed autoconfig running: %d combo(s), %s..%s both ways. Keep your hands off the keys.",
             tuneCombos.size(), fmt(tuneCombos.get(0)[0]), fmt(max));
+        if (tuneVerbose) Msg.info("Verbose: every combo and its result is printed as the sweep goes.");
         return true;
     }
 
@@ -532,11 +536,25 @@ public class CobwebBypass extends Module {
         tuneStageTicks = 0;
         tuneEscapeTicks = 0;
         tuneLagback = false;
+
+        if (tuneVerbose) {
+            Msg.info("[%d/%d] testing horizontal %s%% / vertical %s%%",
+                index + 1, tuneCombos.size(), fmt(tuneH), fmt(tuneV));
+        }
     }
 
     private void finishCombo() {
         tuneTested++;
         int escape = Math.min(tuneEscapeTicks, MAX_ESCAPE_TICKS);
+
+        if (tuneVerbose) {
+            String result;
+            if (tuneLagback) result = "FAILED - the server pulled you back";
+            else if (tuneEscapeTicks >= MAX_ESCAPE_TICKS) result = "stuck - never left the web";
+            else result = "OK - out in " + escape + " tick(s)";
+
+            Msg.info("  -> " + result);
+        }
 
         if (!tuneLagback) {
             tunePassed++;
