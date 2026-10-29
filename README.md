@@ -20,7 +20,7 @@ Highlights:
 - **Crystal Aura** — full explosion damage simulation: every obsidian/bedrock base in range is evaluated with `min-damage` / `max-self-damage` / `anti-suicide` gating, face place, obsidian support blocks, silent server-side rotations and hotbar swaps.
 - **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.
 - **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
-- **Pearl Phase** — one-shot pearl throw at your own block to phase into walls.
+- **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
 - **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap and a lagback watcher.
 - **Auto Login** — sends `/login <password>` automatically after joining.
@@ -67,6 +67,10 @@ Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed
 > On Windows with an older system JDK, point Gradle at a newer one:
 > `JAVA_HOME=<path-to-jdk-21+> ./gradlew build`
 
+## Vendored BlackOut sources
+
+[`blackout/`](blackout/README.md) holds unmodified copies of the BlackOut files this addon ports — upstream [KassuK1/BlackOut](https://github.com/KassuK1/BlackOut) at commit `4c18af3f`, **GPL-3.0** (same as this project), with the original `LICENSE` alongside. It is reference material only, not compiled.
+
 ## Installing
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.11.
@@ -81,7 +85,7 @@ See [FEATURES.md](FEATURES.md) for the complete changelog — the addon version 
 
 This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE), consistent with Meteor Client's licensing.
 
-Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare); all code in this repository is a clean-room rewrite for Minecraft 1.21.11 and this addon's conventions. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
+Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare). Where a module is a port rather than a rewrite, the upstream file is vendored unmodified in [`blackout/`](blackout/README.md) (currently BlackOut's `AutoPearl.java`, GPL-3.0, for `pearl-phase`), and the port's javadoc names the original author. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
 
 ## Disclaimer
 
