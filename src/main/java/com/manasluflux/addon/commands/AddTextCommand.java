@@ -1,16 +1,14 @@
 package com.manasluflux.addon.commands;
 
-import com.manasluflux.addon.modules.AddText;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
-import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.command.CommandSource;
 import net.minecraft.text.Text;
 
 /**
  * .mfaddtext - local-only chat. Shows any text in your chat without sending anything to the server,
- * so nobody else sees it. Optionally kept after relogging via the (toggleable) add-text module.
+ * so nobody else sees it. This is the whole feature: it is a command only, with no module behind it.
  */
 public class AddTextCommand extends Command {
     public AddTextCommand() {
@@ -33,16 +31,6 @@ public class AddTextCommand extends Command {
 
             show(text);
 
-            AddText module = Modules.get().get(AddText.class);
-            if (module != null && module.isActive() && module.persist()) module.add(text);
-
-            return SINGLE_SUCCESS;
-        }));
-
-        builder.then(literal("clear").executes(context -> {
-            AddText module = Modules.get().get(AddText.class);
-            if (module != null) module.clear();
-            Msg.info("Cleared saved local chat lines.");
             return SINGLE_SUCCESS;
         }));
     }

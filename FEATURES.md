@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v0.12.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.0.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,13 +12,12 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (47)
+## Modules (44)
 
-### Category: Manaslu Flux Combat (8)
+### Category: Manaslu Flux Combat (7)
 
 | Module | ID | What it does |
 |---|---|---|
-| AC PacketFlood | `ac-pcktflood` | **Crystal aura on the packet timeline** — place and break are raw packets fired by a millisecond scheduler instead of the 50 ms game tick. **Place** (`place`, `place-delay-ms` 1 ms = ~1000 place packets/s, 0 = burst to the cap, `place-retries` 0, `place-retry-delay-ms` 2, `bases-per-tick`, `place-range`, `place-walls-range`, `support-blocks`), **Break** (`break`, `break-delay-ms` 1 ms = ~1000 attacks/s, 0 = burst to the cap, `break-retries` 0, `break-retry-delay-ms` 2, `break-range`, `break-walls-range`), **General** (`target-range`, `predict-movement`, `min-damage`, `max-self-damage`, `anti-suicide`, `rotate`, `face-place` + health/durability/missing-armor), **Packet** (`max-packets-per-second` 60, `debug-mode`). Retries are dropped the moment the server's spawn/destroy packet confirms the action, so with `place-delay-ms` 1 and `place-retries` 2 the timeline is `1ms:packet 3ms:retry 5ms:retry … 6ms:packet`. |
 | Auto Totem | `auto-totem` | Instantly refills a totem of undying into your offhand whenever it is used or pops. Settings: `delay`; **Packet** group — `packet-level` (refill through raw inventory click packets and detect the pop from the entity status packet, removing the inventory/tick delay), `packet-retries`, `packet-retry-delay`, `max-packets-per-second`. |
 | Clicker | `clicker` | Left/right auto clicker with Nothing/Hold/Click modes and per-action tick delays. |
 | Crystal Aura | `crystal-aura` | **Port of Meteor Client's CrystalAura** — simulates the crystal explosion for every obsidian/bedrock base in range and places/pops only the most damaging one. Settings: target-range, predict-movement, min-damage, max-self-damage, anti-suicide, silent rotate; **Place** (place, place-delay, place-range, place-walls-range, support-blocks + support-delay); **Face Place** (face-place, health, durability, missing-armor); **Break** (break, break-delay, break-range, break-walls-range, attack-frequency); **Pause** (pause-on-mine, pause-on-eat); **Packet** (packet-level, packet-retries, packet-retry-delay, max-packets-per-second — raw place/break packets, crystal spawn/destroy read straight from the packet stream so a crystal is popped the moment the server confirms it, unconfirmed packets resent, every send capped per second). All silent: server-side hotbar swaps and look packets — no visible rotation or hotbar movement. |
@@ -59,26 +58,24 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 
-### Category: Manaslu Flux Client Side (9)
+### Category: Manaslu Flux Client Side (8)
 
 | Module | ID | What it does |
 |---|---|---|
 | Anti Drop Lagback | `anti-drop-lagback` | Watches the server's position-sync teleports and counts "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side. |
-| Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Like Crystal Optimizer but for any block entity. Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
+| Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Purely client-side renderer for any block entity: Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
 | Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
-| Crystal Optimizer | `crystal-optimizer` | Replaces every end crystal's full animated model (outer cube, inner core, bedrock base, beam) with a single static box — or hides crystals entirely — a big FPS boost with lots of crystals on screen. Purely client-side rendering via a tiny renderer mixin: nothing is sent to the server and crystals behave exactly the same. Settings: mode (simple box / hide), box shape (fill/lines), box color. |
 | Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |
 | Ping Spoofer | `ping-spoofer` | Changes your ping with three modes: **Real** (no change), **More** (genuinely adds latency by delaying keep-alive/pong replies, so the server sees real extra ms) or **Spoof** (replies sent instantly, only the tab-list ping is patched). Amount, jitter and a debug readout are configurable. |
 | Sound Muter | `sound-muter` | Mutes specific sounds picked from a sound list, client-side. |
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
 
-### Category: Manaslu Flux Utility (13)
+### Category: Manaslu Flux Utility (12)
 
 | Module | ID | What it does |
 |---|---|---|
 | Mute | `mute` | Module backing `.mfmute`: client-side chat filter by player name and/or phrase. |
-| Add Text | `add-text` | Local-only chat lines added with `.mfaddtext`, optionally kept across relogs. |
 | Auto Chat Clear | `auto-chat-clear` | Automatically does the vanilla **F3+D chat clear** after every N received messages (default 20, 1–100). By default the visible backlog is emptied but scrollback history is preserved; an optional `clear-recent-history` toggle wipes that too. Own messages can be excluded from the count, and an optional chat line confirms each clear. Purely client-side. |
 | Auto Responder | `auto-responder` | Replies to chat automatically via trigger=response pairs (random pick on multiple matches), with an anti-loop cooldown. |
 | Chat Logger | `chat-logger` | Logs incoming and outgoing chat (including commands) to a file, new log per game join, path with %date%/%time%/%player%/%server% placeholders. |
@@ -149,12 +146,12 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 
 Modules are grouped by what they do, so nothing shares a grab-bag category any more:
 
-- **Manaslu Flux Combat** (8) — fighting: auras, autocrystal, totem, TNT, pearl phase, clicker (end crystal icon)
+- **Manaslu Flux Combat** (7) — fighting: auras, totem, TNT, pearl phase, clicker (end crystal icon)
 - **Manaslu Flux Movement** (6) — getting around: the three flights, auto walk, click TP, place travel (feather icon)
 - **Manaslu Flux Player** (7) — keeping you alive and stocked: eat, fish, log, respawn, login, fast use, inventory keeper (golden apple icon)
 - **Manaslu Flux World** (4) — changing blocks around you: placer, auto wither, map part, block replacer (grass block icon)
-- **Manaslu Flux Client Side** (9) — what you see and what the server sees: crystal optimizer, block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
-- **Manaslu Flux Utility** (13) — chat, logs and tools: waypoint, path, death coords, chat/tab loggers, tab privacy, RPC, and the rewritten chat modules (compass icon)
+- **Manaslu Flux Client Side** (8) — what you see and what the server sees: block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
+- **Manaslu Flux Utility** (12) — chat, logs and tools: waypoint, path, death coords, chat/tab loggers, tab privacy, RPC, and the rewritten chat modules (compass icon)
 - **Manaslu Flux** HUD group — HUD elements
 
 ## Bundled Baritone
@@ -167,7 +164,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 ## Chat/GUI features summary
 
-- **Chat features**: local-only chat lines (Add Text), client-side muting by player or phrase (Mute + `.mfmute`), `&` color codes (Universal Colored Chat), death coordinates messages, module feedback messages.
+- **Chat features**: local-only chat lines (`.mfaddtext` command), client-side muting by player or phrase (Mute + `.mfmute`), `&` color codes (Universal Colored Chat), death coordinates messages, module feedback messages.
 - **GUI features**: all modules/elements appear in Meteor's ClickGUI and HUD editor under the categories above, each with their own settings groups; tab-completion suggestions for `.mfsm`.
 - **Render features**: waypoint beams, path line, world origin box highlight.
 
@@ -183,6 +180,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 1.0.0 | **1.0 clean-up release.** Three modules are gone: **AC PacketFlood** (`ac-pcktflood`, together with the 1 ms `MsScheduler` helper it was the only user of), **Crystal Optimizer** (`crystal-optimizer`, along with the `EndCrystalRendererMixin` that cancelled the vanilla crystal render - the jar now ships a single mixin) and **Add Text** (`add-text`), which is now only the `.mfaddtext` chat command with no module behind it, so local lines are no longer kept across relogs and `.mfaddtext clear` went with the saved list. Nothing else changed: Crystal Aura and Auto Totem keep their Packet groups, and every other module, command and HUD element is untouched. Counts: 44 modules (Combat 7, Movement 6, Player 7, World 4, Client Side 8, Utility 12), 26 commands, 7 HUD elements. |
 | 0.12.0 | **New module: Place Travel** (`place-travel`) — one-key travel for the nether roof. It holds forward and sprint for you and jumps on the first tick you are back on the ground: the jump is called directly, which skips the 10 tick jump cooldown that gates holding the jump key, so the bunny hops come out back to back. At the same time it lays a straight line of blocks ahead of you — `distance` blocks in front (default 2, beyond reach is skipped) at the `height` you pick: **Floor** (default) continues the level you are running on so a hole in the roof can't drop you, `Feet` / `Head` / `Above head` build the line over you instead (a line at head height is inside the jump arc, so it stops you at the first block — that mode is for covering travel, not for hopping through). The line sits on the block level you last stood on, tracked separately, so it stays flat while you are mid-jump, and every placement is a normal silent-rotated block place using the first matching block from your hotbar. Counts: 47 modules, Movement 6. |
 | 0.11.0 | **New module: Inventory Keeper** (`inventory-keeper`) — a save/restore layout keeper for your inventory. The module screen gets a **Save layout** button: it snapshots which item sits in each of the 36 playable slots (or just the nine hotbar slots with `only-hotbar`). Then every `refresh-rate` ms (default 200, 0 = every tick) it re-reads the inventory and swaps the saved items back into their slots; the item occupying a wrong slot is swapped out to where the wanted one came from, so nothing is dropped, consumed or moved out of the inventory. Items that no longer exist are skipped, checks only run with no screen open and an empty cursor, and at most 8 swaps happen per check so a scrambled inventory settles over a few refreshes instead of one burst. The layout persists in the Meteor config. Counts: 46 modules, Player 7. |
 | 0.10.1 | **AC PacketFlood no longer waits for the game tick** — the place/break packets are now fired by a continuous 1 ms loop on the scheduler instead of once per tick, so the configured `place-delay-ms` / `break-delay-ms` really are packets-per-millisecond: `1` is roughly 1000 packets/s per action and `0` bursts until `max-packets-per-second` is reached. Plans (which base, which crystal, damage) are still rebuilt every tick on the game thread, only the sending runs in the loop. Batches are sent whole (a look packet without its attack would be useless), and the loop survives exceptions instead of dying. |

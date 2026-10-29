@@ -35,8 +35,6 @@ import com.manasluflux.addon.hud.KillCounterHud;
 import com.manasluflux.addon.hud.PlayerListHud;
 import com.manasluflux.addon.hud.ServerInfoHud;
 import com.manasluflux.addon.hud.SessionInfoHud;
-import com.manasluflux.addon.modules.AcPacketFlood;
-import com.manasluflux.addon.modules.AddText;
 import com.manasluflux.addon.modules.AutoLogin;
 import com.manasluflux.addon.modules.AutoTotem;
 import com.manasluflux.addon.modules.BoatFlight;
@@ -57,7 +55,6 @@ import com.manasluflux.addon.modules.ClickTp;
 import com.manasluflux.addon.modules.ClientBlockEntities;
 import com.manasluflux.addon.modules.ClientSideNightVision;
 import com.manasluflux.addon.modules.CrystalAura;
-import com.manasluflux.addon.modules.CrystalOptimizer;
 import com.manasluflux.addon.modules.DeathCoords;
 import com.manasluflux.addon.modules.DiscordRpc;
 import com.manasluflux.addon.modules.ElytraFlight;
@@ -155,19 +152,16 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new ClientSideNightVision());
         Modules.get().add(new ToggleTab());
         Modules.get().add(new InstantTnt());
-        Modules.get().add(new CrystalOptimizer());
         Modules.get().add(new UniversalColoredChat());
         Modules.get().add(new DeathCoords());
         Modules.get().add(new DiscordRpc());
         Modules.get().add(new WhitelistFastUse());
-        Modules.get().add(new AddText());
         Modules.get().add(new AutoLogin());
 
         // Combat modules (own ClickGUI category)
         Modules.get().add(new TntPlacer());
         Modules.get().add(new SilentAura());
         Modules.get().add(new CrystalAura());
-        Modules.get().add(new AcPacketFlood());
         Modules.get().add(new AutoTotem());
 
         // Example module & HUD kept from the template
@@ -180,7 +174,7 @@ public class AddonTemplate extends MeteorAddon {
         Hud.get().register(SessionInfoHud.INFO);
         Hud.get().register(KillCounterHud.INFO);
 
-        // Commands (24)
+        // Commands (26)
         Commands.add(new PingCommand());
         Commands.add(new CoordsCommand());
         Commands.add(new DayCommand());

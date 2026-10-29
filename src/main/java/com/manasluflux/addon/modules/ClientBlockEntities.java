@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Like Crystal Optimizer, but for any block entity: pick block entity types by
+ * Purely client-side block entity optimization: pick block entity types by
  * id (chest, sign, beacon, spawner, shulker box...) and their block-entity
  * rendering is done client-side only — either replaced by a single static box or
  * hidden entirely. The vanilla block-entity part (items inside a chest, sign
