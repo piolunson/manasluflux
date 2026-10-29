@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.6.4 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.7.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -114,7 +114,7 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
 ---
 
-## Commands (27)
+## Commands (28)
 
 All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
 
@@ -122,6 +122,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 |---|---|
 | `.mffakeplayer` | Spawns a **fake player the client treats as a real player** — own player-list entry (so tab list, skins and name lookups work) and registered in `world.getPlayers()` like a joining player, so auras, player counts and anything else that only reacts to real players targets it. Subcommands: `add [name]` (spawns where you look), `remove <name>`, `clear`, `list`, `tp` (move to your crosshair), `health <hp>`. `add` also copies your inventory so the damage simulation sees real armor. |
 | `.mfwebspeed` | **Autoconfig for Cobweb Bypass.** Takes over your keys, walks you into the nearest cobweb (within 6 blocks) and then tries every horizontal × vertical pair from `0` up to `<max>`, in `<step>` gaps. For each pair it times how many ticks you need to leave the web while holding forward and jump, and any pair where the server sends a correction teleport (a lagback) is marked failed. The fastest pair with zero lagbacks is applied as `Custom`. Usage: `.mfwebspeed <max> [step] [negative] [verbose]` (`step` defaults to 20; `negative` also tries `-5..-1`, off by default; `verbose` narrates the sweep), `.mfwebspeed stop` restores the previous settings, and bare `.mfwebspeed` shows the usage and current sweep progress. With `verbose` every combo prints `[3/36] testing horizontal 40% / vertical 60%` and then its verdict: `-> OK - out in 3 tick(s)`, `-> FAILED - the server pulled you back`, or `-> stuck - never left the web`. Sweeps above 400 combinations are refused - raise the step or lower the max. |
+| `.mfvisualizewebbypassgraph` | **Draws the Cobweb Bypass timer curve in your browser.** Writes `meteor-client/webbypass-graph.html` and opens it: the curve sampled from `CobwebBypass.timerSpeedAt()` (the exact call the running timer makes, so the page matches the module as configured), 0-20 s of time spent in a web, with the timer multiplier on one axis, a dashed 1x baseline, the mode / formula / scale / `web-timer` / peak in chips, a slider and pointer hover that scrub along the curve, and a table explaining what 1x and the plateau mean. If `graph-formula` does not parse the page says so instead of drawing a fake curve, and the module keeps the timer at 1x. No arguments. |
 | `.mfhelp` | Built-in tutorial for Discord RPC: prints every `{}` placeholder with a live value, example Line 1 / Line 2 you can paste into the module, and where the Discord name / logo / images come from. |
 | `.mfaddtext` | Local chat: `mfaddtext <text>` shows text only for you, nothing is sent to the server. |
 | `.mfautoeat` | Configures the AutoEat module: `mfautoeat <food threshold>` \| `mfautoeat off`. |
@@ -195,6 +196,7 @@ Currently vendored: `modules/AutoPearl.java` (ported as `pearl-phase`) and `modu
 
 | Version | Changes |
 |---|---|
+| 1.7.0 | **New command: `.mfvisualizewebbypassgraph`.** Opens `meteor-client/webbypass-graph.html` in your default browser and charts the Cobweb Bypass timer: the multiplier over 0-20 s spent in a web, sampled from the module's own `timerSpeedAt()` once every 0.05 s, so the picture cannot drift from what the timer actually does. Chips show the mode, formula, `graph-scale`, `timer-multiplier`, `web-timer` and the peak; a slider and pointer hover scrub the curve and show the speed at that moment (with the default setup: 1.00x at 0 s, 8.44x at 3 s, 9.60x plateau). A `graph-formula` that does not parse is shown as an error card instead of a curve. Command count 27 -> 28, modules unchanged at 46. |
 | 1.6.4 | **Cobweb Bypass `graph-scale` default corrected to 8.605** (1.6.3 shipped 8.0). The whole formula value range is now in play: `1 - exp(-t / 1.5)` reaches 1.0, so the timer plateaus at `1 + 8.605 = 9.605x` instead of stopping short at 9x. Existing configs are untouched. Counts unchanged: 46 modules, 27 commands. |
 | 1.6.3 | **Cobweb Bypass ships with the tuned Hazey combo as its defaults** — a fresh install now starts where the working setup ended instead of on vanilla numbers. Defaults: `anticheat` **NCP**, `horizontal` **100**, `vertical` **100**, `max-speed` **59.142**, `web-timer` **1.35**, `burst-ticks` 0, `all-stuck-blocks` off, `on-lagback` **Notify**, `pause-ticks` **0**, `chat-notifier` on, `stop-sprint-before` **2**, `start-sprint-after` **1**, `timer-mode` **Graph** with `graph-formula` `1 - exp(-t / 1.5)` and `graph-scale` **8.0** (so the plateau is ~9x). Existing configs keep the values you already saved - defaults only apply to settings you have never touched or after a config reset. Counts unchanged: 46 modules, 27 commands. |
 | 1.6.2 | **Cobweb Bypass: graph timer.** The Timer group grew a second mode. `timer-mode` **Graph** (default) drives Meteor's Timer from `graph-formula`, a plain-text expression in `t` (seconds spent in the current web), scaled by `graph-scale` (default 0.5): the speed is `1 + graph-scale × value`, so value 0 is the normal 1x timer and value 1 is 2x at scale 1 / 1.5x at the default 0.5. The default formula `1 - exp(-t / 1.5)` is fast at first and then flattens — 1.24x at 1 s, 1.43x at 3 s, plateau 1.5x — and never slows back down. **Constant** keeps the old `timer-multiplier`, which is now only visible in that mode. Expressions are parsed by a small hand-written evaluator (`util/Formula.java`, no scripting engine): `+ - * / ^ %`, parentheses, `t`, `e`, `pi`, and `exp, log, ln, sqrt, abs, sign, floor, ceil, round, min, max, sin, cos, tan`; division by zero, unbalanced brackets and unknown names raise a one-time chat warning and the timer stays at 1x. The module's Timer still only runs while you are inside a real cobweb. Counts unchanged: 46 modules, 27 commands. |

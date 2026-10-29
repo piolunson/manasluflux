@@ -518,6 +518,42 @@ public class CobwebBypass extends Module {
         timerOverridden = false;
     }
 
+    public TimerMode timerModeValue() {
+        return timerMode.get();
+    }
+
+    public String graphFormulaValue() {
+        return graphFormula.get();
+    }
+
+    public double graphScaleValue() {
+        return graphScale.get();
+    }
+
+    public double timerMultiplierValue() {
+        return timerMultiplier.get();
+    }
+
+    public double webTimerValue() {
+        return webTimer.get();
+    }
+
+    /**
+     * The timer multiplier this module would use {@code seconds} into a web. Used by
+     * {@code .mfvisualizewebbypassgraph} so the chart is drawn from the same code the timer runs,
+     * not from a copy of the formula. Returns {@link Double#NaN} when the formula does not parse.
+     */
+    public double timerSpeedAt(double seconds) {
+        if (timerMode.get() == TimerMode.Constant) return timerMultiplier.get();
+
+        try {
+            return 1.0 + Math.max(0.0, Formula.eval(graphFormula.get(), seconds)) * graphScale.get();
+        } catch (RuntimeException e) {
+            return Double.NaN;
+        }
+    }
+
+    /** Whether the block at {@code pos} is a cobweb in this client world. */
     private boolean isWeb(BlockPos pos) {
         return mc.world != null && mc.world.getBlockState(pos).isOf(Blocks.COBWEB);
     }
