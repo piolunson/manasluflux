@@ -176,7 +176,7 @@ public class CobwebBypass extends Module {
     private final Setting<Double> graphScale = sgTimer.add(new DoubleSetting.Builder()
         .name("graph-scale")
         .description("Graph mode: how much a formula value of 1 multiplies the timer by. Scale 1 turns a value of 1 into the 2x timer, 0.5 into 1.5x, 0 into nothing.")
-        .defaultValue(8.0)
+        .defaultValue(8.605)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
         .visible(() -> timerMode.get() == TimerMode.Graph)
