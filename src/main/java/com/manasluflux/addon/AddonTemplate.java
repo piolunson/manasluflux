@@ -17,6 +17,7 @@ import com.manasluflux.addon.commands.JavaScriptCommand;
 import com.manasluflux.addon.commands.KillCommand;
 import com.manasluflux.addon.commands.MfFakePlayerCommand;
 import com.manasluflux.addon.commands.MfHelpCommand;
+import com.manasluflux.addon.commands.MfWebSpeedCommand;
 import com.manasluflux.addon.commands.MuteCommand;
 import com.manasluflux.addon.commands.PathCommand;
 import com.manasluflux.addon.commands.PingCommand;
@@ -178,7 +179,7 @@ public class AddonTemplate extends MeteorAddon {
         Hud.get().register(SessionInfoHud.INFO);
         Hud.get().register(KillCounterHud.INFO);
 
-        // Commands (26)
+        // Commands (27)
         Commands.add(new PingCommand());
         Commands.add(new CoordsCommand());
         Commands.add(new DayCommand());
@@ -205,6 +206,7 @@ public class AddonTemplate extends MeteorAddon {
         Commands.add(new KillCommand());
         Commands.add(new MfHelpCommand());
         Commands.add(new MfFakePlayerCommand());
+        Commands.add(new MfWebSpeedCommand());
     }
 
     @Override

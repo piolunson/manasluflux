@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.2.1 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.3.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -109,13 +109,14 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
 ---
 
-## Commands (26)
+## Commands (27)
 
 All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
 
 | Command | What it does |
 |---|---|
 | `.mffakeplayer` | Spawns a **fake player the client treats as a real player** — own player-list entry (so tab list, skins and name lookups work) and registered in `world.getPlayers()` like a joining player, so auras, player counts and anything else that only reacts to real players targets it. Subcommands: `add [name]` (spawns where you look), `remove <name>`, `clear`, `list`, `tp` (move to your crosshair), `health <hp>`. `add` also copies your inventory so the damage simulation sees real armor. |
+| `.mfwebspeed` | **Autoconfig for Cobweb Bypass.** Takes over your keys, walks you into the nearest cobweb (within 6 blocks) and then tries every horizontal × vertical pair from `0` up to `<max>`, in `<step>` gaps. For each pair it times how many ticks you need to leave the web while holding forward and jump, and any pair where the server sends a correction teleport (a lagback) is marked failed. The fastest pair with zero lagbacks is applied as `Custom`. Usage: `.mfwebspeed <max> [step] [negative]` (`step` defaults to 20; `negative` also tries `-5..-1`, off by default), `.mfwebspeed stop` restores the previous settings, and bare `.mfwebspeed` shows the usage and current sweep progress. Sweeps above 400 combinations are refused - raise the step or lower the max. |
 | `.mfhelp` | Built-in tutorial for Discord RPC: prints every `{}` placeholder with a live value, example Line 1 / Line 2 you can paste into the module, and where the Discord name / logo / images come from. |
 | `.mfaddtext` | Local chat: `mfaddtext <text>` shows text only for you, nothing is sent to the server. |
 | `.mfautoeat` | Configures the AutoEat module: `mfautoeat <food threshold>` \| `mfautoeat off`. |
@@ -182,6 +183,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 1.3.0 | **New command: `.mfwebspeed`** — autoconfig for Cobweb Bypass that actually measures. It takes the keys, turns you towards the nearest cobweb within 6 blocks and walks you into it, then sweeps every horizontal × vertical pair from `0` to the `<max>` you pass (in `<step>` gaps, default 20), timing how many ticks it takes to leave the web holding forward + jump. A correction teleport from the server during a combo marks that combo failed instead of pausing the module. The fastest combo with no lagbacks is applied as `Custom`; `negative` also tries `-5..-1` (stickier than vanilla) and is off by default; `.mfwebspeed stop` puts the old settings back. Sweeps over 400 combinations are refused. Counts: 46 modules, 27 commands. |
 | 1.2.1 | **Launch-crash fix.** `manasluflux.mixins.json` still listed `EndCrystalRendererMixin`, a class deleted in 1.0.0 together with Crystal Optimizer. Mixin runs the config before any module loads and `required: true` makes an unresolved entry fatal, so the game died at startup with `InvalidMixinException: The specified mixin 'com.manasluflux.addon.mixin.EndCrystalRendererMixin' was not found` (1.1.0 and 1.2.0 both shipped it). The config now lists exactly the two mixins that exist in the jar, `BlockEntityDispatcherMixin` and `EntitySlowMovementMixin`. No behaviour change otherwise - Cobweb Bypass is unchanged and works from this build. |
 | 1.2.0 | **New module: Cobweb Bypass** (`cobweb-bypass`) — no-slow in webs, done at the one place 1.21.11 actually keeps the slow. `Entity#slowMovement` no longer touches velocity: it stores a multiplier (`0.25 / 0.05 / 0.25` for cobwebs, `0.5 / 0.25 / 0.5` with Weaving) that `Entity#move` multiplies the tick's movement delta by, so a single client-side mixin (`EntitySlowMovementMixin`) swaps in a softened value and nothing else in the movement path changes. `horizontal` / `vertical` are percent-of-slow-removed (0 = vanilla, 100 = no slow), `max-speed` caps the per-axis step in blocks per tick, `burst-ticks` softens only the first N ticks of a web, and `all-stuck-blocks` extends it past cobwebs. Anticheat profiles fill those in: **Vanilla** (full, for servers that never simulate stuck speed), **NCP** (full under a 0.45 cap), **Themis** (85/80 % under a 0.4 cap), **Grim** (two-tick burst and a 0.3 cap, because Grim re-simulates webs itself and its post-June-2026 stuck-speed rewrite flags sustained no-slow outright), plus **Custom**. `on-lagback` watches for correction teleports within 20 ticks of the trick being used and can notify or fall back to vanilla slow for `pause-ticks`. Counts: 46 modules, Movement 8. |
 | 1.1.0 | **New module: VClip PhaseFill** (`vclip-phasefill`) — the vclip phase-fill trick in one one-shot module. Enabling it **vclips you `distance` blocks** (default 3) straight **Down** (default) or **Up**, then **fills the two blocks your body was standing in before the clip** (feet + head) with a block from the `fill-blocks` whitelist in your hotbar, `blocks-per-tick` per tick, retried until they land. After that it waits for the server's **rubberband** — the `PlayerPositionLookS2CPacket` correction an anticheat sends when it rejects the position — and stops as soon as one arrives. `hold-position` (default on) re-applies the clipped spot every tick while waiting, because the client pushes an entity that ends up inside a solid block back out on its own. If no rubberband shows up within `timeout` ticks (default 20 = 1 s, `0` = immediately) it **vclips back** to where you started. Fills are normal silent-rotated block places, and the module switches itself off when the sequence ends. Counts: 45 modules, Movement 7. |

@@ -13,11 +13,17 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Removes (or softens) the stuck-speed a cobweb applies to you, so walking or jumping
@@ -145,6 +151,43 @@ public class CobwebBypass extends Module {
     private int lagbacks;
     private boolean loggedFailure;
 
+    // ---- .mfwebspeed autoconfig -------------------------------------------------
+
+    /** What the autoconfig is doing right now. */
+    private enum TuneStage { Off, Approach, Measure }
+
+    /** Ticks we may spend walking to a web before giving up on the current combo. */
+    private static final int APPROACH_TIMEOUT = 140;
+    /** A combo that has not left the web by then counts as "stuck" at this many ticks. */
+    private static final int MAX_ESCAPE_TICKS = 60;
+    /** How far away a web may be for the autoconfig to walk to it. */
+    private static final int WEB_RADIUS = 6;
+    /** Refuses to start a sweep bigger than this - each combo costs ~1-2 seconds. */
+    private static final int MAX_COMBOS = 400;
+
+    private TuneStage tuneStage = TuneStage.Off;
+    private final List<double[]> tuneCombos = new ArrayList<>();
+    private int tuneIndex;
+    private int tuneStageTicks;
+    private int tuneEscapeTicks;
+    private boolean tuneLagback;
+    private int tuneTested;
+    private int tunePassed;
+    private double tuneH;
+    private double tuneV;
+    private double tuneBestH;
+    private double tuneBestV;
+    private int tuneBestEscape = Integer.MAX_VALUE;
+    private boolean tuneHaveBest;
+    private double tuneSavedH;
+    private double tuneSavedV;
+    private double tuneSavedCap;
+    private int tuneSavedBurst;
+    private Profile tuneSavedProfile;
+    private boolean tuneSavedForward;
+    private boolean tuneSavedJump;
+    private boolean tuneKeysHeld;
+
     public CobwebBypass() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "cobweb-bypass",
             "Removes the cobweb slow client-side (fully or by percent), with profiles for vanilla/NCP/Themis/Grim servers and a lagback watcher.");
@@ -165,6 +208,7 @@ public class CobwebBypass extends Module {
         ticksInWeb = 0;
         softenedThisTick = false;
         pauseLeft = 0;
+        stopTuning(false);
     }
 
     @Override
@@ -253,6 +297,7 @@ public class CobwebBypass extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
+        if (tuneStage != TuneStage.Off) tickTuner();
         if (pauseLeft > 0) pauseLeft--;
 
         if (softenedThisTick) {
@@ -279,6 +324,13 @@ public class CobwebBypass extends Module {
 
         lagbacks++;
         ticksInWeb = 0;
+
+        // While autoconfiguring a setback just marks the current combo as failed; pausing would
+        // otherwise freeze the sweep in vanilla-slow mode and corrupt the next measurement.
+        if (tuneStage != TuneStage.Off) {
+            tuneLagback = true;
+            return;
+        }
 
         if (onLagback.get() == LagbackAction.Pause) pauseLeft = Math.max(pauseLeft, pauseTicks.get());
 
@@ -321,6 +373,289 @@ public class CobwebBypass extends Module {
                 // Nothing: the sliders are the configuration here.
             }
         }
+    }
+
+    // ---- .mfwebspeed autoconfig -------------------------------------------------
+
+    public boolean isTuning() {
+        return tuneStage != TuneStage.Off;
+    }
+
+    public String tuneStatus() {
+        if (!isTuning()) return "not running";
+        return String.format("%d/%d tested, now horizontal %.0f / vertical %.0f",
+            tuneTested, tuneCombos.size(), tuneH, tuneV);
+    }
+
+    public void setHorizontalPercent(double percent) {
+        horizontal.set(percent);
+    }
+
+    public void setVerticalPercent(double percent) {
+        vertical.set(percent);
+    }
+
+    /**
+     * Starts a sweep over every (horizontal, vertical) pair from {@code 0} to {@code max},
+     * plus {@code -5 .. -1} when {@code negative} is set. The module has to be active for the
+     * tick events to arrive.
+     */
+    public boolean startTuning(double max, double step, boolean negative) {
+        if (mc.player == null || mc.world == null) {
+            Msg.error("Not in a world.");
+            return false;
+        }
+
+        if (isTuning()) stopTuning(false);
+
+        List<Double> values = new ArrayList<>();
+        if (negative) {
+            // -5..-1 in ones: it is an opt-in corner of the sweep, so it is always tried whole
+            // rather than being thinned out by the step.
+            for (double v = -5.0; v < 0.0; v += 1.0) values.add(round(v));
+        }
+        for (double v = 0.0; v <= max + 1.0E-9; v += step) values.add(round(v));
+        if (values.isEmpty() || values.get(values.size() - 1) < max - 1.0E-9) values.add(round(max));
+
+        tuneCombos.clear();
+        for (double h : values) {
+            for (double v : values) tuneCombos.add(new double[] {h, v});
+        }
+
+        if (tuneCombos.size() > MAX_COMBOS) {
+            Msg.error("%d combinations is too many (%.0f x %.0f values) - raise the step or lower the max, limit is %d.",
+                tuneCombos.size(), (double) values.size(), (double) values.size(), MAX_COMBOS);
+            return false;
+        }
+
+        if (nearestWeb() == null) {
+            Msg.error("No cobweb within %d blocks - stand next to a web and run it again.", WEB_RADIUS);
+            return false;
+        }
+
+        tuneSavedProfile = profile.get();
+        tuneSavedH = horizontal.get();
+        tuneSavedV = vertical.get();
+        tuneSavedCap = maxSpeed.get();
+        tuneSavedBurst = burstTicks.get();
+        tuneSavedForward = mc.options.forwardKey.isPressed();
+        tuneSavedJump = mc.options.jumpKey.isPressed();
+
+        // Clean two-parameter sweep: the profile must not overwrite the sliders, and a cap or a
+        // burst would waste part of every combo on something we are not testing.
+        profile.set(Profile.Custom);
+        maxSpeed.set(0.0);
+        burstTicks.set(0);
+
+        tuneIndex = 0;
+        tuneTested = 0;
+        tunePassed = 0;
+        tuneHaveBest = false;
+        tuneBestEscape = Integer.MAX_VALUE;
+        applyCombo(0);
+
+        Msg.info("Web speed autoconfig running: %d combo(s), %s..%s both ways. Keep your hands off the keys.",
+            tuneCombos.size(), fmt(tuneCombos.get(0)[0]), fmt(max));
+        return true;
+    }
+
+    /** Stops the sweep. {@code restore} puts the pre-sweep settings back. */
+    public void stopTuning(boolean restore) {
+        if (tuneStage == TuneStage.Off) return;
+
+        releaseKeys();
+
+        if (restore) {
+            horizontal.set(tuneSavedH);
+            vertical.set(tuneSavedV);
+            maxSpeed.set(tuneSavedCap);
+            burstTicks.set(tuneSavedBurst);
+            profile.set(tuneSavedProfile);
+        }
+
+        tuneStage = TuneStage.Off;
+        tuneCombos.clear();
+        tuneIndex = 0;
+
+        if (restore) Msg.info("Web speed autoconfig stopped, settings restored.");
+    }
+
+    private void tickTuner() {
+        if (mc.player == null || mc.world == null) {
+            stopTuning(true);
+            return;
+        }
+
+        switch (tuneStage) {
+            case Approach -> {
+                holdKeys();
+
+                if (insideWeb()) {
+                    // Inside: start timing how long it takes to get out.
+                    tuneStage = TuneStage.Measure;
+                    tuneEscapeTicks = 0;
+                    tuneStageTicks = 0;
+                    return;
+                }
+
+                steerToWeb();
+                tuneStageTicks++;
+
+                if (tuneStageTicks > APPROACH_TIMEOUT) {
+                    tuneStageTicks = 0;
+                    if (nearestWeb() == null) {
+                        Msg.error("Lost the cobweb (nothing within %d blocks) - autoconfig stopped.", WEB_RADIUS);
+                        finishTuning();
+                    }
+                }
+            }
+            case Measure -> {
+                holdKeys();
+                tuneEscapeTicks++;
+
+                if (!insideWeb() || tuneEscapeTicks >= MAX_ESCAPE_TICKS) finishCombo();
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void applyCombo(int index) {
+        double[] combo = tuneCombos.get(index);
+        tuneH = combo[0];
+        tuneV = combo[1];
+
+        horizontal.set(tuneH);
+        vertical.set(tuneV);
+
+        tuneStage = TuneStage.Approach;
+        tuneStageTicks = 0;
+        tuneEscapeTicks = 0;
+        tuneLagback = false;
+    }
+
+    private void finishCombo() {
+        tuneTested++;
+        int escape = Math.min(tuneEscapeTicks, MAX_ESCAPE_TICKS);
+
+        if (!tuneLagback) {
+            tunePassed++;
+            boolean better = !tuneHaveBest
+                || escape < tuneBestEscape
+                || (escape == tuneBestEscape && tuneH > tuneBestH);
+
+            if (better) {
+                tuneHaveBest = true;
+                tuneBestEscape = escape;
+                tuneBestH = tuneH;
+                tuneBestV = tuneV;
+            }
+        }
+
+        if (++tuneIndex >= tuneCombos.size()) {
+            finishTuning();
+            return;
+        }
+
+        applyCombo(tuneIndex);
+    }
+
+    private void finishTuning() {
+        releaseKeys();
+        maxSpeed.set(tuneSavedCap);
+        burstTicks.set(tuneSavedBurst);
+
+        if (tuneHaveBest) {
+            horizontal.set(tuneBestH);
+            vertical.set(tuneBestV);
+            profile.set(Profile.Custom);
+
+            Msg.info("Best web setting: horizontal %s%%, vertical %s%% - out of the web in %d tick(s), no lagback.",
+                fmt(tuneBestH), fmt(tuneBestV), tuneBestEscape);
+            Msg.info("%d of %d combos were not pulled back. Applied as Custom.", tunePassed, tuneTested);
+        } else {
+            horizontal.set(tuneSavedH);
+            vertical.set(tuneSavedV);
+            profile.set(tuneSavedProfile);
+
+            Msg.warning("All %d combos were pulled back by the server - nothing applied. The anticheat simulates webs.", tuneTested);
+        }
+
+        tuneStage = TuneStage.Off;
+        tuneCombos.clear();
+        tuneIndex = 0;
+    }
+
+    private void holdKeys() {
+        if (mc.options == null) return;
+
+        tuneKeysHeld = true;
+        mc.options.forwardKey.setPressed(true);
+        mc.options.jumpKey.setPressed(true);
+    }
+
+    private void releaseKeys() {
+        if (mc.options == null || !tuneKeysHeld) return;
+
+        mc.options.forwardKey.setPressed(tuneSavedForward);
+        mc.options.jumpKey.setPressed(tuneSavedJump);
+        tuneKeysHeld = false;
+    }
+
+    /** True when one of the blocks the player is standing in is a cobweb. */
+    private boolean insideWeb() {
+        if (mc.player == null || mc.world == null) return false;
+
+        Box box = mc.player.getBoundingBox().expand(0.2);
+        BlockPos min = BlockPos.ofFloored(box.minX, box.minY, box.minZ);
+        BlockPos max = BlockPos.ofFloored(box.maxX, box.maxY, box.maxZ);
+
+        for (BlockPos pos : BlockPos.iterate(min, max)) {
+            if (mc.world.getBlockState(pos).isOf(Blocks.COBWEB)) return true;
+        }
+        return false;
+    }
+
+    /** Closest cobweb around the player, or null when there is none within {@link #WEB_RADIUS}. */
+    private BlockPos nearestWeb() {
+        if (mc.player == null || mc.world == null) return null;
+
+        BlockPos origin = mc.player.getBlockPos();
+        Vec3d me = mc.player.getEntityPos();
+        BlockPos best = null;
+        double bestDistance = Double.MAX_VALUE;
+
+        for (BlockPos pos : BlockPos.iterate(origin.add(-WEB_RADIUS, -3, -WEB_RADIUS), origin.add(WEB_RADIUS, 3, WEB_RADIUS))) {
+            if (!mc.world.getBlockState(pos).isOf(Blocks.COBWEB)) continue;
+
+            double distance = me.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = pos.toImmutable();
+            }
+        }
+
+        return best;
+    }
+
+    /** Turns the player towards the nearest web; forward is held, so this walks into it. */
+    private void steerToWeb() {
+        BlockPos web = nearestWeb();
+        if (web == null) return;
+
+        Vec3d me = mc.player.getEntityPos();
+        double dx = web.getX() + 0.5 - me.x;
+        double dz = web.getZ() + 0.5 - me.z;
+
+        mc.player.setYaw((float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0));
+    }
+
+    private static double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
+    private static String fmt(double value) {
+        return value == Math.rint(value) ? String.valueOf((long) value) : String.format("%.1f", value);
     }
 
     public enum Profile {

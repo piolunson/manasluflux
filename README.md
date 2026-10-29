@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **46 modules**, **26 commands** and **7 HUD elements** on top of Meteor Client, organized in six ClickGUI categories:
+ManasluFlux adds **46 modules**, **27 commands** and **7 HUD elements** on top of Meteor Client, organized in six ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, auto totem, instant TNT, pearl phase
 - **Manaslu Flux Movement** (8) — universal/elytra/boat flight, auto walk, click TP, Place Travel, VClip PhaseFill, Cobweb Bypass
