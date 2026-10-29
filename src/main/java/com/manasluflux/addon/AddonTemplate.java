@@ -100,13 +100,15 @@ public class AddonTemplate extends MeteorAddon {
     public static final HudGroup HUD_GROUP = new HudGroup("Manaslu Flux");
 
     // Modules are grouped by what they actually do: fighting, getting around, keeping you alive,
-    // changing the world, changing what you see, and the rest (chat, logs, tools).
+    // changing the world, changing what you see, the rest (chat, logs, tools), and the ones whose
+    // job is beating a server/anticheat check rather than changing what you do.
     public static final Category COMBAT_CATEGORY = new Category("Manaslu Flux Combat", new ItemStack(Items.END_CRYSTAL));
     public static final Category MOVEMENT_CATEGORY = new Category("Manaslu Flux Movement", new ItemStack(Items.FEATHER));
     public static final Category PLAYER_CATEGORY = new Category("Manaslu Flux Player", new ItemStack(Items.GOLDEN_APPLE));
     public static final Category WORLD_CATEGORY = new Category("Manaslu Flux World", new ItemStack(Items.GRASS_BLOCK));
     public static final Category CLIENT_SIDE_CATEGORY = new Category("Manaslu Flux Client Side", new ItemStack(Items.OAK_SIGN));
     public static final Category UTILITY_CATEGORY = new Category("Manaslu Flux Utility", new ItemStack(Items.COMPASS));
+    public static final Category BYPASS_CATEGORY = new Category("Manaslu Flux Bypasses", new ItemStack(Items.ENDER_PEARL));
 
     @Override
     public void onInitialize() {
@@ -217,6 +219,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.registerCategory(WORLD_CATEGORY);
         Modules.registerCategory(CLIENT_SIDE_CATEGORY);
         Modules.registerCategory(UTILITY_CATEGORY);
+        Modules.registerCategory(BYPASS_CATEGORY);
     }
 
     @Override

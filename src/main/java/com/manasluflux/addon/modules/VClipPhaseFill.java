@@ -120,7 +120,7 @@ public class VClipPhaseFill extends Module {
     private boolean warnedNoBlock;
 
     public VClipPhaseFill() {
-        super(AddonTemplate.MOVEMENT_CATEGORY, "vclip-phasefill",
+        super(AddonTemplate.BYPASS_CATEGORY, "vclip-phasefill",
             "Vclips a few blocks, fills the space you left behind and waits for the server's rubberband - if none comes within the timeout it vclips you back.");
     }
 

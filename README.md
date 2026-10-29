@@ -6,14 +6,15 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **46 modules**, **27 commands** and **7 HUD elements** on top of Meteor Client, organized in six ClickGUI categories:
+ManasluFlux adds **46 modules**, **27 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
-- **Manaslu Flux Combat** (7) — crystal aura, silent aura, auto totem, instant TNT, pearl phase
-- **Manaslu Flux Movement** (8) — universal/elytra/boat flight, auto walk, click TP, Place Travel, VClip PhaseFill, Cobweb Bypass
+- **Manaslu Flux Combat** (6) — crystal aura, silent aura, auto totem, instant TNT, clicker, TNT placer
+- **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
 - **Manaslu Flux Client Side** (8) — purely client-side/visual modules
 - **Manaslu Flux Utility** (12) — chat, logs and tools
+- **Manaslu Flux Bypasses** (5) — modules that beat a server/anticheat check instead of changing what you do: cobweb bypass, click TP, pearl phase, VClip PhaseFill, universal flight
 
 Highlights:
 
@@ -34,9 +35,9 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 <details>
 <summary>Full module list (46)</summary>
 
-**Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `pearl-phase`, `silent-aura`, `tnt-placer`
+**Manaslu Flux Combat (6):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `silent-aura`, `tnt-placer`
 
-**Manaslu Flux Movement (8):** `auto-walk-hold`, `boat-flight`, `cobweb-bypass`, `mf-click-tp`, `elytra-flight`, `place-travel`, `universal-flight`, `vclip-phasefill`
+**Manaslu Flux Movement (4):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `place-travel`
 
 **Manaslu Flux Player (7):** `auto-eat`, `auto-fish`, `auto-log`, `auto-login`, `mf-auto-respawn`, `inventory-keeper`, `whitelist-fast-use`
 
@@ -45,6 +46,8 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 **Manaslu Flux Client Side (8):** `anti-drop-lagback`, `client-block-entities`, `client-side-night-vision`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
 
 **Manaslu Flux Utility (12):** `auto-chat-clear`, `auto-responder`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `path`, `tab-complete-privacy`, `tab-logger`, `waypoint`
+
+**Manaslu Flux Bypasses (5):** `cobweb-bypass`, `mf-click-tp`, `pearl-phase`, `universal-flight`, `vclip-phasefill`
 
 </details>
 

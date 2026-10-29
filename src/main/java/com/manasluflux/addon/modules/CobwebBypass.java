@@ -233,7 +233,7 @@ public class CobwebBypass extends Module {
     private boolean timerOverridden;
 
     public CobwebBypass() {
-        super(AddonTemplate.MOVEMENT_CATEGORY, "cobweb-bypass",
+        super(AddonTemplate.BYPASS_CATEGORY, "cobweb-bypass",
             "Removes the cobweb slow client-side (fully or by percent), with profiles for vanilla/NCP/Themis/Grim servers and a lagback watcher.");
     }
 
