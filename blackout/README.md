@@ -13,6 +13,7 @@ Nothing in this folder is compiled — Gradle only builds `src/main/java`.
 | File | Upstream path | Ported as | Status |
 |---|---|---|---|
 | [modules/AutoPearl.java](modules/AutoPearl.java) | `src/main/java/kassuk/addon/blackout/modules/AutoPearl.java` | `com.manasluflux.addon.modules.PearlPhase` (`pearl-phase`) | Ported in 1.4.0 |
+| [modules/AutoCrystalPlus.java](modules/AutoCrystalPlus.java) | `src/main/java/kassuk/addon/blackout/modules/AutoCrystalPlus.java` | `com.manasluflux.addon.modules.CrystalAura` (`crystal-aura`) | Ported in 1.5.0 |
 
 ## Porting notes
 
@@ -27,6 +28,10 @@ Meteor equivalents instead:
 | `BOInvUtils.pickSwitch` / `invSwitch` | `InvUtils.quickSwap()` into the selected hotbar slot |
 | `BOInvUtils.pickSwapBack` / `swapBack` | the same `quickSwap()` again |
 | `SwingHand` render option | a plain `swing` toggle |
+| `BODamageUtils.crystalDamage` | `DamageUtils.crystalDamage(target, pos, box, explosion, factory)` with an `ignore-terrain` raycast factory |
+| `ExtrapolationUtils.extrapolateMap` | per-player position history, averaged over `extrapolation-smoothness` ticks |
+| `SettingUtils` ranges | explicit `place-range` / `place-walls-range` / `break-range` / `break-walls-range` settings |
+| `IInteractEntityC2SPacket` id override (ID Predict) | not ported |
 | `BlackOutModule.priority` | not needed (no competing rotation manager here) |
 
 ## Fetching another file later

@@ -17,7 +17,7 @@ ManasluFlux adds **46 modules**, **27 commands** and **7 HUD elements** on top o
 
 Highlights:
 
-- **Crystal Aura** — full explosion damage simulation: every obsidian/bedrock base in range is evaluated with `min-damage` / `max-self-damage` / `anti-suicide` gating, face place, obsidian support blocks, silent server-side rotations and hotbar swaps.
+- **Crystal Aura** — full port of BlackOut's Auto Crystal+: enemy / friend / self damage model with min–max ratios, force pop and anti-pop, their place and explode speed models, six switch modes, existed/inhibit/set-dead gates and extrapolated hitboxes.
 - **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.
 - **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
@@ -69,7 +69,7 @@ Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed
 
 ## Vendored BlackOut sources
 
-[`blackout/`](blackout/README.md) holds unmodified copies of the BlackOut files this addon ports — upstream [KassuK1/BlackOut](https://github.com/KassuK1/BlackOut) at commit `4c18af3f`, **GPL-3.0** (same as this project), with the original `LICENSE` alongside. It is reference material only, not compiled.
+[`blackout/`](blackout/README.md) holds unmodified copies of the BlackOut files this addon ports — upstream [KassuK1/BlackOut](https://github.com/KassuK1/BlackOut) at commit `4c18af3f`, **GPL-3.0** (same as this project), with the original `LICENSE` alongside. Currently `AutoPearl.java` (→ `pearl-phase`) and `AutoCrystalPlus.java` (→ `crystal-aura`). It is reference material only, not compiled.
 
 ## Installing
 

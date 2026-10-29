@@ -1,140 +1,132 @@
 package com.manasluflux.addon.modules;
 
 import com.manasluflux.addon.AddonTemplate;
-import com.manasluflux.addon.util.PacketLevel;
-import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.ColorSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
+import meteordevelopment.meteorclient.systems.friends.Friends;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.entity.DamageUtils;
 import meteordevelopment.meteorclient.utils.entity.EntityUtils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
+import meteordevelopment.meteorclient.utils.render.color.Color;
+import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.consume.UseAction;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.Box;
+import net.minecraft.item.consume.UseAction;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Port of Meteor Client's CrystalAura (skid), adapted to ManasluFlux's silent packet style.
+ * Port of BlackOut's <b>Auto Crystal+</b> ({@code kassuk.addon.blackout.modules.AutoCrystalPlus},
+ * KassuK1/BlackOut, GPL-3.0, author OLEPOSSU) - "Breaks and places crystals automatically (but
+ * better)". The 1597-line original is vendored unmodified in
+ * {@code blackout/modules/AutoCrystalPlus.java}.
  *
- * Instead of blindly placing on any base next to the target, it simulates the crystal
- * explosion for every obsidian/bedrock base in range (Meteor's DamageUtils.crystalDamage)
- * and only places/pops when the explosion deals enough damage to the target while staying
- * under your max self damage. Supports face placing (low health / bad armor), optional
- * obsidian support blocks in air, and separate place/break ranges, walls ranges and delays.
- * Everything is silent: server-side hotbar swaps and server-side-only look packets - your
- * camera, hand and hotbar never move.
+ * <p>What the port keeps, because it is what makes the original different:
+ * <ul>
+ *   <li>their damage model: enemy / friend / self damage plus health, with the min-max-ratio
+ *       checks, force pop, anti friend pop and anti self pop;</li>
+ *   <li>their place and explode speed model (place speed, slow place under a damage threshold,
+ *       instant place, explode speed, instant attack, sequential ticks);</li>
+ *   <li>their explode modes and filters: only own, inhibit, existed time, set dead;</li>
+ *   <li>switch modes: Disabled, Simple, Gapple, Silent, InvSilent, PickSilent;</li>
+ *   <li>extrapolation of hitboxes and ranges for the damage checks;</li>
+ *   <li>a placement box render.</li>
+ * </ul>
+ *
+ * <p>Dropped on purpose, because they need BlackOut's own modules or framework: <b>ID Predict</b>
+ * (it rewrites the entity id of the attack packet through a mixin), the <b>Compatibility</b> group
+ * (AutoMine / PistonCrystal integration), and the three animated render styles (BlackOut / Future /
+ * Earthhack boxes); this port draws one plain box with the same colours.
+ *
+ * <p>Timers run on the tick (delta 0.05 s) instead of BlackOut's render delta, so speeds are
+ * second-based in the same way but deterministic at 20 TPS.
  */
 public class CrystalAura extends Module {
+    private static final double TICK_DELTA = 0.05;
+
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgPlace = settings.createGroup("Place");
-    private final SettingGroup sgFacePlace = settings.createGroup("Face Place");
-    private final SettingGroup sgBreak = settings.createGroup("Break");
-    private final SettingGroup sgPause = settings.createGroup("Pause");
+    private final SettingGroup sgExplode = settings.createGroup("Explode");
+    private final SettingGroup sgSwitch = settings.createGroup("Switch");
+    private final SettingGroup sgDamage = settings.createGroup("Damage");
+    private final SettingGroup sgExtrapolation = settings.createGroup("Extrapolation");
+    private final SettingGroup sgRender = settings.createGroup("Render");
 
     // General
 
-    private final Setting<Double> targetRange = sgGeneral.add(new DoubleSetting.Builder()
-        .name("target-range")
-        .description("Range in which to target players.")
-        .defaultValue(10)
-        .range(0.0, 10000.0)
-        .sliderRange(0.0, 10000.0)
-        .build()
-    );
-
-    private final Setting<Boolean> predictMovement = sgGeneral.add(new BoolSetting.Builder()
-        .name("predict-movement")
-        .description("Predicts the target's movement in the damage calculation.")
-        .defaultValue(false)
-        .build()
-    );
-
-    private final Setting<Double> minDamage = sgGeneral.add(new DoubleSetting.Builder()
-        .name("min-damage")
-        .description("Minimum damage the crystal needs to deal to the target.")
-        .defaultValue(6)
-        .range(0.0, 10000.0)
-        .sliderRange(0.0, 10000.0)
-        .build()
-    );
-
-    private final Setting<Double> maxSelfDamage = sgGeneral.add(new DoubleSetting.Builder()
-        .name("max-self-damage")
-        .description("Maximum damage crystals can deal to yourself.")
-        .defaultValue(6)
-        .range(0.0, 10000.0)
-        .sliderRange(0.0, 10000.0)
-        .build()
-    );
-
-    private final Setting<Boolean> antiSuicide = sgGeneral.add(new BoolSetting.Builder()
-        .name("anti-suicide")
-        .description("Will not place or break crystals that could kill you.")
+    private final Setting<Boolean> place = sgGeneral.add(new BoolSetting.Builder()
+        .name("place")
+        .description("Places crystals.")
         .defaultValue(true)
         .build()
     );
 
-    private final Setting<Boolean> rotate = sgGeneral.add(new BoolSetting.Builder()
-        .name("rotate")
-        .description("Rotates server-side (silent) towards the crystals being placed/broken - your camera never moves.")
+    private final Setting<Boolean> explode = sgGeneral.add(new BoolSetting.Builder()
+        .name("explode")
+        .description("Explodes crystals.")
+        .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Boolean> pauseEat = sgGeneral.add(new BoolSetting.Builder()
+        .name("pause-eat")
+        .description("Pauses while eating or drinking.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Boolean> performance = sgGeneral.add(new BoolSetting.Builder()
+        .name("performance-mode")
+        .description("Recalculates placements every other tick instead of every tick.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Boolean> ignoreTerrain = sgGeneral.add(new BoolSetting.Builder()
+        .name("ignore-terrain")
+        .description("Ignores blocks when calculating explosion damage, so terrain cannot soak the hit.")
         .defaultValue(true)
         .build()
     );
 
     // Place
 
-    private final Setting<Boolean> doPlace = sgPlace.add(new BoolSetting.Builder()
-        .name("place")
-        .description("Places crystals on the best base for maximum damage.")
-        .defaultValue(true)
-        .build()
-    );
-
-    private final Setting<Integer> placeDelay = sgPlace.add(new IntSetting.Builder()
-        .name("place-delay")
-        .description("Ticks to wait between placing crystals.")
-        .defaultValue(0)
-        .range(0, 10000)
-        .sliderRange(0, 10000)
-        .build()
-    );
-
     private final Setting<Double> placeRange = sgPlace.add(new DoubleSetting.Builder()
         .name("place-range")
-        .description("Range in which to place crystals.")
+        .description("Range in which crystals are placed.")
         .defaultValue(4.5)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
@@ -143,529 +135,976 @@ public class CrystalAura extends Module {
 
     private final Setting<Double> placeWallsRange = sgPlace.add(new DoubleSetting.Builder()
         .name("place-walls-range")
-        .description("Range in which to place crystals when behind blocks.")
+        .description("Range in which crystals are placed when a wall is in the way.")
         .defaultValue(4.5)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
         .build()
     );
 
-    private final Setting<Boolean> support = sgPlace.add(new BoolSetting.Builder()
-        .name("support-blocks")
-        .description("Places obsidian in the air when no base position was found.")
-        .defaultValue(false)
-        .build()
-    );
-
-    private final Setting<Integer> supportDelay = sgPlace.add(new IntSetting.Builder()
-        .name("support-delay")
-        .description("Ticks to wait after placing a support block before placing the crystal on it.")
-        .defaultValue(1)
-        .range(0, 10000)
-        .sliderRange(0, 10000)
-        .visible(support::get)
-        .build()
-    );
-
-    // Face place
-
-    private final Setting<Boolean> facePlace = sgFacePlace.add(new BoolSetting.Builder()
-        .name("face-place")
-        .description("Relaxes the min-damage requirement (to 1.5) when the target is weak.")
+    private final Setting<Boolean> instantPlace = sgPlace.add(new BoolSetting.Builder()
+        .name("instant-place")
+        .description("Ignores the delay after a crystal has disappeared.")
         .defaultValue(true)
         .build()
     );
 
-    private final Setting<Double> facePlaceHealth = sgFacePlace.add(new DoubleSetting.Builder()
-        .name("face-place-health")
-        .description("The health the target has to be at to start face placing.")
-        .defaultValue(8)
+    private final Setting<Double> speedLimit = sgPlace.add(new DoubleSetting.Builder()
+        .name("speed-limit")
+        .description("Maximum place packets per second. 0 = no limit.")
+        .defaultValue(0)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
-        .visible(facePlace::get)
+        .visible(instantPlace::get)
         .build()
     );
 
-    private final Setting<Double> facePlaceDurability = sgFacePlace.add(new DoubleSetting.Builder()
-        .name("face-place-durability")
-        .description("The armor durability percentage the target has to be below to start face placing.")
+    private final Setting<Double> placeSpeed = sgPlace.add(new DoubleSetting.Builder()
+        .name("place-speed")
+        .description("How many times per second the module places.")
+        .defaultValue(10)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<DelayMode> placeDelayMode = sgPlace.add(new EnumSetting.Builder<DelayMode>()
+        .name("place-delay-mode")
+        .description("Counts the place delay in seconds or in ticks.")
+        .defaultValue(DelayMode.Seconds)
+        .build()
+    );
+
+    private final Setting<Double> placeDelay = sgPlace.add(new DoubleSetting.Builder()
+        .name("place-delay")
+        .description("Seconds to wait after an attack before placing.")
+        .defaultValue(0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .visible(() -> placeDelayMode.get() == DelayMode.Seconds)
+        .build()
+    );
+
+    private final Setting<Integer> placeDelayTicks = sgPlace.add(new IntSetting.Builder()
+        .name("place-delay-ticks")
+        .description("Ticks to wait after an attack before placing.")
+        .defaultValue(0)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
+        .visible(() -> placeDelayMode.get() == DelayMode.Ticks)
+        .build()
+    );
+
+    private final Setting<Double> slowDamage = sgPlace.add(new DoubleSetting.Builder()
+        .name("slow-damage")
+        .description("Switches to the slow speed when the target would take less than this.")
+        .defaultValue(3)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> slowSpeed = sgPlace.add(new DoubleSetting.Builder()
+        .name("slow-speed")
+        .description("Places per second when the damage is under slow-damage.")
         .defaultValue(2)
         .range(0.0, 10000.0)
         .sliderRange(0.0, 10000.0)
-        .visible(facePlace::get)
         .build()
     );
 
-    private final Setting<Boolean> facePlaceArmor = sgFacePlace.add(new BoolSetting.Builder()
-        .name("face-place-missing-armor")
-        .description("Automatically starts face placing when the target misses a piece of armor.")
+    // Explode
+
+    private final Setting<Double> breakRange = sgExplode.add(new DoubleSetting.Builder()
+        .name("break-range")
+        .description("Range in which crystals are attacked.")
+        .defaultValue(4.5)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> breakWallsRange = sgExplode.add(new DoubleSetting.Builder()
+        .name("break-walls-range")
+        .description("Range in which crystals are attacked when a wall is in the way.")
+        .defaultValue(4.5)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Boolean> onlyOwn = sgExplode.add(new BoolSetting.Builder()
+        .name("only-own")
+        .description("Only attacks crystals this module placed.")
         .defaultValue(false)
-        .visible(facePlace::get)
         .build()
     );
 
-    // Break
+    private final Setting<Boolean> inhibit = sgExplode.add(new BoolSetting.Builder()
+        .name("inhibit")
+        .description("Stops retargeting crystals that were just attacked.")
+        .defaultValue(false)
+        .build()
+    );
 
-    private final Setting<Boolean> doBreak = sgBreak.add(new BoolSetting.Builder()
-        .name("break")
-        .description("Breaks the crystal that deals the most damage.")
+    private final Setting<DelayMode> existedMode = sgExplode.add(new EnumSetting.Builder<DelayMode>()
+        .name("existed-mode")
+        .description("Counts the existed delay in seconds or in ticks.")
+        .defaultValue(DelayMode.Seconds)
+        .build()
+    );
+
+    private final Setting<Double> existed = sgExplode.add(new DoubleSetting.Builder()
+        .name("existed")
+        .description("Seconds a crystal has to exist before it is attacked.")
+        .defaultValue(0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .visible(() -> existedMode.get() == DelayMode.Seconds)
+        .build()
+    );
+
+    private final Setting<Integer> existedTicks = sgExplode.add(new IntSetting.Builder()
+        .name("existed-ticks")
+        .description("Ticks a crystal has to exist before it is attacked.")
+        .defaultValue(0)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
+        .visible(() -> existedMode.get() == DelayMode.Ticks)
+        .build()
+    );
+
+    private final Setting<SequentialMode> sequential = sgExplode.add(new EnumSetting.Builder<SequentialMode>()
+        .name("sequential")
+        .description("Doesn't place and attack during the same ticks.")
+        .defaultValue(SequentialMode.Disabled)
+        .build()
+    );
+
+    private final Setting<Boolean> instantAttack = sgExplode.add(new BoolSetting.Builder()
+        .name("instant-attack")
+        .description("Skips the delay on the first attack.")
         .defaultValue(true)
         .build()
     );
 
-    private final Setting<Integer> breakDelay = sgBreak.add(new IntSetting.Builder()
-        .name("break-delay")
-        .description("Ticks to wait between breaking crystals.")
+    private final Setting<Double> explodeSpeedLimit = sgExplode.add(new DoubleSetting.Builder()
+        .name("explode-speed-limit")
+        .description("Maximum attacks per second. 0 = no limit.")
+        .defaultValue(0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .visible(instantAttack::get)
+        .build()
+    );
+
+    private final Setting<Double> explodeSpeed = sgExplode.add(new DoubleSetting.Builder()
+        .name("explode-speed")
+        .description("How many times per second the module attacks.")
+        .defaultValue(4)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Boolean> setDead = sgExplode.add(new BoolSetting.Builder()
+        .name("set-dead")
+        .description("Hides a crystal client-side after attacking it.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Double> setDeadDelay = sgExplode.add(new DoubleSetting.Builder()
+        .name("set-dead-delay")
+        .description("Seconds between the attack and the crystal disappearing.")
+        .defaultValue(0.05)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .visible(setDead::get)
+        .build()
+    );
+
+    // Switch
+
+    private final Setting<SwitchMode> switchMode = sgSwitch.add(new EnumSetting.Builder<SwitchMode>()
+        .name("switch-mode")
+        .description("How the crystal gets into your hand. Disabled: only a crystal you already hold.")
+        .defaultValue(SwitchMode.Disabled)
+        .build()
+    );
+
+    private final Setting<Double> switchPenalty = sgSwitch.add(new DoubleSetting.Builder()
+        .name("switch-penalty")
+        .description("Seconds to wait after a slot switch before attacking.")
+        .defaultValue(0.25)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    // Damage
+
+    private final Setting<DmgCheckMode> dmgCheckMode = sgDamage.add(new EnumSetting.Builder<DmgCheckMode>()
+        .name("dmg-check-mode")
+        .description("Normal: best enemy damage wins. Safe: best enemy/self ratio wins.")
+        .defaultValue(DmgCheckMode.Normal)
+        .build()
+    );
+
+    private final Setting<Double> minPlace = sgDamage.add(new DoubleSetting.Builder()
+        .name("min-place")
+        .description("Minimum damage to the enemy required to place.")
+        .defaultValue(4)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> maxPlace = sgDamage.add(new DoubleSetting.Builder()
+        .name("max-place")
+        .description("Maximum self damage allowed when placing.")
+        .defaultValue(8)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> minPlaceRatio = sgDamage.add(new DoubleSetting.Builder()
+        .name("min-place-ratio")
+        .description("Minimum enemy/self damage ratio when placing.")
+        .defaultValue(1.4)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> maxFriendPlace = sgDamage.add(new DoubleSetting.Builder()
+        .name("max-friend-place")
+        .description("Maximum damage allowed to a friend when placing.")
+        .defaultValue(8)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> minFriendPlaceRatio = sgDamage.add(new DoubleSetting.Builder()
+        .name("min-friend-place-ratio")
+        .description("Minimum enemy/friend damage ratio when placing.")
+        .defaultValue(2)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<ExplodeMode> expMode = sgDamage.add(new EnumSetting.Builder<ExplodeMode>()
+        .name("explode-damage-mode")
+        .description("Which checks are applied before attacking a crystal.")
+        .defaultValue(ExplodeMode.FullCheck)
+        .build()
+    );
+
+    private final Setting<Double> minExplode = sgDamage.add(new DoubleSetting.Builder()
+        .name("min-explode")
+        .description("Minimum enemy damage required to attack.")
+        .defaultValue(2.5)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> maxExp = sgDamage.add(new DoubleSetting.Builder()
+        .name("max-explode")
+        .description("Maximum self damage allowed when attacking.")
+        .defaultValue(9)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> minExpRatio = sgDamage.add(new DoubleSetting.Builder()
+        .name("min-explode-ratio")
+        .description("Minimum enemy/self damage ratio when attacking.")
+        .defaultValue(1.1)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> maxFriendExp = sgDamage.add(new DoubleSetting.Builder()
+        .name("max-friend-explode")
+        .description("Maximum damage allowed to a friend when attacking.")
+        .defaultValue(12)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> minFriendExpRatio = sgDamage.add(new DoubleSetting.Builder()
+        .name("min-friend-explode-ratio")
+        .description("Minimum enemy/friend damage ratio when attacking.")
+        .defaultValue(2)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> forcePop = sgDamage.add(new DoubleSetting.Builder()
+        .name("force-pop")
+        .description("Ignores the damage checks when an enemy pops in this many hits. 0 = off.")
+        .defaultValue(1)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> antiFriendPop = sgDamage.add(new DoubleSetting.Builder()
+        .name("anti-friend-pop")
+        .description("Cancels the action when a friend pops in this many hits. 0 = off.")
+        .defaultValue(1)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    private final Setting<Double> antiSelfPop = sgDamage.add(new DoubleSetting.Builder()
+        .name("anti-self-pop")
+        .description("Cancels the action when you pop in this many hits. 0 = off.")
+        .defaultValue(1)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
+    // Extrapolation
+
+    private final Setting<Integer> selfExt = sgExtrapolation.add(new IntSetting.Builder()
+        .name("self-extrapolation")
+        .description("Ticks of your own movement to predict for the self damage check.")
         .defaultValue(0)
         .range(0, 10000)
         .sliderRange(0, 10000)
         .build()
     );
 
-    private final Setting<Double> breakRange = sgBreak.add(new DoubleSetting.Builder()
-        .name("break-range")
-        .description("Range in which to break crystals.")
-        .defaultValue(4.5)
-        .range(0.0, 10000.0)
-        .sliderRange(0.0, 10000.0)
-        .build()
-    );
-
-    private final Setting<Double> breakWallsRange = sgBreak.add(new DoubleSetting.Builder()
-        .name("break-walls-range")
-        .description("Range in which to break crystals when behind blocks.")
-        .defaultValue(4.5)
-        .range(0.0, 10000.0)
-        .sliderRange(0.0, 10000.0)
-        .build()
-    );
-
-    private final Setting<Integer> attackFrequency = sgBreak.add(new IntSetting.Builder()
-        .name("attack-frequency")
-        .description("Maximum hits to do per second.")
-        .defaultValue(25)
+    private final Setting<Integer> extrapolation = sgExtrapolation.add(new IntSetting.Builder()
+        .name("extrapolation")
+        .description("Ticks of enemy movement to predict for the damage checks.")
+        .defaultValue(0)
         .range(0, 10000)
         .sliderRange(0, 10000)
         .build()
     );
 
-    // Pause
-
-    private final Setting<Boolean> pauseOnMine = sgPause.add(new BoolSetting.Builder()
-        .name("pause-on-mine")
-        .description("Pauses while you are mining a block.")
-        .defaultValue(true)
+    private final Setting<Integer> rangeExtrapolation = sgExtrapolation.add(new IntSetting.Builder()
+        .name("range-extrapolation")
+        .description("Ticks of your own movement to predict for the range checks.")
+        .defaultValue(0)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
-    private final Setting<Boolean> pauseOnEat = sgPause.add(new BoolSetting.Builder()
-        .name("pause-on-eat")
-        .description("Pauses while you are eating or drinking.")
-        .defaultValue(true)
+    private final Setting<Integer> hitboxExtrapolation = sgExtrapolation.add(new IntSetting.Builder()
+        .name("hitbox-extrapolation")
+        .description("Ticks of enemy movement to predict for the placement hitbox checks.")
+        .defaultValue(0)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
         .build()
     );
 
-    // Packet level
-
-    private final SettingGroup sgPacket = settings.createGroup("Packet");
-
-    private final Setting<Boolean> packetLevel = sgPacket.add(new BoolSetting.Builder()
-        .name("packet-level")
-        .description("Sends place/break as raw packets and reads crystal spawn/destroy straight from the packet stream, so a crystal is popped the moment the server confirms it instead of on the next game tick.")
-        .defaultValue(false)
-        .build()
-    );
-
-    private final Setting<Integer> packetRetries = sgPacket.add(new IntSetting.Builder()
-        .name("packet-retries")
-        .description("How many times a place/break packet is resent when the server did not react.")
+    private final Setting<Integer> extSmoothness = sgExtrapolation.add(new IntSetting.Builder()
+        .name("extrapolation-smoothness")
+        .description("How many ticks of movement are averaged for the extrapolation.")
         .defaultValue(2)
-        .range(0, 10000)
-        .sliderRange(0, 10000)
-        .visible(packetLevel::get)
+        .range(1, 10000)
+        .sliderRange(1, 10000)
         .build()
     );
 
-    private final Setting<Integer> packetRetryDelay = sgPacket.add(new IntSetting.Builder()
-        .name("packet-retry-delay")
-        .description("Milliseconds to wait for the server to confirm before resending.")
-        .defaultValue(60)
-        .range(0, 10000)
-        .sliderRange(0, 10000)
-        .visible(packetLevel::get)
+    // Render
+
+    private final Setting<Boolean> render = sgRender.add(new BoolSetting.Builder()
+        .name("render")
+        .description("Draws a box on the placement position.")
+        .defaultValue(true)
         .build()
     );
 
-    private final Setting<Integer> maxPacketsPerSecond = sgPacket.add(new IntSetting.Builder()
-        .name("max-packets-per-second")
-        .description("Hard cap on packets the aura may send per second - keeps packet level safe from packet-flood kicks.")
-        .defaultValue(40)
-        .range(0, 10000)
-        .sliderRange(0, 10000)
-        .visible(packetLevel::get)
+    private final Setting<ShapeMode> shapeMode = sgRender.add(new EnumSetting.Builder<ShapeMode>()
+        .name("shape-mode")
+        .description("Which parts of the box to draw.")
+        .defaultValue(ShapeMode.Both)
         .build()
     );
 
-    private final PacketLevel packets = new PacketLevel();
-    private final Map<Integer, BlockPos> packetCrystals = new HashMap<>();
-    private int sequence;
+    private final Setting<SettingColor> sideColor = sgRender.add(new ColorSetting.Builder()
+        .name("side-color")
+        .description("Fill colour of the box.")
+        .defaultValue(new SettingColor(255, 0, 0, 50))
+        .build()
+    );
 
-    private int breakTimer;
-    private int placeTimer;
-    private int ticksPassed;
-    private int attacks;
+    private final Setting<SettingColor> lineColor = sgRender.add(new ColorSetting.Builder()
+        .name("line-color")
+        .description("Line colour of the box.")
+        .defaultValue(new SettingColor(255, 0, 0, 255))
+        .build()
+    );
+
+    // State
+
+    private long ticksEnabled;
+    private int placed;
+    private double placeTimer;
+    private double placeLimitTimer;
+    private double delayTimer;
+    private int delayTicks;
+    private double switchTimer;
+    private long lastAttack;
+    private double cps;
+
+    private BlockPos placePos;
+    private Direction placeDir;
+    private Entity expEntity;
+
+    private final Map<Integer, Long> attacked = new HashMap<>();
+    private final Map<Integer, Long> inhibited = new HashMap<>();
+    private final Map<BlockPos, Long> existedMillis = new HashMap<>();
+    private final Map<BlockPos, Long> existedTicksMap = new HashMap<>();
+    private final Map<BlockPos, Long> own = new HashMap<>();
+    private final List<Box> blocked = new ArrayList<>();
+    private final Map<PlayerEntity, Deque<Vec3d>> motion = new HashMap<>();
+    private final List<long[]> explosions = new ArrayList<>();
+    private final List<long[]> pendingDead = new ArrayList<>();
 
     public CrystalAura() {
-        super(AddonTemplate.COMBAT_CATEGORY, "crystal-aura", "Places and breaks end crystals at the most damaging positions - damage simulation, face place and support blocks, all silent (no visible rotations or hotbar movement).");
+        super(AddonTemplate.COMBAT_CATEGORY, "crystal-aura",
+            "Breaks and places crystals automatically (but better) - full port of BlackOut's Auto Crystal+ with its damage model, speed model, switch modes and extrapolation.");
     }
 
     @Override
     public void onActivate() {
-        breakTimer = 0;
+        ticksEnabled = 0;
+        placed = 0;
         placeTimer = 0;
-        ticksPassed = 0;
-        attacks = 0;
-        sequence = 0;
-        packets.reset();
-        packetCrystals.clear();
+        placeLimitTimer = 0;
+        delayTimer = 0;
+        delayTicks = 0;
+        switchTimer = 0;
+        lastAttack = 0;
+        cps = 0;
+        placePos = null;
+        placeDir = null;
+        expEntity = null;
+        attacked.clear();
+        inhibited.clear();
+        existedMillis.clear();
+        existedTicksMap.clear();
+        own.clear();
+        blocked.clear();
+        motion.clear();
+        explosions.clear();
+        pendingDead.clear();
     }
 
     @Override
-    public void onDeactivate() {
-        packets.reset();
-        packetCrystals.clear();
-    }
-
-    /**
-     * Packet level detection: the server tells us about every crystal it spawns and every entity
-     * it removes. Reading that stream means we know about a crystal the instant it exists (before
-     * the client entity is even added) and can drop our own place/break retries when it is gone.
-     */
-    @EventHandler
-    private void onReceive(PacketEvent.Receive event) {
-        if (!packetLevel.get()) return;
-
-        if (event.packet instanceof EntitySpawnS2CPacket spawn) {
-            if (spawn.getEntityType() != EntityType.END_CRYSTAL) return;
-
-            if (packetCrystals.size() > 512) packetCrystals.clear();
-            packetCrystals.put(spawn.getEntityId(), BlockPos.ofFloored(spawn.getX(), spawn.getY() - 1, spawn.getZ()));
-
-            // Pop it now instead of waiting for the next tick: the spawn packet is the server's
-            // confirmation of our place, so the break can go out in the same tick.
-            if (mc.player != null && mc.world != null) mc.execute(this::instantBreak);
-        } else if (event.packet instanceof EntitiesDestroyS2CPacket destroy) {
-            for (int id : destroy.getEntityIds()) packetCrystals.remove(id);
-        }
-    }
-
-    private void instantBreak() {
-        if (!isActive() || !packetLevel.get() || !doBreak.get()) return;
-        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
-        if (pauseOnMine.get() && mc.interactionManager.isBreakingBlock()) return;
-        if (pauseOnEat.get() && isEatingOrDrinking()) return;
-
-        packets.tick();
-
-        if (breakTimer > 0 || attacks >= attackFrequency.get()) return;
-
-        PlayerEntity target = CombatTargets.findTarget(targetRange.get());
-        if (target == null) return;
-
-        doBreak(target);
+    public String getInfoString() {
+        return String.format("%.1f", cps);
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
-        if (pauseOnMine.get() && mc.interactionManager.isBreakingBlock()) return;
-        if (pauseOnEat.get() && isEatingOrDrinking()) return;
 
-        // Packet level: resend unconfirmed place/break packets.
-        packets.tick();
+        delayTicks++;
+        ticksEnabled++;
+        placed++;
+        placeLimitTimer += TICK_DELTA;
+        delayTimer += TICK_DELTA;
+        switchTimer = Math.max(0, switchTimer - TICK_DELTA);
+        placeTimer = Math.max(0, placeTimer - TICK_DELTA * getSpeed());
 
-        // Attack frequency counter (resets every second)
-        if (ticksPassed < 20) ticksPassed++;
-        else {
-            ticksPassed = 0;
-            attacks = 0;
-        }
+        recordMotion();
+        pruneTimers();
 
-        if (breakTimer > 0) breakTimer--;
-        if (placeTimer > 0) placeTimer--;
+        // Placement is only recalculated every other tick in performance mode; the action loop
+        // still runs every tick so delays and attacks stay responsive.
+        if (!performance.get() || ticksEnabled % 2 == 0) updatePlacement();
 
-        PlayerEntity target = CombatTargets.findTarget(targetRange.get());
-        if (target == null) return;
+        if (isPaused()) return;
 
-        if (doBreak.get()) doBreak(target);
-        if (doPlace.get()) doPlace(target);
+        update();
+        checkDelayed();
     }
 
-    // Break
+    @EventHandler
+    private void onRender(Render3DEvent event) {
+        if (!render.get() || placePos == null || isPaused()) return;
 
-    private void doBreak(PlayerEntity target) {
-        if (breakTimer > 0 || attacks >= attackFrequency.get()) return;
+        Box box = new Box(placePos.getX(), placePos.getY(), placePos.getZ(),
+            placePos.getX() + 1, placePos.getY() + 1, placePos.getZ() + 1);
 
-        EndCrystalEntity best = null;
-        float bestDamage = 0;
+        event.renderer.box(box, sideColor.get(), lineColor.get(), shapeMode.get(), 0);
+    }
+
+    // ---- main loop -------------------------------------------------------------
+
+    private void update() {
+        expEntity = null;
+        updateCps();
+
+        Hand hand = heldCrystalHand();
+
+        if (place.get() && placePos != null && placeDir != null && speedCheck() && delayCheck()) {
+            placeCrystal(placePos.down(), placeDir, hand);
+        }
+
+        if (!explode.get()) return;
+
+        double[] bestValue = null;
 
         for (Entity entity : mc.world.getEntities()) {
             if (!(entity instanceof EndCrystalEntity crystal)) continue;
+            if (inhibited.containsKey(crystal.getId())) continue;
+            if (switchTimer > 0) continue;
+            if (!inBreakRange(crystal.getEntityPos(), crystal.getBlockPos())) continue;
+            if (!canExplode(crystal.getEntityPos(), crystal.getBlockPos(), isOwn(crystal.getBlockPos()))) continue;
 
-            float damage = getBreakDamage(crystal, target);
-            if (damage > bestDamage) {
-                bestDamage = damage;
-                best = crystal;
+            double[] dmg = getDmg(crystal.getEntityPos(), crystal.getBlockPos(), true)[0];
+
+            if (expEntity == null || bestValue == null
+                || (dmgCheckMode.get() == DmgCheckMode.Normal && dmg[0] > bestValue[0])
+                || (dmgCheckMode.get() == DmgCheckMode.Safe && dmg[2] / Math.max(dmg[0], 0.01) < bestValue[2] / Math.max(bestValue[0], 0.01))) {
+                expEntity = crystal;
+                bestValue = dmg;
             }
         }
 
-        if (best == null) return;
-
-        if (!attackCrystal(best)) return;
-
-        attacks++;
-        breakTimer = breakDelay.get();
-    }
-
-    /**
-     * Attacks a crystal. In packet level the attack packet goes out directly and is resent until
-     * the server removes the entity; every send goes through the per-second packet cap.
-     */
-    private boolean attackCrystal(EndCrystalEntity crystal) {
-        if (mc.player == null) return false;
-        if (packetLevel.get() && !packets.allow(maxPacketsPerSecond.get())) return false;
-
-        if (rotate.get()) lookAt(crystal.getEntityPos());
-
-        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(crystal, false));
-        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-
-        if (packetLevel.get()) {
-            int id = crystal.getId();
-            packets.retry(packetRetries.get(), packetRetryDelay.get(), () -> mc.world == null || mc.world.getEntityById(id) == null, () -> resendAttack(id));
+        if (expEntity != null && multiTaskCheck() && !attacked.containsKey(expEntity.getId())
+            && attackDelayCheck() && existedCheck(expEntity.getBlockPos())) {
+            explode(expEntity.getId(), expEntity.getEntityPos());
+            return;
         }
 
-        return true;
     }
 
-    private void resendAttack(int entityId) {
-        if (mc.player == null || mc.world == null) return;
-        if (!(mc.world.getEntityById(entityId) instanceof EndCrystalEntity crystal)) return;
-        if (!packets.allow(maxPacketsPerSecond.get())) return;
+    private void explode(int id, Vec3d pos) {
+        if (mc.player == null) return;
 
-        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(crystal, false));
+        lastAttack = System.currentTimeMillis();
+        attacked.put(id, lastAttack + (long) (1000 / Math.max(explodeSpeed.get(), 0.01)));
+        if (inhibit.get()) inhibited.put(id, lastAttack + 500);
+
+        delayTimer = 0;
+        delayTicks = 0;
+        explosions.add(new long[] {lastAttack, 0});
+
+        removeExisted(BlockPos.ofFloored(pos));
+
+        mc.player.networkHandler.sendPacket(PlayerInteractEntityC2SPacket.attack(mc.player, mc.player.isSneaking()));
         mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-    }
 
-    /**
-     * Returns the damage breaking this crystal deals to the target, or 0 when the crystal
-     * is out of range, would deal too much self damage or not enough damage to the target.
-     */
-    private float getBreakDamage(EndCrystalEntity crystal, PlayerEntity target) {
-        BlockPos base = crystal.getBlockPos().down();
+        blocked.clear();
 
-        if (!inRange(crystal.getEntityPos(), crystal.getBlockPos(), breakRange.get(), breakWallsRange.get())) return 0;
-
-        float selfDamage = DamageUtils.crystalDamage(mc.player, crystal.getEntityPos(), predictMovement.get(), base);
-        if (selfDamage > maxSelfDamage.get() || (antiSuicide.get() && selfDamage >= EntityUtils.getTotalHealth(mc.player))) return 0;
-
-        float damage = DamageUtils.crystalDamage(target, crystal.getEntityPos(), predictMovement.get(), base);
-        double minimumDamage = shouldFacePlace(target) ? Math.min(minDamage.get(), 1.5) : minDamage.get();
-        if (damage < minimumDamage) return 0;
-
-        return damage;
-    }
-
-    // Place
-
-    private void doPlace(PlayerEntity target) {
-        if (placeTimer > 0) return;
-
-        FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
-        if (!crystal.found()) return;
-
-        // Don't multiplace: if a crystal is already placed that we could break, break it first.
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof EndCrystalEntity existing && getBreakDamage(existing, target) > 0) return;
+        if (setDead.get()) {
+            long when = System.currentTimeMillis() + (long) (setDeadDelay.get() * 1000);
+            pendingDead.add(new long[] {id, when});
         }
+    }
 
-        // The setting can be dialled up to 10000, but scanning more than a server-reach halo
-        // would freeze the client - clamp the loop radius, the range check below still applies.
-        int r = Math.min((int) Math.ceil(placeRange.get()), 8);
-        BlockPos origin = mc.player.getBlockPos();
+    private void placeCrystal(BlockPos base, Direction dir, Hand hand) {
+        if (mc.player == null) return;
 
-        BlockPos bestBase = null;
-        double bestBaseDamage = 0;
+        boolean swapped = false;
+        boolean picked = false;
+        int hotbar = mc.player.getInventory().getSelectedSlot();
 
-        BlockPos bestSupportPos = null;
-        double bestSupportDamage = 0;
+        Hand useHand = hand;
 
-        for (BlockPos bp : BlockPos.iterate(origin.add(-r, -r, -r), origin.add(r, r, r))) {
-            BlockState state = mc.world.getBlockState(bp);
-
-            boolean hasBlock = state.isOf(Blocks.OBSIDIAN) || state.isOf(Blocks.BEDROCK);
-            boolean supportCandidate = !hasBlock && support.get() && state.isReplaceable();
-            if (!hasBlock && !supportCandidate) continue;
-
-            BlockPos above = bp.up();
-            if (!mc.world.getBlockState(above).isAir()) continue;
-
-            Vec3d crystalPos = new Vec3d(bp.getX() + 0.5, bp.getY() + 1, bp.getZ() + 0.5);
-            if (!inRange(crystalPos, above, placeRange.get(), placeWallsRange.get())) continue;
-
-            float selfDamage = DamageUtils.crystalDamage(mc.player, crystalPos, predictMovement.get(), bp.toImmutable());
-            if (selfDamage > maxSelfDamage.get() || (antiSuicide.get() && selfDamage >= EntityUtils.getTotalHealth(mc.player))) continue;
-
-            float damage = DamageUtils.crystalDamage(target, crystalPos, predictMovement.get(), bp.toImmutable());
-            double minimumDamage = shouldFacePlace(target) ? Math.min(minDamage.get(), 1.5) : minDamage.get();
-            if (damage < minimumDamage) continue;
-
-            // The crystal's bounding box (2 blocks above the base) must be free of entities.
-            Box crystalBox = new Box(bp.getX(), bp.getY() + 1, bp.getZ(), bp.getX() + 1, bp.getY() + 3, bp.getZ() + 1);
-            if (EntityUtils.intersectsWithEntity(crystalBox, entity -> !entity.isSpectator())) continue;
-
-            if (hasBlock) {
-                if (damage > bestBaseDamage) {
-                    bestBaseDamage = damage;
-                    bestBase = bp.toImmutable();
+        if (useHand == null) {
+            switch (switchMode.get()) {
+                case Simple, Gapple -> {
+                    FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
+                    if (!crystal.found()) return;
+                    InvUtils.swap(crystal.slot(), false);
+                    useHand = Hand.MAIN_HAND;
                 }
-            } else if (damage > bestSupportDamage) {
-                bestSupportDamage = damage;
-                bestSupportPos = bp.toImmutable();
+                case Silent -> {
+                    FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
+                    if (!crystal.found()) return;
+                    InvUtils.swap(crystal.slot(), true);
+                    swapped = true;
+                    useHand = Hand.MAIN_HAND;
+                }
+                case PickSilent, InvSilent -> {
+                    FindItemResult crystal = InvUtils.find(Items.END_CRYSTAL);
+                    if (!crystal.found()) return;
+
+                    if (crystal.slot() > 8) {
+                        InvUtils.quickSwap().fromHotbar(hotbar).to(crystal.slot());
+                        picked = true;
+                    } else {
+                        InvUtils.swap(crystal.slot(), true);
+                        swapped = true;
+                    }
+                    useHand = Hand.MAIN_HAND;
+                }
+                case Disabled -> {
+                    return;
+                }
             }
         }
 
-        if (bestBase != null) {
-            if (placeOnBase(bestBase)) placeTimer = placeDelay.get();
-        } else if (bestSupportPos != null) {
-            placeSupportBlock(bestSupportPos);
-        }
-    }
+        blocked.add(new Box(base.getX(), base.getY() + 1, base.getZ(),
+            base.getX() + 1, base.getY() + 3, base.getZ() + 1));
 
-    /**
-     * Places a crystal on top of the given base block (silent hotbar swap + silent rotation).
-     */
-    private boolean placeOnBase(BlockPos base) {
-        FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
-        if (!crystal.found()) return false;
+        addExisted(base.up());
+        own.put(base.up(), System.currentTimeMillis());
+
+        placeLimitTimer = 0;
+        placeTimer = 1;
+        placed = 0;
 
         BlockHitResult hit = getPlaceInfo(base);
-        Hand hand = Hand.MAIN_HAND;
+        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(useHand, hit, 0));
+        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(useHand));
 
-        int realSlot = -1;
-        if (crystal.isOffhand()) {
-            hand = Hand.OFF_HAND;
-        } else if (crystal.isHotbar() && crystal.slot() != mc.player.getInventory().getSelectedSlot()) {
-            realSlot = mc.player.getInventory().getSelectedSlot();
-            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(crystal.slot()));
+        if (swapped) InvUtils.swapBack();
+        if (picked) {
+            FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
+            if (crystal.found()) InvUtils.quickSwap().fromHotbar(hotbar).to(crystal.slot());
         }
 
-        boolean sent = sendUseBlock(hand, hit);
+        explosions.add(new long[] {System.currentTimeMillis(), 0});
+    }
 
-        if (realSlot != -1) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
-        if (!sent) return false;
+    private void checkDelayed() {
+        long now = System.currentTimeMillis();
 
-        if (packetLevel.get()) {
-            BlockPos placedBase = base.toImmutable();
-            packets.retry(packetRetries.get(), packetRetryDelay.get(), () -> crystalOn(placedBase), () -> resendPlace(placedBase));
+        pendingDead.removeIf(entry -> {
+            if (now < entry[1]) return false;
+            if (mc.world != null) mc.world.removeEntity((int) entry[0], Entity.RemovalReason.KILLED);
+            return true;
+        });
+    }
+
+    // ---- checks ----------------------------------------------------------------
+
+    private boolean speedCheck() {
+        if (speedLimit.get() > 0 && placeLimitTimer < 1 / speedLimit.get()) return false;
+        if (instantPlace.get() && !shouldSlow() && !isBlocked(placePos)) return true;
+        return placeTimer <= 0;
+    }
+
+    private boolean delayCheck() {
+        if (placeDelayMode.get() == DelayMode.Seconds) return delayTimer >= placeDelay.get();
+        return delayTicks >= placeDelayTicks.get();
+    }
+
+    private boolean multiTaskCheck() {
+        return placed >= sequential.get().ticks;
+    }
+
+    private boolean attackDelayCheck() {
+        if (instantAttack.get()) return explodeSpeedLimit.get() <= 0 || System.currentTimeMillis() > lastAttack + 1000 / explodeSpeedLimit.get();
+        return System.currentTimeMillis() > lastAttack + 1000 / Math.max(explodeSpeed.get(), 0.01);
+    }
+
+    private boolean isPaused() {
+        if (!pauseEat.get()) return false;
+        return isEatingOrDrinking();
+    }
+
+    private boolean isEatingOrDrinking() {
+        if (mc.player == null || !mc.player.isUsingItem()) return false;
+        UseAction action = mc.player.getActiveItem().getUseAction();
+        return action == UseAction.EAT || action == UseAction.DRINK;
+    }
+
+    private boolean isBlocked(BlockPos pos) {
+        Box box = new Box(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 2, pos.getZ() + 1);
+        for (Box bb : blocked) if (bb.intersects(box)) return true;
+        return false;
+    }
+
+    private double getSpeed() {
+        return shouldSlow() ? slowSpeed.get() : placeSpeed.get();
+    }
+
+    private boolean shouldSlow() {
+        if (placePos == null) return false;
+        return getDmg(new Vec3d(placePos.getX() + 0.5, placePos.getY(), placePos.getZ() + 0.5), placePos.down(), false)[0][0] <= slowDamage.get();
+    }
+
+    // ---- placement -------------------------------------------------------------
+
+    private void updatePlacement() {
+        if (!place.get()) {
+            placePos = null;
+            placeDir = null;
+            return;
+        }
+
+        double range = Math.max(placeRange.get(), placeWallsRange.get());
+        int r = Math.min((int) Math.ceil(range), 8);
+        BlockPos origin = BlockPos.ofFloored(mc.player.getEyePos());
+
+        BlockPos bestPos = null;
+        Direction bestDir = null;
+        double[] highest = null;
+
+        for (int x = -r; x <= r; x++) {
+            for (int y = -r; y <= r; y++) {
+                for (int z = -r; z <= r; z++) {
+                    BlockPos pos = origin.add(x, y, z);
+
+                    if (!air(pos) || !air(pos.up())) continue;
+                    if (!crystalBlock(pos.down())) continue;
+                    if (!inPlaceRange(pos.down())) continue;
+                    if (!inBreakRange(new Vec3d(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5), pos)) continue;
+
+                    double[][] result = getDmg(new Vec3d(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5), pos.down(), false);
+                    if (!placeDamageCheck(result[0], result[1], highest)) continue;
+
+                    Box box = new Box(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 2, pos.getZ() + 1);
+                    if (EntityUtils.intersectsWithEntity(box, entity -> !entity.isSpectator() && !(entity instanceof EndCrystalEntity))) continue;
+
+                    Direction dir = getPlaceDirection(pos.down());
+                    if (dir == null) continue;
+
+                    bestPos = pos;
+                    bestDir = dir;
+                    highest = result[0];
+                }
+            }
+        }
+
+        placeDir = bestDir;
+        placePos = bestPos;
+    }
+
+    private boolean placeDamageCheck(double[] dmg, double[] health, double[] highest) {
+        // 0 = enemy, 1 = friend, 2 = self
+        if (highest != null) {
+            if (dmgCheckMode.get() == DmgCheckMode.Normal && dmg[0] < highest[0]) return false;
+            if (dmgCheckMode.get() == DmgCheckMode.Safe && dmg[2] / Math.max(dmg[0], 0.01) > highest[2] / Math.max(highest[0], 0.01)) return false;
+        }
+
+        double playerHp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+
+        if (antiSelfPop.get() > 0 && dmg[2] * antiSelfPop.get() >= playerHp) return false;
+        if (health[1] >= 0 && antiFriendPop.get() > 0 && dmg[1] * antiFriendPop.get() >= health[1]) return false;
+        if (health[0] >= 0 && forcePop.get() > 0 && dmg[0] * forcePop.get() >= health[0]) return true;
+
+        if (dmg[0] < minPlace.get()) return false;
+
+        if (dmg[1] > maxFriendPlace.get()) return false;
+        if (dmg[1] > 0 && dmg[0] / dmg[1] < minFriendPlaceRatio.get()) return false;
+        if (dmg[2] > maxPlace.get()) return false;
+
+        return dmg[2] <= 0 || dmg[0] / dmg[2] >= minPlaceRatio.get();
+    }
+
+    private boolean canExplode(Vec3d vec, BlockPos pos, boolean isOwn) {
+        if (onlyOwn.get() && !isOwn) return false;
+        if (!inBreakRange(vec, pos)) return false;
+
+        double[][] result = getDmg(vec, pos, true);
+        return explodeDamageCheck(result[0], result[1], isOwn);
+    }
+
+    private boolean explodeDamageCheck(double[] dmg, double[] health, boolean own) {
+        ExplodeMode mode = expMode.get();
+
+        boolean checkOwn = mode == ExplodeMode.FullCheck || mode == ExplodeMode.SelfDmgCheck
+            || mode == ExplodeMode.SelfDmgOwn || mode == ExplodeMode.AlwaysOwn;
+        boolean checkDmg = mode == ExplodeMode.FullCheck
+            || (mode == ExplodeMode.SelfDmgOwn && !own)
+            || (mode == ExplodeMode.AlwaysOwn && !own);
+
+        double playerHp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+
+        if (checkOwn) {
+            if (antiSelfPop.get() > 0 && dmg[2] * antiSelfPop.get() >= playerHp) return false;
+            if (health[1] >= 0 && antiFriendPop.get() > 0 && dmg[1] * antiFriendPop.get() >= health[1]) return false;
+        }
+
+        if (checkDmg) {
+            if (health[0] >= 0 && forcePop.get() > 0 && dmg[0] * forcePop.get() >= health[0]) return true;
+            if (dmg[0] < minExplode.get()) return false;
+
+            if (dmg[1] > 0 && dmg[0] / dmg[1] < minFriendExpRatio.get()) return false;
+            if (dmg[2] > 0 && dmg[0] / dmg[2] < minExpRatio.get()) return false;
+        }
+
+        if (checkOwn) {
+            if (dmg[1] > maxFriendExp.get()) return false;
+            return dmg[2] <= maxExp.get();
         }
 
         return true;
     }
 
-    /**
-     * Sends the use-block action. Packet level bypasses the interaction manager entirely: the
-     * use-block packet is built and sent by us, so no client-side prediction or sequence wait
-     * delays the next place.
-     */
-    private boolean sendUseBlock(Hand hand, BlockHitResult hit) {
-        if (mc.player == null) return false;
-        if (packetLevel.get() && !packets.allow(maxPacketsPerSecond.get())) return false;
+    // ---- damage ----------------------------------------------------------------
 
-        if (rotate.get()) lookAt(hit.getPos());
+    /** @return {@code {{enemy, friend, self}, {enemyHp, friendHp}}} - like BlackOut's getDmg. */
+    private double[][] getDmg(Vec3d crystalPos, BlockPos base, boolean attack) {
+        double self = crystalDamage(mc.player, crystalPos, base, predictedBox(mc.player, selfExt.get()));
 
-        if (packetLevel.get()) mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(hand, hit, sequence++));
-        else mc.interactionManager.interactBlock(mc.player, hand, hit);
+        double highestEnemy = -1;
+        double highestFriend = -1;
+        double enemyHp = -1;
+        double friendHp = -1;
 
-        mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(hand));
-        return true;
-    }
+        for (PlayerEntity player : mc.world.getPlayers()) {
+            if (player == mc.player || player.getHealth() <= 0) continue;
 
-    /**
-     * Resends the crystal place packet for a base that still has no crystal on top of it.
-     */
-    private void resendPlace(BlockPos base) {
-        if (mc.player == null || mc.world == null) return;
+            double dmg = crystalDamage(player, crystalPos, base, predictedBox(player, extrapolation.get()));
+            double hp = player.getHealth() + player.getAbsorptionAmount();
 
-        BlockState state = mc.world.getBlockState(base);
-        if (!state.isOf(Blocks.OBSIDIAN) && !state.isOf(Blocks.BEDROCK)) return;
-
-        FindItemResult crystal = InvUtils.findInHotbar(Items.END_CRYSTAL);
-        if (!crystal.found()) return;
-
-        Hand hand = Hand.MAIN_HAND;
-        int realSlot = -1;
-
-        if (crystal.isOffhand()) {
-            hand = Hand.OFF_HAND;
-        } else if (crystal.isHotbar() && crystal.slot() != mc.player.getInventory().getSelectedSlot()) {
-            realSlot = mc.player.getInventory().getSelectedSlot();
-            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(crystal.slot()));
+            if (Friends.get().isFriend(player)) {
+                if (dmg > highestFriend) {
+                    highestFriend = dmg;
+                    friendHp = hp;
+                }
+            } else if (dmg > highestEnemy) {
+                highestEnemy = dmg;
+                enemyHp = hp;
+            }
         }
 
-        sendUseBlock(hand, getPlaceInfo(base));
-
-        if (realSlot != -1) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
+        return new double[][] {{highestEnemy, highestFriend, self}, {enemyHp, friendHp}};
     }
 
-    /**
-     * @return true when a crystal already stands on the given base (client entity or spawn packet).
-     */
-    private boolean crystalOn(BlockPos base) {
-        BlockPos above = base.up();
-        if (packetCrystals.containsValue(above)) return true;
-        if (mc.world == null) return false;
+    private double crystalDamage(LivingEntity target, Vec3d crystalPos, BlockPos base, Box box) {
+        if (target == null) return 0;
 
-        return !mc.world.getEntitiesByClass(EndCrystalEntity.class, new Box(above), e -> e.getBlockPos().equals(above)).isEmpty();
+        Box hitbox = box == null ? target.getBoundingBox() : box;
+        Vec3d center = hitbox.getCenter();
+
+        return DamageUtils.crystalDamage(target, center, hitbox, crystalPos, hitFactory(base));
     }
 
-    /**
-     * Places obsidian into a replaceable block in the air (support block), then either places
-     * the crystal immediately (support-delay 0) or lets the normal place loop pick it up
-     * after the support delay.
-     */
-    private void placeSupportBlock(BlockPos supportPos) {
-        BlockHitResult hit = getSupportInfo(supportPos);
-        if (hit == null) return;
+    /** BlackOut's "ignore terrain": everything but the base the crystal sits on is see-through. */
+    private DamageUtils.RaycastFactory hitFactory(BlockPos base) {
+        if (!ignoreTerrain.get()) return DamageUtils.HIT_FACTORY;
 
-        FindItemResult obsidian = InvUtils.findInHotbar(Items.OBSIDIAN);
-        if (!obsidian.found()) return;
+        return (context, blockPos) -> {
+            if (!blockPos.equals(base)) return null;
+            BlockState state = Blocks.OBSIDIAN.getDefaultState();
+            return state.getCollisionShape(mc.world, blockPos).raycast(context.start(), context.end(), blockPos);
+        };
+    }
 
-        Hand hand = Hand.MAIN_HAND;
+    // ---- extrapolation ---------------------------------------------------------
 
-        int realSlot = -1;
-        if (obsidian.isOffhand()) {
-            hand = Hand.OFF_HAND;
-        } else if (obsidian.isHotbar() && obsidian.slot() != mc.player.getInventory().getSelectedSlot()) {
-            realSlot = mc.player.getInventory().getSelectedSlot();
-            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(obsidian.slot()));
+    private void recordMotion() {
+        motion.keySet().removeIf(player -> player.getHealth() <= 0 || player.isRemoved());
+
+        for (PlayerEntity player : mc.world.getPlayers()) {
+            Deque<Vec3d> history = motion.computeIfAbsent(player, p -> new ArrayDeque<>());
+            history.addLast(player.getEntityPos());
+            while (history.size() > Math.max(2, extSmoothness.get() + 1)) history.removeFirst();
+        }
+    }
+
+    /** Extrapolates a player's box by the average of their last few ticks of movement. */
+    private Box predictedBox(PlayerEntity player, int ticks) {
+        if (player == null || ticks <= 0) return player == null ? null : player.getBoundingBox();
+
+        Deque<Vec3d> history = motion.get(player);
+        if (history == null || history.size() < 2) return player.getBoundingBox();
+
+        Vec3d first = history.peekFirst();
+        Vec3d last = history.peekLast();
+        if (first == null || last == null) return player.getBoundingBox();
+
+        Vec3d velocity = last.subtract(first).multiply(1.0 / (history.size() - 1));
+        return player.getBoundingBox().offset(velocity.multiply(ticks));
+    }
+
+    // ---- helpers ---------------------------------------------------------------
+
+    private void pruneTimers() {
+        long now = System.currentTimeMillis();
+
+        attacked.entrySet().removeIf(e -> e.getValue() < now);
+        inhibited.entrySet().removeIf(e -> e.getValue() < now);
+
+        existedMillis.entrySet().removeIf(e -> now - e.getValue() >= 5000 + (long) (existed.get() * 1000));
+        existedTicksMap.entrySet().removeIf(e -> ticksEnabled - e.getValue() >= 100 + existedTicks.get());
+        own.entrySet().removeIf(e -> now - e.getValue() >= 5000);
+    }
+
+    private void updateCps() {
+        long now = System.currentTimeMillis();
+
+        explosions.removeIf(entry -> now - entry[0] >= 5000);
+
+        double total = 0;
+        for (long[] entry : explosions) {
+            double age = (now - entry[0]) / 1000.0;
+            total += age <= 4 ? 1 : Math.max(0, 1 - (age - 4));
+        }
+        cps = total / 4.5;
+    }
+
+    private boolean existedCheck(BlockPos pos) {
+        if (existedMode.get() == DelayMode.Seconds) {
+            Long time = existedMillis.get(pos);
+            return time == null || System.currentTimeMillis() > time + (long) (existed.get() * 1000);
         }
 
-        sendUseBlock(hand, hit);
-
-        if (realSlot != -1) mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(realSlot));
-
-        if (supportDelay.get() == 0) placeOnBase(supportPos);
-        else placeTimer = supportDelay.get();
+        Long ticks = existedTicksMap.get(pos);
+        return ticks == null || ticksEnabled >= ticks + existedTicks.get();
     }
 
-    // Helpers
+    private void addExisted(BlockPos pos) {
+        if (existedMode.get() == DelayMode.Seconds) existedMillis.putIfAbsent(pos, System.currentTimeMillis());
+        else existedTicksMap.putIfAbsent(pos, ticksEnabled);
+    }
 
-    /**
-     * Finds the side of the base block to click on for placing a crystal: raycasts from your
-     * eyes to all 6 face centers (like Meteor's CrystalAura) and falls back to the closest
-     * face (up/down) when no face is visible.
-     */
+    private void removeExisted(BlockPos pos) {
+        existedMillis.remove(pos);
+        existedTicksMap.remove(pos);
+    }
+
+    private boolean isOwn(BlockPos pos) {
+        return own.containsKey(pos);
+    }
+
+    private boolean air(BlockPos pos) {
+        return mc.world.getBlockState(pos).isAir();
+    }
+
+    private boolean crystalBlock(BlockPos pos) {
+        BlockState state = mc.world.getBlockState(pos);
+        return state.isOf(Blocks.OBSIDIAN) || state.isOf(Blocks.BEDROCK);
+    }
+
+    private boolean inPlaceRange(BlockPos pos) {
+        return PlayerUtils.isWithin(pos.toCenterPos(), isBehindWall(pos.toCenterPos(), pos) ? placeWallsRange.get() : placeRange.get());
+    }
+
+    private boolean inBreakRange(Vec3d pos, BlockPos expected) {
+        return PlayerUtils.isWithin(pos, isBehindWall(pos, expected) ? breakWallsRange.get() : breakRange.get());
+    }
+
+    private boolean isBehindWall(Vec3d pos, BlockPos expected) {
+        BlockHitResult result = mc.world.raycast(new RaycastContext(
+            mc.player.getEyePos(), pos, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
+
+        return result.getType() == HitResult.Type.BLOCK && !result.getBlockPos().equals(expected);
+    }
+
+    private Hand heldCrystalHand() {
+        if (mc.player.getMainHandStack().getItem() == Items.END_CRYSTAL) return Hand.MAIN_HAND;
+        if (mc.player.getOffHandStack().getItem() == Items.END_CRYSTAL) return Hand.OFF_HAND;
+        return null;
+    }
+
+    /** Which face of the base to click: a visible face if there is one, otherwise the closest. */
     private BlockHitResult getPlaceInfo(BlockPos base) {
         Vec3d eye = mc.player.getEyePos();
 
@@ -673,10 +1112,11 @@ public class CrystalAura extends Module {
             Vec3d faceCenter = new Vec3d(
                 base.getX() + 0.5 + side.getOffsetX() * 0.5,
                 base.getY() + 0.5 + side.getOffsetY() * 0.5,
-                base.getZ() + 0.5 + side.getOffsetZ() * 0.5
-            );
+                base.getZ() + 0.5 + side.getOffsetZ() * 0.5);
 
-            BlockHitResult result = mc.world.raycast(new RaycastContext(eye, faceCenter, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
+            BlockHitResult result = mc.world.raycast(new RaycastContext(eye, faceCenter,
+                RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
+
             if (result.getType() == HitResult.Type.BLOCK && result.getBlockPos().equals(base)) return result;
         }
 
@@ -687,78 +1127,49 @@ public class CrystalAura extends Module {
         return new BlockHitResult(hitVec, side, base, false);
     }
 
-    /**
-     * Finds a neighboring solid block to click on in order to place obsidian into the given
-     * air/replaceable position.
-     */
-    private BlockHitResult getSupportInfo(BlockPos supportPos) {
-        for (Direction dir : Direction.values()) {
-            BlockPos neighbor = supportPos.offset(dir);
-            BlockState state = mc.world.getBlockState(neighbor);
-            if (state.isAir() || state.isReplaceable()) continue;
+    private Direction getPlaceDirection(BlockPos base) {
+        return getPlaceInfo(base).getSide();
+    }
 
-            Direction face = dir.getOpposite();
-            Vec3d hitVec = Vec3d.of(neighbor).add(0.5, 0.5, 0.5)
-                .add(face.getOffsetX() * 0.5, face.getOffsetY() * 0.5, face.getOffsetZ() * 0.5);
+    // ---- enums ----------------------------------------------------------------
 
-            return new BlockHitResult(hitVec, face, neighbor, false);
+    public enum DmgCheckMode {
+        Normal,
+        Safe
+    }
+
+    public enum SwitchMode {
+        Disabled,
+        Simple,
+        Gapple,
+        Silent,
+        InvSilent,
+        PickSilent
+    }
+
+    public enum SequentialMode {
+        Disabled(0),
+        Weak(1),
+        Strong(2),
+        Strict(3);
+
+        public final int ticks;
+
+        SequentialMode(int ticks) {
+            this.ticks = ticks;
         }
-
-        return null;
     }
 
-    /**
-     * Range check with wall handling: raycasts from your eyes to the position - if a wall is
-     * in the way the walls range is used, otherwise the normal range.
-     */
-    private boolean inRange(Vec3d pos, BlockPos expectedClipPos, double range, double wallsRange) {
-        BlockHitResult result = mc.world.raycast(new RaycastContext(mc.player.getEyePos(), pos, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player));
-        boolean behindWall = result.getType() == HitResult.Type.BLOCK && !result.getBlockPos().equals(expectedClipPos);
-
-        return PlayerUtils.isWithin(pos, behindWall ? wallsRange : range);
+    public enum ExplodeMode {
+        FullCheck,
+        SelfDmgCheck,
+        SelfDmgOwn,
+        AlwaysOwn,
+        Always
     }
 
-    /**
-     * Face place: relaxes the min damage requirement when the target has low health,
-     * nearly broken armor or (optionally) is missing armor pieces.
-     */
-    private boolean shouldFacePlace(PlayerEntity target) {
-        if (!facePlace.get()) return false;
-
-        if (EntityUtils.getTotalHealth(target) <= facePlaceHealth.get()) return true;
-
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (!slot.isArmorSlot()) continue;
-
-            ItemStack stack = target.getEquippedStack(slot);
-            if (stack.isEmpty()) {
-                if (facePlaceArmor.get()) return true;
-            } else if ((double) (stack.getMaxDamage() - stack.getDamage()) / stack.getMaxDamage() * 100 <= facePlaceDurability.get()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Silent aim: sends a look rotation packet so the server sees us looking at the position,
-     * without touching the client-side camera.
-     */
-    private void lookAt(Vec3d pos) {
-        Vec3d eye = mc.player.getEyePos();
-        Vec3d delta = pos.subtract(eye);
-        double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
-
-        float yaw = (float) MathHelper.wrapDegrees(Math.atan2(-delta.x, delta.z));
-        float pitch = (float) -MathHelper.wrapDegrees(Math.atan2(delta.y, horizontal));
-
-        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, mc.player.isOnGround(), mc.player.isOnGround()));
-    }
-
-    private boolean isEatingOrDrinking() {
-        if (!mc.player.isUsingItem()) return false;
-        UseAction anim = mc.player.getActiveItem().getUseAction();
-        return anim == UseAction.EAT || anim == UseAction.DRINK;
+    public enum DelayMode {
+        Seconds,
+        Ticks
     }
 }
