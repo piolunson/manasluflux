@@ -102,6 +102,15 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    private final Setting<Double> webTimer = sgGeneral.add(new DoubleSetting.Builder()
+        .name("web-timer")
+        .description("Speeds up walking only while you are in a web: the horizontal movement is multiplied by this factor (1.0 = off, 2.0 = twice as fast). Vertical movement is never touched.")
+        .defaultValue(1.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
     private final Setting<Integer> burstTicks = sgGeneral.add(new IntSetting.Builder()
         .name("burst-ticks")
         .description("Only soften the first N ticks you spend in a web, then go back to vanilla slow. 0 softens every tick.")
@@ -182,6 +191,7 @@ public class CobwebBypass extends Module {
     private double tuneSavedH;
     private double tuneSavedV;
     private double tuneSavedCap;
+    private double tuneSavedTimer;
     private int tuneSavedBurst;
     private Profile tuneSavedProfile;
     private boolean tuneSavedForward;
@@ -258,9 +268,17 @@ public class CobwebBypass extends Module {
         double y = softenAxis(vanilla.y, keepVertical);
         double z = softenAxis(vanilla.z, keepHorizontal);
 
+        // Web timer: only while actually walking, and only the horizontal axes - a vertical
+        // boost would launch you out of the web instead of speeding up the walk.
+        Vec3d velocity = entity.getVelocity();
+        double timer = webTimer.get();
+        if (timer != 1.0 && Math.abs(velocity.x) + Math.abs(velocity.z) > 0.01) {
+            x *= timer;
+            z *= timer;
+        }
+
         double cap = maxSpeed.get();
         if (cap > 0) {
-            Vec3d velocity = entity.getVelocity();
             x = capAxis(x, velocity.x, cap);
             z = capAxis(z, velocity.z, cap);
         }
@@ -440,6 +458,7 @@ public class CobwebBypass extends Module {
         tuneSavedH = horizontal.get();
         tuneSavedV = vertical.get();
         tuneSavedCap = maxSpeed.get();
+        tuneSavedTimer = webTimer.get();
         tuneSavedBurst = burstTicks.get();
         tuneSavedForward = mc.options.forwardKey.isPressed();
         tuneSavedJump = mc.options.jumpKey.isPressed();
@@ -448,6 +467,7 @@ public class CobwebBypass extends Module {
         // burst would waste part of every combo on something we are not testing.
         profile.set(Profile.Custom);
         maxSpeed.set(0.0);
+        webTimer.set(1.0);
         burstTicks.set(0);
 
         tuneIndex = 0;
@@ -473,6 +493,7 @@ public class CobwebBypass extends Module {
             horizontal.set(tuneSavedH);
             vertical.set(tuneSavedV);
             maxSpeed.set(tuneSavedCap);
+            webTimer.set(tuneSavedTimer);
             burstTicks.set(tuneSavedBurst);
             profile.set(tuneSavedProfile);
         }
@@ -581,6 +602,7 @@ public class CobwebBypass extends Module {
     private void finishTuning() {
         releaseKeys();
         maxSpeed.set(tuneSavedCap);
+        webTimer.set(tuneSavedTimer);
         burstTicks.set(tuneSavedBurst);
 
         if (tuneHaveBest) {
