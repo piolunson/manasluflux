@@ -12,6 +12,7 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.systems.modules.world.Timer;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -120,6 +121,36 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    private final SettingGroup sgSprint = settings.createGroup("Sprint Tweaks");
+    private final SettingGroup sgTimer = settings.createGroup("Timer");
+
+    private final Setting<Integer> stopSprintBefore = sgSprint.add(new IntSetting.Builder()
+        .name("stop-sprint-before")
+        .description("Stops your sprint when a cobweb is this many ticks of movement ahead. 0 turns it off.")
+        .defaultValue(0)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
+        .build()
+    );
+
+    private final Setting<Integer> startSprintAfter = sgSprint.add(new IntSetting.Builder()
+        .name("start-sprint-after")
+        .description("While you are inside a web, sprint stays off until you have been in it for this many ticks. 0 turns it off.")
+        .defaultValue(0)
+        .range(0, 10000)
+        .sliderRange(0, 10000)
+        .build()
+    );
+
+    private final Setting<Double> timerMultiplier = sgTimer.add(new DoubleSetting.Builder()
+        .name("timer-multiplier")
+        .description("Runs Meteor's Timer while you are inside a real cobweb and turns it back off the moment you leave it (1.0 = off, 2.0 = everything runs twice as fast).")
+        .defaultValue(1.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .build()
+    );
+
     private final Setting<Boolean> allStuckBlocks = sgGeneral.add(new BoolSetting.Builder()
         .name("all-stuck-blocks")
         .description("Softens every stuck-speed block, not just cobwebs (sweet berry bushes, powder snow and anything else that multiplies your movement).")
@@ -198,6 +229,8 @@ public class CobwebBypass extends Module {
     private boolean tuneSavedJump;
     private boolean tuneKeysHeld;
     private boolean tuneVerbose;
+    /** True while this module is the one driving Meteor's Timer. */
+    private boolean timerOverridden;
 
     public CobwebBypass() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "cobweb-bypass",
@@ -220,6 +253,7 @@ public class CobwebBypass extends Module {
         softenedThisTick = false;
         pauseLeft = 0;
         stopTuning(false);
+        releaseTimer();
     }
 
     @Override
@@ -314,6 +348,13 @@ public class CobwebBypass extends Module {
             && Math.abs(a.z - b.z) < 1.0E-5;
     }
 
+    /** Sprint tweaks run before the player is ticked, so the sprint state is already correct for this tick's movement packet. */
+    @EventHandler
+    private void onTickPre(TickEvent.Pre event) {
+        if (mc.player == null || mc.world == null || mc.options == null) return;
+        applySprintTweaks();
+    }
+
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (tuneStage != TuneStage.Off) tickTuner();
@@ -328,6 +369,89 @@ public class CobwebBypass extends Module {
         }
 
         softenedThisTick = false;
+
+        updateWebTimer();
+
+        // Second pass: the client re-evaluates sprint during its own tick, so the tweak also has
+        // to be applied after it, or a held sprint key would switch it straight back on.
+        applySprintTweaks();
+    }
+
+    /**
+     * Stops sprint a configured number of ticks before a web is reached, and keeps it off for the
+     * first ticks inside one - both are purely what your legs do, nothing is sent differently.
+     */
+    private void applySprintTweaks() {
+        if (mc.player == null) return;
+
+        // Inside a web: sprint stays off for the first ticks, then comes back on by itself.
+        if (insideWeb()) {
+            int delay = startSprintAfter.get();
+            if (delay <= 0) return;
+
+            if (ticksInWeb < delay) {
+                if (mc.player.isSprinting()) mc.player.setSprinting(false);
+            } else if (!mc.player.isSprinting() && wantsToWalk()) {
+                mc.player.setSprinting(true);
+            }
+            return;
+        }
+
+        // Outside a web: drop sprint a set amount of ticks before the web is reached.
+        int lead = stopSprintBefore.get();
+        if (lead > 0 && mc.player.isSprinting() && webAhead(lead)) {
+            mc.player.setSprinting(false);
+        }
+    }
+
+    /** Whether the player is holding a movement key, so re-enabling sprint cannot look like a ghost sprint. */
+    private boolean wantsToWalk() {
+        return mc.options != null && (mc.options.forwardKey.isPressed() || mc.options.backKey.isPressed());
+    }
+
+    /** Walks the next {@code ticks} of your current velocity and reports whether a web is in it. */
+    private boolean webAhead(int ticks) {
+        if (mc.player == null || mc.world == null) return false;
+
+        Vec3d velocity = mc.player.getVelocity();
+        if (Math.abs(velocity.x) + Math.abs(velocity.z) < 0.02) return false;
+
+        for (int i = 1; i <= ticks; i++) {
+            BlockPos pos = BlockPos.ofFloored(mc.player.getEntityPos().add(velocity.multiply(i)));
+            if (isWeb(pos) || isWeb(pos.up())) return true;
+        }
+
+        return false;
+    }
+
+    /** Meteor's Timer, on only while you actually stand in a cobweb. */
+    private void updateWebTimer() {
+        double multiplier = timerMultiplier.get();
+        boolean enabled = multiplier > 0 && Math.abs(multiplier - 1.0) > 1.0E-4 && insideWeb();
+
+        if (!enabled) {
+            releaseTimer();
+            return;
+        }
+
+        Timer timer = Modules.get().get(Timer.class);
+        if (timer == null) return;
+
+        timer.setOverride(multiplier);
+        timerOverridden = true;
+    }
+
+    /** Hands the timer back to Meteor (its own module setting, or off). */
+    private void releaseTimer() {
+        if (!timerOverridden) return;
+
+        Timer timer = Modules.get().get(Timer.class);
+        if (timer != null) timer.setOverride(Timer.OFF);
+        timerOverridden = false;
+    }
+
+    private boolean isWeb(BlockPos pos) {
+        return mc.world != null && mc.world.getBlockState(pos).isOf(Blocks.COBWEB);
     }
 
     @EventHandler

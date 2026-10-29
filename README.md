@@ -22,7 +22,7 @@ Highlights:
 - **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
-- **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap and a lagback watcher.
+- **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap, a lagback watcher, sprint tweaks that release sprint before a web and put it back on after a set time inside one, and a Timer that only runs while you stand in a web.
 - **Auto Login** — sends `/login <password>` automatically after joining.
 - **Image / GIF HUD** — display images and animated GIFs directly on your HUD.
 - **Server Info / Session Info / Kill Counter HUD** — server address + live ping, in-game day/time/weather/biome, and a session combat tracker.
