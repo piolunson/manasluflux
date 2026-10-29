@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.1.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.2.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (45)
+## Modules (46)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -26,12 +26,13 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Silent Aura | `silent-aura` | Attacks the nearest player without rotating or swinging your visible hand — **silent aim** (server-side-only look rotation at the target, body or head) plus a silent weapon switch. **Pause** group: `pause-on-mine` and `pause-on-eat` temporarily stop the aura while you mine or eat/drink. |
 | TNT Placer | `tnt-placer` | Traps the nearest player in (crying) obsidian, buries them in TNT and ignites it — non-stop. |
 
-### Category: Manaslu Flux Movement (7)
+### Category: Manaslu Flux Movement (8)
 
 | Module | ID | What it does |
 |---|---|---|
 | Auto Walk Hold | `auto-walk-hold` | Holds a configurable key (default **2**) down while enabled — keeps it pressed even after screens open or window focus changes. |
 | Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
+| Cobweb Bypass | `cobweb-bypass` | Takes the glue out of cobwebs: 1.21.11's `Entity#slowMovement` only stores a multiplier that `Entity#move` applies to that tick's movement, so the module hands it a softened number (`horizontal` / `vertical` percent, 100 = no slow at all) instead of vanilla `0.25 / 0.05 / 0.25`. Profiles for what the server actually checks — **Vanilla** (no movement prediction: full speed), **NCP** and **Themis** (limit-based: full-ish speed under a per-axis `max-speed` cap), **Grim** (re-simulates webs, so it only softens the first `burst-ticks` ticks to launch you out and then hands the vanilla number back), **Custom**. `all-stuck-blocks` covers every stuck-speed block, not just webs. A lagback watcher reports correction teleports that arrive within 20 ticks of a softened tick and can drop back to vanilla slow for `pause-ticks` (`on-lagback` = Notify / Pause / Ignore). |
 | Click TP | `mf-click-tp` | Hold use while looking at a block to teleport there in configurable steps, with max distance, step size, delay and an optional safe-landing check. |
 | Place Travel | `place-travel` | Sprint-and-jump travel for the nether roof: holds forward and sprint, and jumps on the very first tick you touch the ground — the 10 tick vanilla jump cooldown is bypassed by calling the jump directly, so the hops never stall. While running it lays a straight line of blocks ahead of you on a fixed level (the block level you last stood on, tracked so the line stays flat through the jump arc). Settings: `distance` (blocks ahead, default 2; beyond block reach is skipped), `height` (**Floor** by default = keeps the level you are running on solid, so a hole can't drop you; `Feet` / `Head` / `Above head` build the line over you instead), `blocks-per-tick`, `blocks` whitelist (netherrack / cobblestone / dirt by default — only blocks you carry are used), `sprint`, `jump`, `rotate`. |
 | Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
@@ -148,7 +149,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 Modules are grouped by what they do, so nothing shares a grab-bag category any more:
 
 - **Manaslu Flux Combat** (7) — fighting: auras, totem, TNT, pearl phase, clicker (end crystal icon)
-- **Manaslu Flux Movement** (7) — getting around: the three flights, auto walk, click TP, place travel, vclip phasefill (feather icon)
+- **Manaslu Flux Movement** (8) — getting around: the three flights, auto walk, click TP, place travel, vclip phasefill, cobweb bypass (feather icon)
 - **Manaslu Flux Player** (7) — keeping you alive and stocked: eat, fish, log, respawn, login, fast use, inventory keeper (golden apple icon)
 - **Manaslu Flux World** (4) — changing blocks around you: placer, auto wither, map part, block replacer (grass block icon)
 - **Manaslu Flux Client Side** (8) — what you see and what the server sees: block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
@@ -181,6 +182,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 1.2.0 | **New module: Cobweb Bypass** (`cobweb-bypass`) — no-slow in webs, done at the one place 1.21.11 actually keeps the slow. `Entity#slowMovement` no longer touches velocity: it stores a multiplier (`0.25 / 0.05 / 0.25` for cobwebs, `0.5 / 0.25 / 0.5` with Weaving) that `Entity#move` multiplies the tick's movement delta by, so a single client-side mixin (`EntitySlowMovementMixin`) swaps in a softened value and nothing else in the movement path changes. `horizontal` / `vertical` are percent-of-slow-removed (0 = vanilla, 100 = no slow), `max-speed` caps the per-axis step in blocks per tick, `burst-ticks` softens only the first N ticks of a web, and `all-stuck-blocks` extends it past cobwebs. Anticheat profiles fill those in: **Vanilla** (full, for servers that never simulate stuck speed), **NCP** (full under a 0.45 cap), **Themis** (85/80 % under a 0.4 cap), **Grim** (two-tick burst and a 0.3 cap, because Grim re-simulates webs itself and its post-June-2026 stuck-speed rewrite flags sustained no-slow outright), plus **Custom**. `on-lagback` watches for correction teleports within 20 ticks of the trick being used and can notify or fall back to vanilla slow for `pause-ticks`. Counts: 46 modules, Movement 8. |
 | 1.1.0 | **New module: VClip PhaseFill** (`vclip-phasefill`) — the vclip phase-fill trick in one one-shot module. Enabling it **vclips you `distance` blocks** (default 3) straight **Down** (default) or **Up**, then **fills the two blocks your body was standing in before the clip** (feet + head) with a block from the `fill-blocks` whitelist in your hotbar, `blocks-per-tick` per tick, retried until they land. After that it waits for the server's **rubberband** — the `PlayerPositionLookS2CPacket` correction an anticheat sends when it rejects the position — and stops as soon as one arrives. `hold-position` (default on) re-applies the clipped spot every tick while waiting, because the client pushes an entity that ends up inside a solid block back out on its own. If no rubberband shows up within `timeout` ticks (default 20 = 1 s, `0` = immediately) it **vclips back** to where you started. Fills are normal silent-rotated block places, and the module switches itself off when the sequence ends. Counts: 45 modules, Movement 7. |
 | 1.0.0 | **1.0 clean-up release.** Three modules are gone: **AC PacketFlood** (`ac-pcktflood`, together with the 1 ms `MsScheduler` helper it was the only user of), **Crystal Optimizer** (`crystal-optimizer`, along with the `EndCrystalRendererMixin` that cancelled the vanilla crystal render - the jar now ships a single mixin) and **Add Text** (`add-text`), which is now only the `.mfaddtext` chat command with no module behind it, so local lines are no longer kept across relogs and `.mfaddtext clear` went with the saved list. Nothing else changed: Crystal Aura and Auto Totem keep their Packet groups, and every other module, command and HUD element is untouched. Counts: 44 modules (Combat 7, Movement 6, Player 7, World 4, Client Side 8, Utility 12), 26 commands, 7 HUD elements. |
 | 0.12.0 | **New module: Place Travel** (`place-travel`) — one-key travel for the nether roof. It holds forward and sprint for you and jumps on the first tick you are back on the ground: the jump is called directly, which skips the 10 tick jump cooldown that gates holding the jump key, so the bunny hops come out back to back. At the same time it lays a straight line of blocks ahead of you — `distance` blocks in front (default 2, beyond reach is skipped) at the `height` you pick: **Floor** (default) continues the level you are running on so a hole in the roof can't drop you, `Feet` / `Head` / `Above head` build the line over you instead (a line at head height is inside the jump arc, so it stops you at the first block — that mode is for covering travel, not for hopping through). The line sits on the block level you last stood on, tracked separately, so it stays flat while you are mid-jump, and every placement is a normal silent-rotated block place using the first matching block from your hotbar. Counts: 47 modules, Movement 6. |

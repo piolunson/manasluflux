@@ -6,10 +6,10 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **45 modules**, **26 commands** and **7 HUD elements** on top of Meteor Client, organized in six ClickGUI categories:
+ManasluFlux adds **46 modules**, **26 commands** and **7 HUD elements** on top of Meteor Client, organized in six ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, auto totem, instant TNT, pearl phase
-- **Manaslu Flux Movement** (7) — universal/elytra/boat flight, auto walk, click TP, Place Travel, VClip PhaseFill
+- **Manaslu Flux Movement** (8) — universal/elytra/boat flight, auto walk, click TP, Place Travel, VClip PhaseFill, Cobweb Bypass
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
 - **Manaslu Flux Client Side** (8) — purely client-side/visual modules
@@ -22,6 +22,7 @@ Highlights:
 - **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
 - **Pearl Phase** — one-shot pearl throw at your own block to phase into walls.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
+- **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap and a lagback watcher.
 - **Auto Login** — sends `/login <password>` automatically after joining.
 - **Image / GIF HUD** — display images and animated GIFs directly on your HUD.
 - **Server Info / Session Info / Kill Counter HUD** — server address + live ping, in-game day/time/weather/biome, and a session combat tracker.
@@ -31,11 +32,11 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (45)</summary>
+<summary>Full module list (46)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `pearl-phase`, `silent-aura`, `tnt-placer`
 
-**Manaslu Flux Movement (7):** `auto-walk-hold`, `boat-flight`, `mf-click-tp`, `elytra-flight`, `place-travel`, `universal-flight`, `vclip-phasefill`
+**Manaslu Flux Movement (8):** `auto-walk-hold`, `boat-flight`, `cobweb-bypass`, `mf-click-tp`, `elytra-flight`, `place-travel`, `universal-flight`, `vclip-phasefill`
 
 **Manaslu Flux Player (7):** `auto-eat`, `auto-fish`, `auto-log`, `auto-login`, `mf-auto-respawn`, `inventory-keeper`, `whitelist-fast-use`
 

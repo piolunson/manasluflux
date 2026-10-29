@@ -3,7 +3,9 @@
   "package": "com.manasluflux.addon.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "BlockEntityDispatcherMixin"
+    "EndCrystalRendererMixin",
+    "BlockEntityDispatcherMixin",
+    "EntitySlowMovementMixin"
   ],
   "injectors": {
     "defaultRequire": 1
