@@ -131,6 +131,7 @@ public class VisualizeWebBypassGraphCommand extends Command {
             .replace("__WEBTIMER__", String.format(Locale.ROOT, "%.3f", cobweb.webTimerValue()))
             .replace("__CONSTANT__", String.format(Locale.ROOT, "%.3f", cobweb.timerMultiplierValue()))
             .replace("__PEAK__", String.format(Locale.ROOT, "%.3f", peak))
+            .replace("__CAP__", String.format(Locale.ROOT, "%.3f", cobweb.graphMaxValue()))
             .replace("__MAXT__", String.format(Locale.ROOT, "%.1f", MAX_SECONDS))
             .replace("__SAMPLES__", samples.toString())
             .replace("__ERROR__", broken ? esc(error) : "")
@@ -198,6 +199,8 @@ public class VisualizeWebBypassGraphCommand extends Command {
   .curve { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
   .fill { fill: url(#g); opacity: .85; }
   .marker { stroke: #6d6a7c; stroke-width: 1; stroke-dasharray: 3 4; }
+  .cap { stroke: var(--good); stroke-width: 1.5; stroke-dasharray: 7 5; opacity: .75; }
+  .caplabel { fill: var(--good); font-size: 11px; }
   .knob { fill: var(--txt); stroke: var(--accent); stroke-width: 2.5; }
   .controls { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
   input[type=range] { flex: 1; accent-color: var(--accent); }
@@ -225,6 +228,7 @@ public class VisualizeWebBypassGraphCommand extends Command {
     <span class="chip">Constant <b>__CONSTANT__x</b></span>
     <span class="chip">Web timer <b>__WEBTIMER__x</b></span>
     <span class="chip">Peak <b>__PEAK__x</b></span>
+    <span class="chip">Max timer <b>__CAP__x</b></span>
   </div>
 
   <div class="card" id="err" hidden>
@@ -248,6 +252,8 @@ public class VisualizeWebBypassGraphCommand extends Command {
       <g id="grid"></g>
       <path id="area" class="fill" d=""></path>
       <path id="curve" class="curve" d=""></path>
+      <line id="cap" class="cap" x1="0" y1="0" x2="0" y2="0" hidden></line>
+      <text id="caplabel" class="caplabel" hidden></text>
       <line id="marker" class="marker" x1="0" y1="0" x2="0" y2="0"></line>
       <circle id="knob" class="knob" r="5"></circle>
       <g id="labels"></g>
@@ -264,6 +270,7 @@ public class VisualizeWebBypassGraphCommand extends Command {
       <tbody>
         <tr><th>1.00x</th><td>normal game speed (a formula value of 0)</td></tr>
         <tr><th>1 + scale</th><td>the plateau, reached once the formula sits at 1</td></tr>
+        <tr><th>max-timer</th><td>a hard ceiling on the graph speed (0 = no cap); the green dashed line when it is in view</td></tr>
         <tr><th>t</th><td>seconds spent in the current web; it resets the moment you leave</td></tr>
       </tbody>
     </table>
@@ -274,6 +281,7 @@ public class VisualizeWebBypassGraphCommand extends Command {
 const BROKEN = __BROKEN__;
 const SAMPLES = __SAMPLES__;
 const MAXT = __MAXT__;
+const CAP = __CAP__;
 
 const W = 900, H = 340, PAD_L = 46, PAD_R = 16, PAD_T = 14, PAD_B = 30;
 const svg = document.getElementById('chart');
@@ -336,6 +344,21 @@ if (!BROKEN && SAMPLES.length > 1) {
   base.setAttribute('y1', ys(1)); base.setAttribute('y2', ys(1));
   base.setAttribute('class', 'base');
   grid.appendChild(base);
+
+  // The max-timer ceiling, when it is actually within view.
+  if (CAP > 0 && CAP >= yMin && CAP <= yMax) {
+    const cap = document.getElementById('cap');
+    cap.hidden = false;
+    cap.setAttribute('x1', PAD_L); cap.setAttribute('x2', W - PAD_R);
+    cap.setAttribute('y1', ys(CAP)); cap.setAttribute('y2', ys(CAP));
+
+    const label = document.getElementById('caplabel');
+    label.hidden = false;
+    label.setAttribute('x', W - PAD_R - 6);
+    label.setAttribute('y', ys(CAP) - 7);
+    label.setAttribute('text-anchor', 'end');
+    label.textContent = 'max ' + fmt(CAP, 2) + 'x';
+  }
 
   let d = '';
   SAMPLES.forEach((p, i) => { d += (i ? ' L' : 'M') + xs(p[0]).toFixed(1) + ' ' + ys(p[1]).toFixed(1); });

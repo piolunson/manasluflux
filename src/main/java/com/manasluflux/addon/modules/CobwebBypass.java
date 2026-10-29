@@ -183,6 +183,16 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    private final Setting<Double> graphMax = sgTimer.add(new DoubleSetting.Builder()
+        .name("max-timer")
+        .description("Graph mode: never speed the timer past this, whatever the formula works out to (0 = no cap).")
+        .defaultValue(10.0)
+        .range(0.0, 10000.0)
+        .sliderRange(0.0, 10000.0)
+        .visible(() -> timerMode.get() == TimerMode.Graph)
+        .build()
+    );
+
     private final Setting<Boolean> allStuckBlocks = sgGeneral.add(new BoolSetting.Builder()
         .name("all-stuck-blocks")
         .description("Softens every stuck-speed block, not just cobwebs (sweet berry bushes, powder snow and anything else that multiplies your movement).")
@@ -474,7 +484,13 @@ public class CobwebBypass extends Module {
 
         // 1 + scale * f(t): the formula floors at 0, so the timer never dips below normal speed
         // and a formula that starts at 0 starts the boost from 1x instead of from 0.
-        return 1.0 + Math.max(0.0, graphValue()) * graphScale.get();
+        return capTimer(1.0 + Math.max(0.0, graphValue()) * graphScale.get());
+    }
+
+    /** max-timer: a hard ceiling on the graph speed, so a steep formula can't launch you. 0 = no cap. */
+    private double capTimer(double speed) {
+        double cap = graphMax.get();
+        return cap > 0 ? Math.min(speed, cap) : speed;
     }
 
     /** Evaluates graph-formula for the current time in the web, warning once if it does not parse. */
@@ -538,6 +554,10 @@ public class CobwebBypass extends Module {
         return webTimer.get();
     }
 
+    public double graphMaxValue() {
+        return graphMax.get();
+    }
+
     /**
      * The timer multiplier this module would use {@code seconds} into a web. Used by
      * {@code .mfvisualizewebbypassgraph} so the chart is drawn from the same code the timer runs,
@@ -547,7 +567,7 @@ public class CobwebBypass extends Module {
         if (timerMode.get() == TimerMode.Constant) return timerMultiplier.get();
 
         try {
-            return 1.0 + Math.max(0.0, Formula.eval(graphFormula.get(), seconds)) * graphScale.get();
+            return capTimer(1.0 + Math.max(0.0, Formula.eval(graphFormula.get(), seconds)) * graphScale.get());
         } catch (RuntimeException e) {
             return Double.NaN;
         }
