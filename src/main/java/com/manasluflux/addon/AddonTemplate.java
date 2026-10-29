@@ -77,6 +77,7 @@ import com.manasluflux.addon.modules.TntPlacer;
 import com.manasluflux.addon.modules.ToggleTab;
 import com.manasluflux.addon.modules.UniversalColoredChat;
 import com.manasluflux.addon.modules.UniversalFlight;
+import com.manasluflux.addon.modules.VClipPhaseFill;
 import com.manasluflux.addon.modules.Waypoint;
 import com.manasluflux.addon.modules.DeathCommands;
 import com.mojang.logging.LogUtils;
@@ -132,6 +133,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new PingSpoofer());
         Modules.get().add(new InventoryKeeper());
         Modules.get().add(new PlaceTravel());
+        Modules.get().add(new VClipPhaseFill());
 
         // Rewrite category (Meteor built-ins, rewritten for ManasluFlux)
         Modules.get().add(new AutoRespawn());

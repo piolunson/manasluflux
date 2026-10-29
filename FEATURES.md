@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.0.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.1.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (44)
+## Modules (45)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -26,7 +26,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Silent Aura | `silent-aura` | Attacks the nearest player without rotating or swinging your visible hand — **silent aim** (server-side-only look rotation at the target, body or head) plus a silent weapon switch. **Pause** group: `pause-on-mine` and `pause-on-eat` temporarily stop the aura while you mine or eat/drink. |
 | TNT Placer | `tnt-placer` | Traps the nearest player in (crying) obsidian, buries them in TNT and ignites it — non-stop. |
 
-### Category: Manaslu Flux Movement (6)
+### Category: Manaslu Flux Movement (7)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -36,6 +36,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Place Travel | `place-travel` | Sprint-and-jump travel for the nether roof: holds forward and sprint, and jumps on the very first tick you touch the ground — the 10 tick vanilla jump cooldown is bypassed by calling the jump directly, so the hops never stall. While running it lays a straight line of blocks ahead of you on a fixed level (the block level you last stood on, tracked so the line stays flat through the jump arc). Settings: `distance` (blocks ahead, default 2; beyond block reach is skipped), `height` (**Floor** by default = keeps the level you are running on solid, so a hole can't drop you; `Feet` / `Head` / `Above head` build the line over you instead), `blocks-per-tick`, `blocks` whitelist (netherrack / cobblestone / dirt by default — only blocks you carry are used), `sprint`, `jump`, `rotate`. |
 | Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
+| VClip PhaseFill | `vclip-phasefill` | The phase-fill trick as one one-shot module: **vclips** you `distance` blocks (default 3) straight **Down** or **Up**, **fills the blocks your body stood in before the clip** (feet + head, from the `fill-blocks` whitelist in your hotbar, `blocks-per-tick` each tick until they land) and then **waits for the server's rubberband** — the position-sync teleport an anticheat sends when it disagrees with where you are. `hold-position` (default on) keeps re-applying the clipped spot while waiting, because the client itself pushes an entity out of a solid block. If no rubberband arrives within `timeout` ticks (default 20 = 1 s, `0` = immediately), it **vclips back** to where you started. `rotate` for the fills, chat messages on start/rubberband/return, and it switches itself off when the sequence ends. |
 
 ### Category: Manaslu Flux Player (7)
 
@@ -147,7 +148,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 Modules are grouped by what they do, so nothing shares a grab-bag category any more:
 
 - **Manaslu Flux Combat** (7) — fighting: auras, totem, TNT, pearl phase, clicker (end crystal icon)
-- **Manaslu Flux Movement** (6) — getting around: the three flights, auto walk, click TP, place travel (feather icon)
+- **Manaslu Flux Movement** (7) — getting around: the three flights, auto walk, click TP, place travel, vclip phasefill (feather icon)
 - **Manaslu Flux Player** (7) — keeping you alive and stocked: eat, fish, log, respawn, login, fast use, inventory keeper (golden apple icon)
 - **Manaslu Flux World** (4) — changing blocks around you: placer, auto wither, map part, block replacer (grass block icon)
 - **Manaslu Flux Client Side** (8) — what you see and what the server sees: block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
@@ -180,6 +181,7 @@ ManasluFlux ships with **Baritone built in** — the unmodified official Fabric 
 
 | Version | Changes |
 |---|---|
+| 1.1.0 | **New module: VClip PhaseFill** (`vclip-phasefill`) — the vclip phase-fill trick in one one-shot module. Enabling it **vclips you `distance` blocks** (default 3) straight **Down** (default) or **Up**, then **fills the two blocks your body was standing in before the clip** (feet + head) with a block from the `fill-blocks` whitelist in your hotbar, `blocks-per-tick` per tick, retried until they land. After that it waits for the server's **rubberband** — the `PlayerPositionLookS2CPacket` correction an anticheat sends when it rejects the position — and stops as soon as one arrives. `hold-position` (default on) re-applies the clipped spot every tick while waiting, because the client pushes an entity that ends up inside a solid block back out on its own. If no rubberband shows up within `timeout` ticks (default 20 = 1 s, `0` = immediately) it **vclips back** to where you started. Fills are normal silent-rotated block places, and the module switches itself off when the sequence ends. Counts: 45 modules, Movement 7. |
 | 1.0.0 | **1.0 clean-up release.** Three modules are gone: **AC PacketFlood** (`ac-pcktflood`, together with the 1 ms `MsScheduler` helper it was the only user of), **Crystal Optimizer** (`crystal-optimizer`, along with the `EndCrystalRendererMixin` that cancelled the vanilla crystal render - the jar now ships a single mixin) and **Add Text** (`add-text`), which is now only the `.mfaddtext` chat command with no module behind it, so local lines are no longer kept across relogs and `.mfaddtext clear` went with the saved list. Nothing else changed: Crystal Aura and Auto Totem keep their Packet groups, and every other module, command and HUD element is untouched. Counts: 44 modules (Combat 7, Movement 6, Player 7, World 4, Client Side 8, Utility 12), 26 commands, 7 HUD elements. |
 | 0.12.0 | **New module: Place Travel** (`place-travel`) — one-key travel for the nether roof. It holds forward and sprint for you and jumps on the first tick you are back on the ground: the jump is called directly, which skips the 10 tick jump cooldown that gates holding the jump key, so the bunny hops come out back to back. At the same time it lays a straight line of blocks ahead of you — `distance` blocks in front (default 2, beyond reach is skipped) at the `height` you pick: **Floor** (default) continues the level you are running on so a hole in the roof can't drop you, `Feet` / `Head` / `Above head` build the line over you instead (a line at head height is inside the jump arc, so it stops you at the first block — that mode is for covering travel, not for hopping through). The line sits on the block level you last stood on, tracked separately, so it stays flat while you are mid-jump, and every placement is a normal silent-rotated block place using the first matching block from your hotbar. Counts: 47 modules, Movement 6. |
 | 0.11.0 | **New module: Inventory Keeper** (`inventory-keeper`) — a save/restore layout keeper for your inventory. The module screen gets a **Save layout** button: it snapshots which item sits in each of the 36 playable slots (or just the nine hotbar slots with `only-hotbar`). Then every `refresh-rate` ms (default 200, 0 = every tick) it re-reads the inventory and swaps the saved items back into their slots; the item occupying a wrong slot is swapped out to where the wanted one came from, so nothing is dropped, consumed or moved out of the inventory. Items that no longer exist are skipped, checks only run with no screen open and an empty cursor, and at most 8 swaps happen per check so a scrambled inventory settles over a few refreshes instead of one burst. The layout persists in the Meteor config. Counts: 46 modules, Player 7. |
