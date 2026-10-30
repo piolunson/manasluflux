@@ -27,26 +27,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 
-/**
- * Port of Homovore's <b>SpeedMine</b> ({@code dev.leonetic.features.modules.world.SpeedMineModule},
- * leonetics/homovore-public, <b>AGPL-3.0</b>). The original file is vendored unmodified in
- * {@code homovore/modules/SpeedMineModule.java}.
- *
- * <p>What it does, from the original: clicking a block is cancelled client-side and the break is
- * driven by <b>our own packets</b> at the speed of your best tool. A <b>Grim decoy</b> sends a second
- * {@code START_DESTROY_BLOCK} two thousand blocks below the world, so the pair of starts Grim sees
- * does not look like a single fast break; the client-side progress is predicted from the real break
- * delta, and once it reaches {@code threshold} the stop packet goes out with the best tool held.
- * <b>Double break</b> demotes a break in progress to a second slot so a new click can start
- * immediately, <b>break ahead</b> also mines the block your look ray continues into, and
- * <b>rebreak</b> keeps re-sending the stop so the block really disappears.
- *
- * <p>Adapted to Yarn 1.21.11 / Meteor: {@code AttackBlockEvent} becomes
- * {@link StartBreakingBlockEvent}, {@code InteractionUtil.getBreakDelta} becomes Meteor's
- * {@code BlockUtils.getBreakDelta}, Homovore's swap manager becomes an {@code InvUtils} swap held
- * for the break, and rendering goes through {@code Renderer3D} instead of Homovore's render utils.
- * See {@code homovore/README.md} for the full mapping and the license note.
- */
 public class SpeedMine extends Module {
     private static final int DECOY_Y_OFFSET = 2000;
 
@@ -193,7 +173,7 @@ public class SpeedMine extends Module {
 
     public SpeedMine() {
         super(AddonTemplate.WORLD_CATEGORY, "mf-speed-mine",
-            "Packet mines the clicked block at best-tool speed behind a Grim decoy, then rebreaks it (port of Homovore's SpeedMine).");
+            "Packet mines the clicked block at best-tool speed behind a Grim decoy, then rebreaks it.");
     }
 
     @Override
@@ -582,6 +562,20 @@ public class SpeedMine extends Module {
 
     public boolean isMining(BlockPos target) {
         return target.equals(pos) || target.equals(secondaryPos);
+    }
+
+    /**
+     * Collects the blocks this miner is partway through, for modules that plan around them - the
+     * crystal aura ignores a block it is already breaking when it works out explosion exposure.
+     * Same contract as Homovore's {@code SpeedMineModule#collectMiningPositions}.
+     *
+     * @param out           receives the positions
+     * @param minCompletion how far through the break a block has to be, 0..1
+     */
+    public void collectMiningPositions(java.util.Collection<BlockPos> out, double minCompletion) {
+        if (!isActive()) return;
+        if (pos != null && progress >= minCompletion) out.add(pos);
+        if (secondaryPos != null && secondaryProgress >= minCompletion) out.add(secondaryPos);
     }
 
     /**

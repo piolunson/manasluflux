@@ -21,6 +21,9 @@ says GPL-3.0.
 |---|---|---|---|
 | [modules/SpeedMineModule.java](modules/SpeedMineModule.java) | `src/main/java/dev/leonetic/features/modules/world/SpeedMineModule.java` | `com.manasluflux.addon.modules.SpeedMine` (`mf-speed-mine`) | Ported in 1.11.7 |
 | [modules/MineApi.java](modules/MineApi.java) | `src/main/java/dev/leonetic/features/modules/world/MineApi.java` | — | **Not ported**: it exists so AutoMine/Nuker can request breaks, and this addon has no such module. |
+| [modules/AutoCrystalModule.java](modules/AutoCrystalModule.java) | `src/main/java/dev/leonetic/features/modules/combat/AutoCrystalModule.java` | `com.manasluflux.addon.modules.AutoCrystal` (`auto-crystal`) | Ported in 1.12.0 |
+| [modules/PlacementManager.java](modules/PlacementManager.java) | `src/main/java/dev/leonetic/manager/PlacementManager.java` | `com.manasluflux.addon.homovore.PlacementManager` | Ported in 1.12.0 |
+| [modules/BlockHighlightModule.java](modules/BlockHighlightModule.java) | `src/main/java/dev/leonetic/features/modules/render/BlockHighlightModule.java` | `com.manasluflux.addon.modules.BlockHighlight` (`block-highlight`) | Ported in 1.12.1, with a glow added |
 
 ## Porting notes
 
@@ -41,3 +44,28 @@ is an adaptation, not a copy. Homovore's helper layer is not vendored either:
 `faceMargin` uses the player's current position only, where Homovore also checks the previous
 tick's position; the previous-position fields have no stable Yarn name in 1.21.11, and the current
 tick is the stricter of the two checks anyway.
+
+### Crystal aura (1.12.0)
+
+| Homovore | Here |
+|---|---|
+| `Homovore.rotationManager.submit(RotationRequest)` (`SILENT`) | Meteor's `Rotations.rotate(yaw, pitch, priority, callback)` - the break packet is the callback, so it follows the look packet |
+| `Homovore.rotationManager.getServerYaw()/getServerPitch()` | `Rotations.serverYaw` / `Rotations.serverPitch` |
+| `Homovore.swapManager.withSwap(..., SILENT)` in the placement manager | `InvUtils.swap(slot, true)` ... `InvUtils.swapBack()` around the whole batch |
+| `ClientLevelAccessor.homovore$getBlockStatePredictionHandler()` sequence | Meteor's `BlockUtils.interact(...)`, which sends the sequenced use packet |
+| Homovore's hand-rolled damage model (`MathUtil` + `CombatRules` + exposure raycast) | Meteor's `DamageUtils.crystalDamage(...)`, the same vanilla explosion formula, plus a custom `RaycastFactory` that keeps Homovore's rules: only blocks with blast resistance >= 600 shadow, blocks Speed Mine is partway through do not, and a phantom base counts as the obsidian it is about to become |
+| `TargetsModule` (a separate module there) | settings on the aura itself (players / hostiles / neutrals / passives / ignore-friends) |
+| `AutoSwordModule` mace-ready defer | dropped: this addon has no sword module, so there is nothing to defer to |
+| Damage-sync particle-colour probe (`DamageSyncTracker`) | `timeUntilRegen` plus the full-armour / turtle-master check |
+| 5 render styles on Homovore's gradient pipeline | `Renderer3D.box(...)` with `None` / `Box` (smoothed) / `Pulse` |
+| Batching in `PlacementManager` (queue, 9 per 300 ms window, 50 ms per block) | identical, in `com.manasluflux.addon.homovore.PlacementManager` |
+
+### Block highlight (1.12.1)
+
+| Homovore | Here |
+|---|---|
+| `RenderBlockOutlineEvent` (cancelled, so the vanilla outline is hidden) | `mc.gameRenderer.setBlockOutlineEnabled(false)` on activate, back to `true` on deactivate |
+| `RenderUtil.drawBox(matrix, box, color, lineWidth)` | `Renderer3D.boxLines(...)`; Meteor's 3D lines have a fixed width, so `line-width` is not carried over |
+| the 60 ms `FadingIn` / `Visible` / `Shifting` / `FadingOut` / `Idle` state machine, smoothstep easing, 20% pinch while shifting | identical, ported line for line |
+| `mc.hitResult` / `AABB` / `VoxelShape.bounds()` | `mc.crosshairTarget` / `Box` / `VoxelShape.getBoundingBox().offset(pos)` |
+| — | **added:** `glow`, `glow-layers`, `glow-spread`, `glow-strength` - translucent shells outside the box, drawn with `boxSides` + `boxLines` and animated with the box |

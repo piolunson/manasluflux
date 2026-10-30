@@ -54,6 +54,7 @@ import com.manasluflux.addon.modules.AutoMapPart;
 import com.manasluflux.addon.modules.AutoWither;
 import com.manasluflux.addon.modules.BlockReplacer;
 import com.manasluflux.addon.modules.ChatLogger;
+import com.manasluflux.addon.modules.Surround;
 import com.manasluflux.addon.modules.BritishChat;
 import com.manasluflux.addon.modules.Screenshot;
 import com.manasluflux.addon.modules.BreakReminder;
@@ -64,17 +65,23 @@ import com.manasluflux.addon.modules.JumpPearlPhase;
 import com.manasluflux.addon.modules.TotemPopPearlPhase;
 import com.manasluflux.addon.modules.SpeedMine;
 import com.manasluflux.addon.modules.SelfMineOut;
+import com.manasluflux.addon.modules.NoForceRotation;
 import com.manasluflux.addon.modules.Clicker;
 import com.manasluflux.addon.modules.ClickTp;
 import com.manasluflux.addon.modules.ClientBlockEntities;
 import com.manasluflux.addon.modules.ClientSideNightVision;
 import com.manasluflux.addon.modules.CobwebBypass;
-import com.manasluflux.addon.modules.CrystalAura;
+import com.manasluflux.addon.modules.BlockHighlight;
+import com.manasluflux.addon.modules.CustomEsp;
+import com.manasluflux.addon.modules.AutoCrystal;
 import com.manasluflux.addon.modules.DeathCoords;
 import com.manasluflux.addon.modules.DiscordRpc;
 import com.manasluflux.addon.modules.ElytraFlight;
 import com.manasluflux.addon.modules.InstantTnt;
 import com.manasluflux.addon.modules.InventoryKeeper;
+import com.manasluflux.addon.modules.XCarry;
+import com.manasluflux.addon.modules.FovModifier;
+import com.manasluflux.addon.modules.KillSay;
 import com.manasluflux.addon.modules.ModuleExample;
 import com.manasluflux.addon.modules.PacketLimiter;
 import com.manasluflux.addon.modules.SoundBlocker;
@@ -88,6 +95,7 @@ import com.manasluflux.addon.modules.PingSpoofer;
 import com.manasluflux.addon.modules.PlaceTravel;
 import com.manasluflux.addon.modules.Placer;
 import com.manasluflux.addon.modules.SilentAura;
+import com.manasluflux.addon.modules.SilentTimerSwitch;
 import com.manasluflux.addon.modules.TntPlacer;
 import com.manasluflux.addon.modules.ToggleTab;
 import com.manasluflux.addon.modules.UniversalColoredChat;
@@ -149,6 +157,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new Placer());
         Modules.get().add(new PingSpoofer());
         Modules.get().add(new InventoryKeeper());
+        Modules.get().add(new XCarry());
         Modules.get().add(new PlaceTravel());
         Modules.get().add(new VClipPhaseFill());
         Modules.get().add(new CobwebBypass());
@@ -169,17 +178,20 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new TotemPopPearlPhase());
         Modules.get().add(new SpeedMine());
         Modules.get().add(new SelfMineOut());
+        Modules.get().add(new NoForceRotation());
         Modules.get().add(new TabLogger());
         Modules.get().add(new TabCompletePrivacy());
         Modules.get().add(new ClickTp());
         Modules.get().add(new Clicker());
         Modules.get().add(new SoundBlocker());
         Modules.get().add(new PacketLimiter());
+        Modules.get().add(new SilentTimerSwitch());
 
         // Client-side modules (own ClickGUI category)
         Modules.get().add(new ClientBlockEntities());
         Modules.get().add(new AntiDropLagBack());
         Modules.get().add(new ClientSideNightVision());
+        Modules.get().add(new FovModifier());
         Modules.get().add(new ToggleTab());
         Modules.get().add(new InstantTnt());
         Modules.get().add(new UniversalColoredChat());
@@ -191,9 +203,13 @@ public class AddonTemplate extends MeteorAddon {
         // Combat modules (own ClickGUI category)
         Modules.get().add(new TntPlacer());
         Modules.get().add(new SilentAura());
-        Modules.get().add(new CrystalAura());
+        Modules.get().add(new AutoCrystal());
+        Modules.get().add(new Surround());
+        Modules.get().add(new BlockHighlight());
+        Modules.get().add(new CustomEsp());
         Modules.get().add(new AutoTotem());
         Modules.get().add(new BedAura());
+        Modules.get().add(new KillSay());
 
         // Example module & HUD kept from the template
         Modules.get().add(new ModuleExample());

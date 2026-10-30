@@ -88,7 +88,7 @@ public class AutoTotem extends Module {
     private long pendingUntil;
 
     public AutoTotem() {
-        super(AddonTemplate.COMBAT_CATEGORY, "auto-totem", "Instantly refills a totem of undying into your offhand whenever it is used or pops.");
+        super(AddonTemplate.COMBAT_CATEGORY, "mf-auto-totem", "Instantly refills a totem of undying into your offhand whenever it is used or pops.");
     }
 
     @Override
