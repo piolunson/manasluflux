@@ -25,68 +25,60 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * Elytra flight you fly with fireworks: it keeps the glide going by boosting only when you are
- * slower than the speed you set, and with fake fly it does that while you are wearing a chestplate
- * - the hotbar elytra is swapped into the server's chest slot for the start-gliding packet and
- * straight back out, so the elytra is never actually worn and loses no durability.
+ * Rocket-powered elytra flight. The rockets are the thrust: aim with the keys, and a firework is
+ * lit in that direction whenever you are slower than the speed you set, so you settle at that
+ * speed instead of accelerating forever. Jump climbs, sneak descends, W/A/S/D move, and with no
+ * key held the glide is stopped dead and you hover where you are.
  *
- * <p>The fake-fly swap follows the trick used by Stashhunting's {@code ElytraFlyPlusPlus}
- * (miles352, MIT) and the Grim elytra fly the same idea comes from.
+ * <p>Fake fly does the same with a chestplate: the hotbar elytra is shown to the server for one
+ * start-gliding packet and swapped straight back, so the elytra is never worn and costs no
+ * durability (the trick from Stashhunting's {@code ElytraFlyPlusPlus}).
  */
 public class FireworkElytraFly extends Module {
     private static final int CHEST_SLOT = 6;
+    private static final double TICKS_PER_SECOND = 20.0;
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgFakeFly = settings.createGroup("Fake Fly");
 
-    private final Setting<Boolean> autoTakeoff = sgGeneral.add(new BoolSetting.Builder()
-        .name("auto-takeoff")
-        .description("Jumps for you and starts gliding, so a rocket can be used right away.")
+    private final Setting<Double> horizontalSpeed = sgGeneral.add(new DoubleSetting.Builder()
+        .name("horizontal-speed")
+        .description("Blocks per second to travel horizontally. The rockets push you; this is the speed they are cut off at.")
+        .defaultValue(20.0)
+        .range(0.0, 100.0)
+        .sliderRange(1.0, 60.0)
+        .build()
+    );
+
+    private final Setting<Double> verticalSpeed = sgGeneral.add(new DoubleSetting.Builder()
+        .name("vertical-speed")
+        .description("Blocks per second to climb or descend with jump / sneak.")
+        .defaultValue(8.0)
+        .range(0.0, 50.0)
+        .sliderRange(1.0, 25.0)
+        .build()
+    );
+
+    private final Setting<Boolean> hover = sgGeneral.add(new BoolSetting.Builder()
+        .name("hover")
+        .description("With no movement key held, stop the glide and stay exactly where you are.")
         .defaultValue(true)
         .build()
     );
 
-    private final Setting<Boolean> autoFireworks = sgGeneral.add(new BoolSetting.Builder()
-        .name("auto-fireworks")
-        .description("Uses a firework rocket whenever you are slower than the target speed.")
+    private final Setting<Boolean> autoTakeoff = sgGeneral.add(new BoolSetting.Builder()
+        .name("auto-takeoff")
+        .description("Jumps and starts gliding for you.")
         .defaultValue(true)
         .build()
     );
 
     private final Setting<Double> fireworkDelay = sgGeneral.add(new DoubleSetting.Builder()
         .name("firework-delay")
-        .description("Seconds between two rockets.")
-        .defaultValue(1.5)
+        .description("Seconds between rockets while you still need speed.")
+        .defaultValue(0.8)
         .range(0.2, 10.0)
         .sliderRange(0.2, 5.0)
-        .visible(autoFireworks::get)
-        .build()
-    );
-
-    private final Setting<Double> targetSpeed = sgGeneral.add(new DoubleSetting.Builder()
-        .name("target-speed")
-        .description("Blocks per second to stay at. No rocket is used while you are already going faster.")
-        .defaultValue(35.0)
-        .range(0.0, 250.0)
-        .sliderRange(10.0, 120.0)
-        .visible(autoFireworks::get)
-        .build()
-    );
-
-    private final Setting<Boolean> lockPitch = sgGeneral.add(new BoolSetting.Builder()
-        .name("lock-pitch")
-        .description("Holds your pitch while gliding, so a rocket does not send you into a climb or a dive.")
-        .defaultValue(false)
-        .build()
-    );
-
-    private final Setting<Double> pitch = sgGeneral.add(new DoubleSetting.Builder()
-        .name("pitch")
-        .description("The pitch to hold. 0 is level flight.")
-        .defaultValue(0.0)
-        .range(-90.0, 90.0)
-        .sliderRange(-90.0, 90.0)
-        .visible(lockPitch::get)
         .build()
     );
 
@@ -119,10 +111,11 @@ public class FireworkElytraFly extends Module {
     private boolean warnedElytra;
 
     private boolean sprintBefore;
+    private Vec3d hoverPos;
 
     public FireworkElytraFly() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "firework-elytra-fly",
-            "Elytra flight flown with fireworks: it boosts only while you are slower than the speed you set, and fake fly lets you do it with a chestplate on.");
+            "Rocket-powered elytra flight: jump climbs, sneak descends, WASD moves, and letting go hovers in place. Fireworks are the thrust.");
     }
 
     @Override
@@ -130,6 +123,7 @@ public class FireworkElytraFly extends Module {
         if (mc.player == null) return;
 
         sprintBefore = mc.player.isSprinting();
+        hoverPos = null;
         cooldown = 0;
         spoofCooldown = 0;
         warnedRocket = false;
@@ -142,6 +136,7 @@ public class FireworkElytraFly extends Module {
     public void onDeactivate() {
         if (mc.player == null) return;
 
+        hoverPos = null;
         mc.player.setSprinting(sprintBefore);
 
         if (toggleElytra.get() && !fakeFly.get() && isElytraEquipped()) chestSwap();
@@ -162,37 +157,132 @@ public class FireworkElytraFly extends Module {
             return;
         }
 
-        if (fakeFly.get()) {
-            if (mc.player.isOnGround()) {
-                if (autoTakeoff.get()) mc.player.jump();
-            } else if (!mc.player.isGliding() && spoofCooldown == 0) {
-                spoofStartGliding();
-            }
-        } else {
-            if (!isElytraEquipped()) return;
+        if (!mc.player.isGliding()) {
+            if (!autoTakeoff.get()) return;
 
-            if (!mc.player.isGliding() && autoTakeoff.get() && !mc.player.isOnGround()) {
-                mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+            // On the ground, only leave it when you ask with jump - no bunny-hopping while idle.
+            if (mc.player.isOnGround()) {
+                if (mc.options.jumpKey.isPressed()) mc.player.jump();
+            } else if (fakeFly.get()) spoofStartGliding();
+            else startGliding();
+
+            return;
+        }
+
+        fly();
+    }
+
+    private void fly() {
+        Vec3d direction = inputDirection();
+
+        // No key held: park in the air. Zeroing the velocity alone lets gravity sink you a little
+        // every tick, so the position is held as well.
+        if (direction.lengthSquared() < 1.0E-4) {
+            if (hover.get()) {
+                if (hoverPos == null) hoverPos = new Vec3d(mc.player.getX(), mc.player.getY(), mc.player.getZ());
+
+                mc.player.setVelocity(Vec3d.ZERO);
+                mc.player.setPosition(hoverPos.x, hoverPos.y, hoverPos.z);
+            }
+
+            return;
+        }
+
+        hoverPos = null;
+        aim(direction);
+
+        double maxHorizontal = horizontalSpeed.get() / TICKS_PER_SECOND;
+        double maxVertical = verticalSpeed.get() / TICKS_PER_SECOND;
+
+        Vec3d velocity = mc.player.getVelocity();
+        double horizontal = Math.hypot(velocity.x, velocity.z);
+
+        // Rockets are the accelerator: light one only while the speed is still short of the target.
+        if (cooldown == 0) {
+            boolean horizontalSlow = horizontal < maxHorizontal * 0.9;
+            boolean verticalSlow = Math.abs(velocity.y) < maxVertical * 0.9;
+            boolean wantsHorizontal = direction.x != 0 || direction.z != 0;
+            boolean wantsVertical = direction.y != 0;
+
+            if ((wantsHorizontal && horizontalSlow) || (wantsVertical && verticalSlow)) {
+                if (fireRocket()) cooldown = (int) Math.max(1, Math.round(fireworkDelay.get() * TICKS_PER_SECOND));
             }
         }
 
-        if (lockPitch.get() && mc.player.isGliding()) mc.player.setPitch(pitch.get().floatValue());
+        // ...and the speed you set is the ceiling, so a rocket cannot run away with you.
+        velocity = mc.player.getVelocity();
+        double newHorizontal = Math.hypot(velocity.x, velocity.z);
+        double x = velocity.x;
+        double z = velocity.z;
+        double y = velocity.y;
 
-        if (!autoFireworks.get() || !mc.player.isGliding() || cooldown > 0) return;
+        if (maxHorizontal <= 0) {
+            x = 0;
+            z = 0;
+        } else if (newHorizontal > maxHorizontal) {
+            double scale = maxHorizontal / newHorizontal;
+            x *= scale;
+            z *= scale;
+        }
 
-        Vec3d velocity = mc.player.getVelocity();
-        double blocksPerSecond = Math.hypot(velocity.x, velocity.z) * 20.0;
+        if (direction.y == 0) {
+            // Level flight: let the glide keep its own sink, but never faster than the vertical setting.
+            if (Math.abs(y) > maxVertical) y = Math.signum(y) * maxVertical;
+        } else if (Math.abs(y) > maxVertical) {
+            y = Math.signum(y) * maxVertical;
+        }
 
-        if (blocksPerSecond >= targetSpeed.get()) return;
-        if (useFirework()) cooldown = (int) Math.round(fireworkDelay.get() * 20.0);
+        mc.player.setVelocity(new Vec3d(x, y, z));
     }
 
-    private boolean useFirework() {
+    /** WASD + jump/sneak as a world-space direction, horizontal part normalised. */
+    private Vec3d inputDirection() {
+        double forward = (mc.options.forwardKey.isPressed() ? 1 : 0) - (mc.options.backKey.isPressed() ? 1 : 0);
+        double strafe = (mc.options.rightKey.isPressed() ? 1 : 0) - (mc.options.leftKey.isPressed() ? 1 : 0);
+        double up = (mc.options.jumpKey.isPressed() ? 1 : 0) - (mc.options.sneakKey.isPressed() ? 1 : 0);
+
+        double yaw = Math.toRadians(mc.player.getYaw());
+        Vec3d look = new Vec3d(-Math.sin(yaw), 0, Math.cos(yaw));
+        Vec3d right = new Vec3d(-Math.cos(yaw), 0, -Math.sin(yaw));
+
+        double x = look.x * forward + right.x * strafe;
+        double z = look.z * forward + right.z * strafe;
+
+        double length = Math.hypot(x, z);
+        if (length > 1.0E-4) {
+            x /= length;
+            z /= length;
+        } else {
+            x = 0;
+            z = 0;
+        }
+
+        if (x == 0 && z == 0 && up == 0) return Vec3d.ZERO;
+
+        return new Vec3d(x, up, z);
+    }
+
+    private void aim(Vec3d direction) {
+        double horizontal = Math.hypot(direction.x, direction.z);
+
+        if (horizontal > 1.0E-4) mc.player.setYaw((float) Math.toDegrees(Math.atan2(-direction.x, direction.z)));
+
+        if (direction.y != 0) {
+            double pitch = horizontal > 1.0E-4
+                ? -Math.toDegrees(Math.atan2(direction.y, horizontal))
+                : Math.copySign(80.0, -direction.y);
+            mc.player.setPitch((float) pitch);
+        } else if (horizontal > 1.0E-4) {
+            mc.player.setPitch(0.0f);
+        }
+    }
+
+    private boolean fireRocket() {
         FindItemResult rocket = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);
 
         if (!rocket.found()) {
             if (!warnedRocket) {
-                info("No firework rocket in the hotbar.");
+                info("No firework rocket in the hotbar - out of thrust.");
                 warnedRocket = true;
             }
 
@@ -208,6 +298,12 @@ public class FireworkElytraFly extends Module {
 
         InvUtils.swapBack();
         return true;
+    }
+
+    private void startGliding() {
+        if (!isElytraEquipped()) return;
+
+        mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
     }
 
     /**
