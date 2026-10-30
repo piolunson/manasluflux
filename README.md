@@ -6,10 +6,10 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **68 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **69 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (10) — crystal aura, silent aura, trigger bot, bed aura, surround, kill say, auto totem, instant TNT, clicker, TNT placer
-- **Manaslu Flux Movement** (5) — universal/elytra/boat flight, elytra bounce, auto walk
+- **Manaslu Flux Movement** (6) — universal/elytra/boat flight, elytra bounce, firework elytra, auto walk
 - **Manaslu Flux Player** (9) — eating, fishing, login/logout, respawn, inventory keeper, xcarry, fast use
 - **Manaslu Flux World** (5) — placer, block replacer, wither builder, map art, speed mine
 - **Manaslu Flux Client Side** (14) — purely client-side/visual modules, including an FOV modifier and a custom ESP
@@ -53,7 +53,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux Combat (10):** `auto-crystal`, `kill-say`, `mf-auto-totem`, `clicker`, `instant-tnt`, `mf-bed-aura`, `mf-surround`, `mf-trigger-bot`, `silent-aura`, `tnt-placer`
 
-**Manaslu Flux Movement (5):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `mf-elytra-bounce`, `place-travel`
+**Manaslu Flux Movement (6):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `firework-elytra-fly`, `mf-elytra-bounce`, `place-travel`
 
 **Manaslu Flux Player (9):** `mf-auto-eat`, `mf-auto-fish`, `mf-auto-log`, `auto-login`, `mf-auto-respawn`, `inventory-keeper`, `xcarry`, `no-force-rotation`, `whitelist-fast-use`
 
