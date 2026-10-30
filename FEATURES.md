@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.10.2 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.10.3 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (52)
+## Modules (53)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -56,13 +56,14 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 
-### Category: Manaslu Flux Client Side (10)
+### Category: Manaslu Flux Client Side (11)
 
 | Module | ID | What it does |
 |---|---|---|
 | Anti Drop Lagback | `anti-drop-lagback` | Watches the server's position-sync teleports and counts "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side. |
 | Break Reminder | `break-reminder` | Reminds you to stand up: `interval` in **minutes** (default 45, 0 = off, up to 10000) and it speaks up when that much real time has passed. The clock is wall-clock, not ticks, so it counts the same whatever the server is doing, and it restarts whenever you switch the module on — the interval always means "since I enabled this". `chat` prints the reminder in local chat, `title` shows it as the big title text on screen. Its HUD info string shows the current interval. Purely client-side. |
 | Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Purely client-side renderer for any block entity: Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
+| Wool Replace | `wool-replace` | **Places wool while you are holding obsidian.** Every right-click block placement made with obsidian in hand goes out as a wool placement, and your obsidian is selected again the moment the click is done - no settings, no position/target checks, it simply does that while enabled. It has to swap rather than edit the packet, because the placement packet (`PlayerInteractBlockC2SPacket`) carries only the hand, the hit result, the sequence and the screen-handler revision - **not the item**; the server decides what to place from the item it thinks you hold. So a mixin (`WoolReplaceMixin`) swaps to a wool hotbar slot at the head of `interactBlock`, letting vanilla build *and predict* a wool placement (no ghost block), then swaps back on return. Needs wool in your hotbar: with none, the click stays an obsidian placement, since there is no honest way to fake the item. |
 | Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
 | Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |
 | Packet Filter | `packet-filter` | Keeps you under a **packets-per-second budget** by dropping the **least important** packet first instead of whatever happens to arrive next. Every outgoing packet is sorted into three classes: **Critical** is never dropped (keep-alive and pong, because the connection dies without them, plus block/item use, entity interaction, inventory clicks - moving totems and crystals - hotbar switches, swings, player actions, respawn and chat commands); **Normal** is movement, input and mining, dropped only once the budget is stretched a quarter past its limit, so walking is never sacrificed while something cheaper is still going out; **Low** is chat, sprint/sneak state, custom payloads, boat paddles and the rest, the first to go. `preset` picks the ranking: **CPvP** (default) makes placing obsidian/crystals, breaking crystals, totem swaps and swings critical; **Generic** keeps only inventory clicks, block/item use and respawn critical. `max-per-second` is the budget (0 = counting only, nothing dropped), `notifier` reports once a second when packets were filtered. Its HUD shows `sent/budget` per second. Paired with `.mfpacketlimit`, which measures the server's own limit. |
