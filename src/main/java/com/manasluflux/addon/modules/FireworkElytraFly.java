@@ -22,6 +22,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.screen.sync.ItemStackHash;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 /**
@@ -29,6 +30,9 @@ import net.minecraft.util.math.Vec3d;
  * lit in that direction whenever you are slower than the speed you set, so you settle at that
  * speed instead of accelerating forever. Jump climbs, sneak descends, W/A/S/D move, and with no
  * key held the glide is stopped dead and you hover where you are.
+ *
+ * <p>Movement is relative to a reference yaw, not to the yaw this module just wrote: otherwise
+ * holding A or D would turn you, which turns the "right" it is strafing towards, and you spin.
  *
  * <p>Fake fly does the same with a chestplate: the hotbar elytra is shown to the server for one
  * start-gliding packet and swapped straight back, so the elytra is never worn and costs no
@@ -113,9 +117,14 @@ public class FireworkElytraFly extends Module {
     private boolean sprintBefore;
     private Vec3d hoverPos;
 
+    private float referenceYaw;
+    private float lastSetYaw;
+    private boolean yawInitialized;
+    private int lastInputMask;
+
     public FireworkElytraFly() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "firework-elytra-fly",
-            "Rocket-powered elytra flight: jump climbs, sneak descends, WASD moves, and letting go hovers in place. Fireworks are the thrust.");
+            "Rocket-powered elytra flight: jump climbs straight up, sneak descends straight down, WASD moves, and letting go hovers in place. Fireworks are the thrust.");
     }
 
     @Override
@@ -128,6 +137,11 @@ public class FireworkElytraFly extends Module {
         spoofCooldown = 0;
         warnedRocket = false;
         warnedElytra = false;
+
+        referenceYaw = mc.player.getYaw();
+        lastSetYaw = referenceYaw;
+        yawInitialized = false;
+        lastInputMask = 0;
 
         if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) chestSwap();
     }
@@ -170,10 +184,15 @@ public class FireworkElytraFly extends Module {
         }
 
         fly();
+
+        lastSetYaw = mc.player.getYaw();
     }
 
     private void fly() {
-        Vec3d direction = inputDirection();
+        int mask = inputMask();
+        updateReferenceYaw(mask);
+
+        Vec3d direction = inputDirection(referenceYaw);
 
         // No key held: park in the air. Zeroing the velocity alone lets gravity sink you a little
         // every tick, so the position is held as well.
@@ -189,7 +208,11 @@ public class FireworkElytraFly extends Module {
         }
 
         hoverPos = null;
-        aim(direction);
+
+        double horizontalInput = Math.hypot(direction.x, direction.z);
+        boolean straightVertical = horizontalInput < 1.0E-4;
+
+        aim(direction, straightVertical ? referenceYaw : Float.NaN);
 
         double maxHorizontal = horizontalSpeed.get() / TICKS_PER_SECOND;
         double maxVertical = verticalSpeed.get() / TICKS_PER_SECOND;
@@ -201,7 +224,7 @@ public class FireworkElytraFly extends Module {
         if (cooldown == 0) {
             boolean horizontalSlow = horizontal < maxHorizontal * 0.9;
             boolean verticalSlow = Math.abs(velocity.y) < maxVertical * 0.9;
-            boolean wantsHorizontal = direction.x != 0 || direction.z != 0;
+            boolean wantsHorizontal = !straightVertical;
             boolean wantsVertical = direction.y != 0;
 
             if ((wantsHorizontal && horizontalSlow) || (wantsVertical && verticalSlow)) {
@@ -216,7 +239,11 @@ public class FireworkElytraFly extends Module {
         double z = velocity.z;
         double y = velocity.y;
 
-        if (maxHorizontal <= 0) {
+        if (straightVertical) {
+            // Climbing or diving is straight up or down: no sideways drift is left in.
+            x = 0;
+            z = 0;
+        } else if (maxHorizontal <= 0) {
             x = 0;
             z = 0;
         } else if (newHorizontal > maxHorizontal) {
@@ -225,23 +252,57 @@ public class FireworkElytraFly extends Module {
             z *= scale;
         }
 
-        if (direction.y == 0) {
-            // Level flight: let the glide keep its own sink, but never faster than the vertical setting.
-            if (Math.abs(y) > maxVertical) y = Math.signum(y) * maxVertical;
-        } else if (Math.abs(y) > maxVertical) {
-            y = Math.signum(y) * maxVertical;
-        }
+        if (Math.abs(y) > maxVertical) y = Math.signum(y) * maxVertical;
 
         mc.player.setVelocity(new Vec3d(x, y, z));
     }
 
+    private int inputMask() {
+        int mask = 0;
+
+        if (mc.options.forwardKey.isPressed()) mask |= 1;
+        if (mc.options.backKey.isPressed()) mask |= 2;
+        if (mc.options.leftKey.isPressed()) mask |= 4;
+        if (mc.options.rightKey.isPressed()) mask |= 8;
+        if (mc.options.jumpKey.isPressed()) mask |= 16;
+        if (mc.options.sneakKey.isPressed()) mask |= 32;
+
+        return mask;
+    }
+
+    /**
+     * Keeps the yaw the movement is measured from. Our own aim writes the player's yaw every tick,
+     * so the movement direction cannot be derived from it directly - A or D would then be measured
+     * against the turn that same key just caused. Any yaw the player changed with the mouse is
+     * folded in, and a change of keys re-bases it on where you are facing now.
+     */
+    private void updateReferenceYaw(int mask) {
+        float actual = mc.player.getYaw();
+
+        if (!yawInitialized) {
+            referenceYaw = actual;
+            lastSetYaw = actual;
+            lastInputMask = mask;
+            yawInitialized = true;
+            return;
+        }
+
+        float delta = MathHelper.wrapDegrees(actual - lastSetYaw);
+        if (Math.abs(delta) > 1.0E-3f) referenceYaw = MathHelper.wrapDegrees(referenceYaw + delta);
+
+        if (mask != lastInputMask) {
+            referenceYaw = actual;
+            lastInputMask = mask;
+        }
+    }
+
     /** WASD + jump/sneak as a world-space direction, horizontal part normalised. */
-    private Vec3d inputDirection() {
+    private Vec3d inputDirection(float baseYaw) {
         double forward = (mc.options.forwardKey.isPressed() ? 1 : 0) - (mc.options.backKey.isPressed() ? 1 : 0);
         double strafe = (mc.options.rightKey.isPressed() ? 1 : 0) - (mc.options.leftKey.isPressed() ? 1 : 0);
         double up = (mc.options.jumpKey.isPressed() ? 1 : 0) - (mc.options.sneakKey.isPressed() ? 1 : 0);
 
-        double yaw = Math.toRadians(mc.player.getYaw());
+        double yaw = Math.toRadians(baseYaw);
         Vec3d look = new Vec3d(-Math.sin(yaw), 0, Math.cos(yaw));
         Vec3d right = new Vec3d(-Math.cos(yaw), 0, -Math.sin(yaw));
 
@@ -262,15 +323,18 @@ public class FireworkElytraFly extends Module {
         return new Vec3d(x, up, z);
     }
 
-    private void aim(Vec3d direction) {
+    private void aim(Vec3d direction, float keepYaw) {
         double horizontal = Math.hypot(direction.x, direction.z);
 
         if (horizontal > 1.0E-4) mc.player.setYaw((float) Math.toDegrees(Math.atan2(-direction.x, direction.z)));
+        else if (!Float.isNaN(keepYaw)) mc.player.setYaw(keepYaw);
 
         if (direction.y != 0) {
+            // Straight up or straight down when no horizontal key is held, so the rocket pushes
+            // exactly that way instead of drifting off at an angle.
             double pitch = horizontal > 1.0E-4
                 ? -Math.toDegrees(Math.atan2(direction.y, horizontal))
-                : Math.copySign(80.0, -direction.y);
+                : Math.copySign(90.0, -direction.y);
             mc.player.setPitch((float) pitch);
         } else if (horizontal > 1.0E-4) {
             mc.player.setPitch(0.0f);
