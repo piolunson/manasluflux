@@ -2,37 +2,33 @@ package com.manasluflux.addon.mixin;
 
 import com.manasluflux.addon.modules.WoolReplace;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.network.ClientConnection;
+import net.minecraft.network.packet.Packet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Swaps to wool around a block interaction so the placement vanilla builds (and sends) is a wool
- * placement while your obsidian stays where it is in the hotbar.
+ * Rewrites an obsidian placement on its way out: the held slot is spoofed to wool for the server
+ * just long enough for the placement packet to be handled, then put back.
  *
- * <p>It has to happen here rather than on the packet: the item is not part of the placement packet,
- * the server reads it from your inventory, and swapping after the packet was built would let the
- * client predict obsidian where the server places wool - a ghost block.
+ * <p>Hook point is the connection, not {@code interactBlock}, because the item is not part of the
+ * placement packet - the server reads it from the inventory, so the packets either side of it are
+ * what decide which block gets placed. The local inventory is deliberately untouched, which is what
+ * makes the placed block on the server differ from the one your client shows.
  */
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(ClientConnection.class)
 public class WoolReplaceMixin {
-    @Inject(method = "interactBlock", at = @At("HEAD"))
-    private void mf$swapToWool(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult,
-                               CallbackInfoReturnable<ActionResult> cir) {
+    @Inject(method = "send", at = @At("HEAD"))
+    private void mf$woolBeforeSend(Packet<?> packet, CallbackInfo ci) {
         WoolReplace module = Modules.get().get(WoolReplace.class);
-        if (module != null) module.beforePlacement(hand);
+        if (module != null) module.beforeSend(packet);
     }
 
-    @Inject(method = "interactBlock", at = @At("RETURN"))
-    private void mf$restoreAfterPlacement(ClientPlayerEntity player, Hand hand, BlockHitResult hitResult,
-                                          CallbackInfoReturnable<ActionResult> cir) {
+    @Inject(method = "send", at = @At("RETURN"))
+    private void mf$woolAfterSend(Packet<?> packet, CallbackInfo ci) {
         WoolReplace module = Modules.get().get(WoolReplace.class);
-        if (module != null) module.afterPlacement();
+        if (module != null) module.afterSend(packet);
     }
 }
