@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.8.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.9.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,13 +12,14 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (46)
+## Modules (47)
 
-### Category: Manaslu Flux Combat (6)
+### Category: Manaslu Flux Combat (7)
 
 | Module | ID | What it does |
 |---|---|---|
 | Auto Totem | `auto-totem` | Instantly refills a totem of undying into your offhand whenever it is used or pops. Settings: `delay`; **Packet** group — `packet-level` (refill through raw inventory click packets and detect the pop from the entity status packet, removing the inventory/tick delay), `packet-retries`, `packet-retry-delay`, `max-packets-per-second`. |
+| Bed Aura | `mf-bed-aura` | Places and detonates **beds** (Nether / End) and **charged respawn anchors** (Overworld / End) on a target — it picks whichever one the current dimension lets explode and falls back to the other item if the first is not in your inventory, so a single module covers every dimension. **General** — `place-delay` (ticks, 0–10000), `strict-direction`, `swing`. **Targeting** — `target-range`, `target-priority`, `min-damage`, `max-self-damage`, `anti-suicide`, `place-range`. **Items** — `auto-switch` (silent hotbar swap), `anchor-charges` (1–4 glowstone charges, more charges = more damage), `charge-delay`. **Pause** — `pause-on-eat` / `pause-on-drink` / `pause-on-mine`. **Render** — targeting box with shape mode and colours. Placement copies Meteor's bed-aura geometry: it rotates to a cardinal direction so the bed's head half lands on the target block, checks both halves are free, then places — a bed pops with a plain use on the block, an anchor pops with a glowstone-free use (the glowstone used for charging stays out of that hand). Beds whose second half the client shifted are re-found by block entity before popping, and a block already planted is always finished before a new one is started. |
 | Clicker | `clicker` | Left/right auto clicker with Nothing/Hold/Click modes and per-action tick delays. |
 | Crystal Aura | `crystal-aura` | **Full port of BlackOut's Auto Crystal+** (`kassuk.addon.blackout.modules.AutoCrystalPlus`, KassuK1/BlackOut, GPL-3.0 — original vendored in [`blackout/`](blackout/README.md)). Their damage model: enemy / friend / self damage plus health, with `min-place` / `max-place` / `min-place-ratio`, friend limits, `force-pop`, `anti-friend-pop`, `anti-self-pop`, and `dmg-check-mode` (Normal = most enemy damage, Safe = best enemy/self ratio). **Place** — `place-range`, `place-walls-range`, `instant-place`, `speed-limit`, `place-speed`, `place-delay-mode` (Seconds/Ticks) + delay, `slow-damage` / `slow-speed` (slows down when the hit would be weak). **Explode** — `break-range`, `break-walls-range`, `only-own`, `inhibit`, `existed-mode` + `existed`, `sequential`, `instant-attack`, `explode-speed-limit`, `explode-speed`, `set-dead` + `set-dead-delay`. **Switch** — `switch-mode` (Disabled / Simple / Gapple / Silent / InvSilent / PickSilent) and `switch-penalty`. **Damage** — the full explode side too (`explode-damage-mode`, `min-explode`, `max-explode`, ratios, friend limits). **Extrapolation** — `self-extrapolation`, `extrapolation`, `range-extrapolation`, `hitbox-extrapolation`, `extrapolation-smoothness`. **Render** — placement box with shape mode and colours. Dropped from the original: ID Predict and the AutoMine/PistonCrystal compatibility group (they need BlackOut's own modules), and the three animated box styles (one plain box here). **Replaces the old Meteor-style CrystalAura and its Packet group.** |
 | Instant TNT | `instant-tnt` | Automatically ignites TNT just by looking at it — silent server-side switch to flint & steel/fire charge. **Click Through Walls**: scans in reach and ignites TNT behind walls and around corners with a synthesized use packet. **Redstone Block** (default on): when no igniter is in the inventory, silently places a redstone block next to the TNT instead — redstone power primes TNT. **Mine Redstone Block** (default on): the placed redstone block is packet-mined again during the TNT's fuse with a silent hotbar-pickaxe swap, so the dust lands back in your inventory. **Bow Fallback** (default on): last resort when there is no igniter and no redstone block either — silently swaps to a bow, draws and releases after 10 ticks, and shoots the TNT; only fires when the TNT is in your crosshair (arrows fly where you look) and only with a **Flame** bow (or any bow in creative) plus an arrow, since flaming arrows ignite TNT on contact. |

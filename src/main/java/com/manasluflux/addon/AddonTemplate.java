@@ -39,6 +39,7 @@ import com.manasluflux.addon.hud.ServerInfoHud;
 import com.manasluflux.addon.hud.SessionInfoHud;
 import com.manasluflux.addon.modules.AutoLogin;
 import com.manasluflux.addon.modules.AutoTotem;
+import com.manasluflux.addon.modules.BedAura;
 import com.manasluflux.addon.modules.BoatFlight;
 import com.manasluflux.addon.modules.AutoChatClear;
 import com.manasluflux.addon.modules.AutoEat;
@@ -171,6 +172,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new SilentAura());
         Modules.get().add(new CrystalAura());
         Modules.get().add(new AutoTotem());
+        Modules.get().add(new BedAura());
 
         // Example module & HUD kept from the template
         Modules.get().add(new ModuleExample());

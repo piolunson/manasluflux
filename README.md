@@ -6,9 +6,9 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **46 modules**, **28 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **47 modules**, **28 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
-- **Manaslu Flux Combat** (6) — crystal aura, silent aura, auto totem, instant TNT, clicker, TNT placer
+- **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
@@ -19,8 +19,8 @@ ManasluFlux adds **46 modules**, **28 commands** and **7 HUD elements** on top o
 Highlights:
 
 - **Crystal Aura** — full port of BlackOut's Auto Crystal+: enemy / friend / self damage model with min–max ratios, force pop and anti-pop, their place and explode speed models, six switch modes, existed/inhibit/set-dead gates and extrapolated hitboxes.
-- **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.
-- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
+- **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
+- **Bed Aura** — one module for both explosion blocks: beds in the Nether and End, charged respawn anchors in the Overworld and End, picked automatically per dimension with a fallback to whichever item you actually carry, silent switching, glowstone charging and anti-suicide gating.
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
 - **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap, a lagback watcher, sprint tweaks that release sprint before a web and put it back on after a set time inside one, and a web-only Timer with a constant mode or a graph mode that follows your own formula of the time spent in the web (default: fast at first, then a gentle plateau).
@@ -33,9 +33,9 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (46)</summary>
+<summary>Full module list (47)</summary>
 
-**Manaslu Flux Combat (6):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `silent-aura`, `tnt-placer`
+**Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
 **Manaslu Flux Movement (4):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `place-travel`
 
