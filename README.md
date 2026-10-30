@@ -6,15 +6,15 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **48 modules**, **28 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **49 modules**, **28 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
 - **Manaslu Flux Client Side** (8) — purely client-side/visual modules
-- **Manaslu Flux Utility** (13) — chat, logs and tools
-- **Manaslu Flux Bypasses** (5) — modules that beat a server/anticheat check instead of changing what you do: cobweb bypass, click TP, pearl phase, VClip PhaseFill, universal flight
+- **Manaslu Flux Utility** (14) — chat, logs and tools
+- **Manaslu Flux Bypasses** (5) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, VClip PhaseFill, flight
 
 Highlights:
 
@@ -34,7 +34,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (48)</summary>
+<summary>Full module list (49)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
@@ -46,9 +46,9 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux Client Side (8):** `anti-drop-lagback`, `client-block-entities`, `client-side-night-vision`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
 
-**Manaslu Flux Utility (13):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `path`, `tab-complete-privacy`, `tab-logger`, `waypoint`
+**Manaslu Flux Utility (14):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 
-**Manaslu Flux Bypasses (5):** `cobweb-bypass`, `mf-click-tp`, `pearl-phase`, `universal-flight`, `vclip-phasefill`
+**Manaslu Flux Bypasses (5):** `universal-click-tp`, `universal-cobweb-bypass`, `universal-flight`, `universal-pearl-phase`, `universal-vclip-phasefill`
 
 </details>
 
@@ -73,7 +73,7 @@ Source: [cabaletta/baritone](https://github.com/cabaletta/baritone) — licensed
 
 ## Vendored BlackOut sources
 
-[`blackout/`](blackout/README.md) holds unmodified copies of the BlackOut files this addon ports — upstream [KassuK1/BlackOut](https://github.com/KassuK1/BlackOut) at commit `4c18af3f`, **GPL-3.0** (same as this project), with the original `LICENSE` alongside. Currently `AutoPearl.java` (→ `pearl-phase`) and `AutoCrystalPlus.java` (→ `crystal-aura`). It is reference material only, not compiled.
+[`blackout/`](blackout/README.md) holds unmodified copies of the BlackOut files this addon ports — upstream [KassuK1/BlackOut](https://github.com/KassuK1/BlackOut) at commit `4c18af3f`, **GPL-3.0** (same as this project), with the original `LICENSE` alongside. Currently `AutoPearl.java` (→ `universal-pearl-phase`) and `AutoCrystalPlus.java` (→ `crystal-aura`). It is reference material only, not compiled.
 
 ## Installing
 
@@ -89,7 +89,7 @@ See [FEATURES.md](FEATURES.md) for the complete changelog — the addon version 
 
 This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE), consistent with Meteor Client's licensing.
 
-Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare). Where a module is a port rather than a rewrite, the upstream file is vendored unmodified in [`blackout/`](blackout/README.md) (currently BlackOut's `AutoPearl.java`, GPL-3.0, for `pearl-phase`), and the port's javadoc names the original author. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
+Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare). Where a module is a port rather than a rewrite, the upstream file is vendored unmodified in [`blackout/`](blackout/README.md) (currently BlackOut's `AutoPearl.java`, GPL-3.0, for `universal-pearl-phase`), and the port's javadoc names the original author. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
 
 ## Disclaimer
 

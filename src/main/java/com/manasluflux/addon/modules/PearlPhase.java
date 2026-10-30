@@ -115,7 +115,7 @@ public class PearlPhase extends Module {
     private int pickedHotbarSlot = -1;
 
     public PearlPhase() {
-        super(AddonTemplate.BYPASS_CATEGORY, "pearl-phase",
+        super(AddonTemplate.BYPASS_CATEGORY, "universal-pearl-phase",
             "Easily clip inside walls with pearls - full port of BlackOut's Auto Pearl, with CC bypass, switch modes and instant rotation.");
     }
 

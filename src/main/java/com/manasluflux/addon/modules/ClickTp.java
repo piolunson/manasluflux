@@ -63,7 +63,7 @@ public class ClickTp extends Module {
     private int teleportTimer;
 
     public ClickTp() {
-        super(AddonTemplate.BYPASS_CATEGORY, "mf-click-tp", "Teleports you to the block you are looking at when you press use.");
+        super(AddonTemplate.BYPASS_CATEGORY, "universal-click-tp", "Teleports you to the block you are looking at when you press use.");
     }
 
     @Override
