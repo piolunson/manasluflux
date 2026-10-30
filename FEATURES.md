@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.9.2 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.9.3 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (49)
+## Modules (50)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -56,11 +56,12 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 
-### Category: Manaslu Flux Client Side (8)
+### Category: Manaslu Flux Client Side (9)
 
 | Module | ID | What it does |
 |---|---|---|
 | Anti Drop Lagback | `anti-drop-lagback` | Watches the server's position-sync teleports and counts "rubberbands" (corrections that snap you back ≥ `min-distance`, default 1.5 blocks) inside a sliding window (`window-seconds`, default 5 s). Passing the cap (`rubberbands`, default 3) **pauses every other active module** for `pause-ticks` (default 40) so whatever causes the rubberbands stops, then switches everything back on. `chat-notifier` (default on) announces each rubberband and each pause/resume in local chat — purely client-side. |
+| Break Reminder | `break-reminder` | Reminds you to stand up: `interval` in **minutes** (default 45, 0 = off, up to 10000) and it speaks up when that much real time has passed. The clock is wall-clock, not ticks, so it counts the same whatever the server is doing, and it restarts whenever you switch the module on — the interval always means "since I enabled this". `chat` prints the reminder in local chat, `title` shows it as the big title text on screen. Its HUD info string shows the current interval. Purely client-side. |
 | Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Purely client-side renderer for any block entity: Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
 | Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
 | Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |

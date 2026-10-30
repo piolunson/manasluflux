@@ -55,6 +55,7 @@ import com.manasluflux.addon.modules.BlockReplacer;
 import com.manasluflux.addon.modules.ChatLogger;
 import com.manasluflux.addon.modules.BritishChat;
 import com.manasluflux.addon.modules.Screenshot;
+import com.manasluflux.addon.modules.BreakReminder;
 import com.manasluflux.addon.modules.Clicker;
 import com.manasluflux.addon.modules.ClickTp;
 import com.manasluflux.addon.modules.ClientBlockEntities;
@@ -152,6 +153,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new ChatLogger());
         Modules.get().add(new BritishChat());
         Modules.get().add(new Screenshot());
+        Modules.get().add(new BreakReminder());
         Modules.get().add(new TabLogger());
         Modules.get().add(new TabCompletePrivacy());
         Modules.get().add(new ClickTp());
