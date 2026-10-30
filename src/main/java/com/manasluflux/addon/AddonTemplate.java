@@ -102,6 +102,7 @@ import com.manasluflux.addon.modules.ToggleTab;
 import com.manasluflux.addon.modules.UniversalColoredChat;
 import com.manasluflux.addon.modules.UniversalFlight;
 import com.manasluflux.addon.modules.VClipPhaseFill;
+import com.manasluflux.addon.modules.Vom;
 import com.manasluflux.addon.modules.Waypoint;
 import com.manasluflux.addon.modules.DeathCommands;
 import com.manasluflux.addon.update.UpdateChecker;
@@ -213,6 +214,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new Surround());
         Modules.get().add(new BlockHighlight());
         Modules.get().add(new CustomEsp());
+        Modules.get().add(new Vom());
         Modules.get().add(new AutoTotem());
         Modules.get().add(new BedAura());
         Modules.get().add(new KillSay());

@@ -6,13 +6,13 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **65 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **66 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (9) — crystal aura, silent aura, bed aura, surround, kill say, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (9) — eating, fishing, login/logout, respawn, inventory keeper, xcarry, fast use
 - **Manaslu Flux World** (5) — placer, block replacer, wither builder, map art, speed mine
-- **Manaslu Flux Client Side** (13) — purely client-side/visual modules, including an FOV modifier and a custom ESP
+- **Manaslu Flux Client Side** (14) — purely client-side/visual modules, including an FOV modifier and a custom ESP
 - **Manaslu Flux Utility** (15) — chat, logs and tools
 - **Manaslu Flux Bypasses** (10) — modules that beat a server/anticheat check instead of changing what you do, mostly named **Universal** because they do not target one anticheat: cobweb bypass, click TP, pearl phase, jump pearl, VClip PhaseFill, flight, wool replace, silent timer switch
 
@@ -47,7 +47,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (65)</summary>
+<summary>Full module list (66)</summary>
 
 **Manaslu Flux Combat (9):** `auto-crystal`, `kill-say`, `mf-auto-totem`, `clicker`, `instant-tnt`, `mf-bed-aura`, `mf-surround`, `silent-aura`, `tnt-placer`
 
@@ -57,7 +57,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux World (5):** `auto-map-part`, `auto-wither`, `block-replacer`, `placer`, `mf-speed-mine`
 
-**Manaslu Flux Client Side (13):** `anti-drop-lagback`, `block-highlight`, `break-reminder`, `client-block-entities`, `client-side-night-vision`, `custom-esp`, `fov-modifier`, `packet-filter`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
+**Manaslu Flux Client Side (14):** `anti-drop-lagback`, `block-highlight`, `break-reminder`, `client-block-entities`, `client-side-night-vision`, `custom-esp`, `fov-modifier`, `packet-filter`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`, `VOM`
 
 **Manaslu Flux Utility (15):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `packet-stealer`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 

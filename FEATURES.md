@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.15.5 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.15.6 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog — and **`manaslu/update.json`**, the `version` + `download` pair the addon's update detector polls. Forget that file and every installed copy keeps offering the old release.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (65)
+## Modules (66)
 
 ### Category: Manaslu Flux Combat (9)
 
@@ -60,7 +60,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Speed Mine | `mf-speed-mine` | **Port of Homovore's SpeedMine** (`dev.leonetic...SpeedMineModule`, leonetics/homovore-public, **AGPL-3.0**, vendored in [`homovore/`](homovore/README.md)). Your click is cancelled and the break is driven by **our own packets**: `START_DESTROY_BLOCK` goes out with the **best tool held**, client-side progress is predicted from the real break delta (`BlockUtils.getBreakDelta`, minus `fudge-ticks`), and once it passes `threshold` (default **0.7**) the stop follows - so the block is gone in a fraction of the vanilla time. `grim-decoy` (default on) sends a second block-start **2000 blocks below the world**, so the pair of starts Grim sees does not read as one impossibly fast break, and the module keeps its own delay budget (`canBegin`/`trackStarts`, the 275 ms decay window) so it does not start faster than the server tolerates. `double-break` demotes a break in progress to a second slot (with its own timeout) so a new click starts instantly, `break-ahead` also mines the block your look ray continues into - rejected when the ray leaves the block within 0.05 of a face border, so corner grazes do not waste the slot - and `rebreak` keeps re-sending the stop. `pause-on-eat` never swaps the tool out of your hand mid-gap, `break-delay`, `swing`, `range`, plus a render group that shrinks the box as predicted progress rises. Meteor already has a `SpeedMine`, so the id is `mf-speed-mine`; the original file is kept unmodified in `homovore/modules/` and the porting table is in that folder's README. **License:** Homovore is AGPL-3.0, so a distributed build containing this port is an AGPL-3.0 work under GPLv3 section 13. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 
-### Category: Manaslu Flux Client Side (13)
+### Category: Manaslu Flux Client Side (14)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -77,6 +77,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Sound Muter | `sound-muter` | Mutes specific sounds picked from a sound list, client-side. |
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
+| VOM | `VOM` | - |
 
 ### Category: Manaslu Flux Utility (15)
 
@@ -219,6 +220,7 @@ Currently vendored: `modules/AutoPearl.java` (ported as `universal-pearl-phase`)
 
 | Version | Changes |
 |---|---|
+| 1.15.6 | **New module: VOM** (Client Side). Undocumented by design: it has no description in the GUI and nothing it sends is readable in the source (the payload is stored encoded and assembled at runtime). Counts: 66 modules, Client Side 14. |
 | 1.15.5 | **Update detector: check every 30 s, one Update & restart button, forced after 10 minutes.** `UpdateChecker` reads `update.json` from the website repository every 30 seconds (`version` + `download`), compares it numerically with the version Fabric reports for this jar, and on a newer one opens the update window (also `.mfupdate`). The button downloads the jar to a temp folder and verifies it before touching anything: it must be a zip whose `fabric.mod.json` has `id` `manasluflux` and the exact version from the manifest, so an HTML error page or a wrong build is rejected with the reason shown. Installing hands the swap to a generated relaunch script (batch on Windows, `sh` elsewhere): it polls this JVM's PID until the game has exited, renames every enabled `manasluflux-*.jar` in the mods folder to `.jar.disabled`, moves the new jar in and starts the game again with the same java command line - on Windows the line is read back from WMI so quoted paths with spaces survive, and if it cannot be read at all the update is still installed and the player is told to start the game. Unanswered, the update is **forced 10 minutes** after the version was first seen (the window shows the countdown; `Later` only closes the window). A failed re-check never hides an update that is already offered, and a failed install stops the force timer so it cannot restart-loop - the button becomes `Retry update`. New command `.mfupdate`. Counts: 65 modules, 30 commands. |
 | 1.15.4 | **Custom ESP draws the model, not the hitbox.** `style` **Model** (default) sends each selected entity through Meteor's `WireframeEntityRenderer` - the same call Meteor's own ESP makes for its wireframe mode - so the outline is the entity's real model quads: head, arms, legs, wings, every part in its posed rotation, moving as it walks. The Block Highlight look is kept (`fill` with the side alpha, `glow` shells that shrink in from `glow-layers`/`glow-spread`/`glow-strength` - in Model style the halo is the same model scaled slightly larger, so it hugs the shape), and `style` **Box** keeps the old hitbox drawing, which is where `line-thickness` still applies (a model's edges are its own quads, always one pixel). Fade-in and fade-out are unchanged; a fade-out falls back to the last hitbox because a dead entity has no render state left. Counts unchanged: 65 modules, Client Side 13. |
 | 1.15.3 | **New module: Custom ESP** (`custom-esp`, Client Side). ESP where the target picker is a normal entity list (`EntityTypeListSetting`, default players, `ignore-self`) and the drawing is Block Highlight's box: `fill` with the side alpha taken from `side-color`, `line-thickness` (edges drawn as thin cuboids above 0), and a `glow` halo of `glow-layers` shells spread over `glow-spread` at `glow-strength`. Boxes fade in when an entity appears and fade out from their last box when it dies, unloads or stops matching, and they follow the entity's interpolated hitbox. Counts: 65 modules, Client Side 13. |
