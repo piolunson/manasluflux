@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.10.3 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.11.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (53)
+## Modules (55)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -92,7 +92,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
 | World Origin | `world-origin` | Example module that highlights the center of the world. |
 
-### Category: Manaslu Flux Bypasses (5)
+### Category: Manaslu Flux Bypasses (7)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -100,7 +100,11 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Universal Click TP | `universal-click-tp` | Hold use while looking at a block to teleport there in configurable steps, with max distance, step size, delay and an optional safe-landing check. |
 | Universal Pearl Phase | `universal-pearl-phase` | **Full port of BlackOut's Auto Pearl** (`kassuk.addon.blackout.modules.AutoPearl`, KassuK1/BlackOut, GPL-3.0) — the original file is vendored unmodified in [`blackout/`](blackout/README.md). Aims at the centre of your own block + 180° with a steep pitch and throws a pearl so you clip into the wall. Settings: `cc-bypass` — places a block under you before the throw (BlackOut's Constantiam anti-delay trick), with its own `cc-switch-mode`; `switch-mode` — **Normal** (only a pearl you are holding), **Silent** (selects the hotbar slot, swaps back), **PickSilent** / **InvSwitch** (pulls one out of the inventory into your selected slot, swaps it back after the throw); `pitch` (85, BlackOut's default); `instant-rotation` (look packet + throw on the same tick); `keep-rotation`; `swing`. Restores your view and inventory, then switches itself off. |
 | Universal VClip PhaseFill | `universal-vclip-phasefill` | The phase-fill trick as one one-shot module: **vclips** you `distance` blocks (default 3) straight **Down** or **Up**, **fills the blocks your body stood in before the clip** (feet + head, from the `fill-blocks` whitelist in your hotbar, `blocks-per-tick` each tick until they land) and then **waits for the server's rubberband** — the position-sync teleport an anticheat sends when it disagrees with where you are. `hold-position` (default on) keeps re-applying the clipped spot while waiting, because the client itself pushes an entity out of a solid block. If no rubberband arrives within `timeout` ticks (default 20 = 1 s, `0` = immediately), it **vclips back** to where you started. `rotate` for the fills, chat messages on start/rubberband/return, and it switches itself off when the sequence ends. |
+| NCP Item Frame Phase | `ncp-itemframe` | Sneaks, jumps, then pushes you **into the block you are facing** with **small position packets, one per tick** (0.05 blocks each), which is the pacing NCP's passability/SurvivalFly-style validation expects: every step is a distance a real movement tick could produce, and each tick gives the server a chance to answer with a setback before the next push. `mode` **Normal** just uses your look direction; **Frame** finds an item frame in reach and phases into the block it hangs on. A setback (`PlayerPositionLookS2CPacket`) during the attempt counts as a failure and it retries up to `retries` times. Silent by default: the rotation goes out as look packets while your camera stays put, and `silent-switch` can hold a chosen hotbar slot for the attempt on the server side only. |
+| Themis Item Frame Phase | `th-itemframe` | The same attempt paced for **Themis**, which advertises Fly / Step / Speed / **Blink** / Timer. Blink is what matters: it looks for large jumps across a few packets, so this variant pushes **fewer, larger** increments (0.25 blocks) and finishes the distance in one tick, reading as a single step instead of a series of teleports, then waits longer before deciding (`retry-delay` 10 ticks). Same `mode`, retries, and silent rotation/switch as the NCP variant - both are thin subclasses of one shared `ItemFramePhase` module, so a fix to the attempt applies to both. |
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
+
+> **On item frames, honestly:** an item frame is a thin `BlockAttachedEntity` whose box is a *targeting* box (`canHit()`); it is **not** movement collision and it does not make the block it hangs on passable. Research turned up **no verified item-frame-specific phase technique** for 1.21 in any public client or anticheat source - the documented phase bypasses are generic movement-packet tricks, and the only item-frame material is a Grim issue about a *false positive* when attacking a frame while moving. So these modules do the part that is real: a generic stepped phase that ignores frames entirely (they cannot block you), aimed at the block behind a frame in `Frame` mode. The anticheat pacing follows what NCP and Themis publicly describe checking, not a proven bypass.
 
 > Every module in this category is named **Universal** because none of them target one anticheat: they work on whatever the server runs, and the per-server differences live in settings (Cobweb Bypass has its Vanilla/NCP/Themis/Grim profiles) rather than in the module's name.
 

@@ -60,6 +60,8 @@ import com.manasluflux.addon.modules.BreakReminder;
 import com.manasluflux.addon.modules.PacketFilter;
 import com.manasluflux.addon.modules.PacketStealer;
 import com.manasluflux.addon.modules.WoolReplace;
+import com.manasluflux.addon.modules.NcpItemFramePhase;
+import com.manasluflux.addon.modules.ThItemFramePhase;
 import com.manasluflux.addon.modules.Clicker;
 import com.manasluflux.addon.modules.ClickTp;
 import com.manasluflux.addon.modules.ClientBlockEntities;
@@ -161,6 +163,8 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new PacketFilter());
         Modules.get().add(new PacketStealer());
         Modules.get().add(new WoolReplace());
+        Modules.get().add(new NcpItemFramePhase());
+        Modules.get().add(new ThItemFramePhase());
         Modules.get().add(new TabLogger());
         Modules.get().add(new TabCompletePrivacy());
         Modules.get().add(new ClickTp());

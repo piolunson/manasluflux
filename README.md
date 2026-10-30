@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **53 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **55 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
@@ -14,7 +14,7 @@ ManasluFlux adds **53 modules**, **29 commands** and **7 HUD elements** on top o
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
 - **Manaslu Flux Client Side** (11) — purely client-side/visual modules
 - **Manaslu Flux Utility** (15) — chat, logs and tools
-- **Manaslu Flux Bypasses** (5) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, VClip PhaseFill, flight
+- **Manaslu Flux Bypasses** (7) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, VClip PhaseFill, flight
 
 Highlights:
 
@@ -36,7 +36,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (53)</summary>
+<summary>Full module list (55)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
@@ -50,7 +50,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux Utility (15):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `packet-stealer`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 
-**Manaslu Flux Bypasses (5):** `universal-click-tp`, `universal-cobweb-bypass`, `universal-flight`, `universal-pearl-phase`, `universal-vclip-phasefill`
+**Manaslu Flux Bypasses (7):** `ncp-itemframe`, `th-itemframe`, `universal-click-tp`, `universal-cobweb-bypass`, `universal-flight`, `universal-pearl-phase`, `universal-vclip-phasefill`
 
 </details>
 
