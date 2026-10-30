@@ -26,7 +26,10 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Removes (or softens) the stuck-speed a cobweb applies to you, so walking or jumping
@@ -193,6 +196,13 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    private final Setting<Boolean> resetOnNewWeb = sgTimer.add(new BoolSetting.Builder()
+        .name("reset-on-new-web")
+        .description("Starts the timer and the web clock over when you walk out of one cobweb straight into another, even if the two touch. Off: the clock only restarts once you have been in open air.")
+        .defaultValue(true)
+        .build()
+    );
+
     private final Setting<Boolean> allStuckBlocks = sgGeneral.add(new BoolSetting.Builder()
         .name("all-stuck-blocks")
         .description("Softens every stuck-speed block, not just cobwebs (sweet berry bushes, powder snow and anything else that multiplies your movement).")
@@ -277,6 +287,11 @@ public class CobwebBypass extends Module {
     private boolean timerOverridden;
     /** Ticks spent in the current web - the graph timer's {@code t}. */
     private int webTicks;
+
+    /** Web blocks the player is inside this tick. */
+    private final Set<BlockPos> websNow = new HashSet<>();
+    /** Web blocks that were there when the current web was entered - what "this web" means. */
+    private final Set<BlockPos> entryWebs = new HashSet<>();
     /** Last formula we warned about, so a broken one prints once instead of every tick. */
     private String graphWarnedFor;
 
@@ -294,6 +309,8 @@ public class CobwebBypass extends Module {
         lagbacks = 0;
         loggedFailure = false;
         webTicks = 0;
+        websNow.clear();
+        entryWebs.clear();
     }
 
     @Override
@@ -302,6 +319,8 @@ public class CobwebBypass extends Module {
         softenedThisTick = false;
         pauseLeft = 0;
         webTicks = 0;
+        websNow.clear();
+        entryWebs.clear();
         stopTuning(false);
         releaseTimer();
     }
@@ -421,8 +440,27 @@ public class CobwebBypass extends Module {
         softenedThisTick = false;
 
         // The graph timer's clock: real time spent in this web, reset the moment you are out.
-        if (insideWeb()) webTicks++;
-        else webTicks = 0;
+        // Two touching webs never leave you in open air in between, and walking from one to the
+        // next means straddling both for a few ticks - so "this web" is the set of blocks that was
+        // there when you entered, and it only counts as a new web once none of those blocks are
+        // left under you.
+        websNow.clear();
+
+        if (!collectWebs(websNow)) {
+            webTicks = 0;
+            entryWebs.clear();
+        } else {
+            if (entryWebs.isEmpty()) {
+                entryWebs.addAll(websNow);
+            } else if (resetOnNewWeb.get() && Collections.disjoint(websNow, entryWebs)) {
+                webTicks = 0;
+                ticksInWeb = 0;
+                entryWebs.clear();
+                entryWebs.addAll(websNow);
+            }
+
+            webTicks++;
+        }
 
         updateWebTimer();
 
@@ -912,6 +950,25 @@ public class CobwebBypass extends Module {
             if (mc.world.getBlockState(pos).isOf(Blocks.COBWEB)) return true;
         }
         return false;
+    }
+
+    /**
+     * Fills {@code out} with every cobweb the player's box is touching and reports whether there was
+     * at least one. Two webs side by side produce two positions, so a move from one to the other is
+     * visible as the old position disappearing.
+     */
+    private boolean collectWebs(Set<BlockPos> out) {
+        if (mc.player == null || mc.world == null) return false;
+
+        Box box = mc.player.getBoundingBox().expand(0.2);
+        BlockPos min = BlockPos.ofFloored(box.minX, box.minY, box.minZ);
+        BlockPos max = BlockPos.ofFloored(box.maxX, box.maxY, box.maxZ);
+
+        for (BlockPos pos : BlockPos.iterate(min, max)) {
+            if (mc.world.getBlockState(pos).isOf(Blocks.COBWEB)) out.add(pos.toImmutable());
+        }
+
+        return !out.isEmpty();
     }
 
     /** Closest cobweb around the player, or null when there is none within {@link #WEB_RADIUS}. */
