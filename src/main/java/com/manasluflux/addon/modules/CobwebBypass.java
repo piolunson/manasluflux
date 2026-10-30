@@ -226,6 +226,31 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    private final Setting<Integer> lagbackLimit = sgGeneral.add(new IntSetting.Builder()
+        .name("lagback-limit")
+        .description("How many lagbacks in the same cobweb before the module reacts on the next one - reset the timer and/or drop sprint. 0 = never react.")
+        .defaultValue(2)
+        .range(0, 1000)
+        .sliderRange(0, 20)
+        .build()
+    );
+
+    private final Setting<Boolean> lagbackResetTimer = sgGeneral.add(new BoolSetting.Builder()
+        .name("lagback-reset-timer")
+        .description("Restart the web clock (so the graph timer starts climbing from 1x again) when that many lagbacks happen in one cobweb.")
+        .defaultValue(true)
+        .visible(() -> lagbackLimit.get() > 0)
+        .build()
+    );
+
+    private final Setting<Boolean> lagbackStopSprint = sgGeneral.add(new BoolSetting.Builder()
+        .name("lagback-stop-sprint")
+        .description("Drop sprint when that many lagbacks happen in one cobweb, and keep it off until you leave the web.")
+        .defaultValue(true)
+        .visible(() -> lagbackLimit.get() > 0)
+        .build()
+    );
+
     private final Setting<Boolean> notifier = sgGeneral.add(new BoolSetting.Builder()
         .name("chat-notifier")
         .description("Reports lagbacks that happen while the trick is active, in local chat.")
@@ -239,6 +264,13 @@ public class CobwebBypass extends Module {
         .defaultValue(false)
         .build()
     );
+
+    /** Lagbacks seen in the cobweb you are currently standing in. */
+    private int webLagbacks;
+    /** Set when the lagback limit was hit, so it reacts once per web rather than on every packet. */
+    private boolean lagbackReacted;
+    /** Sprint forced off by the lagback rule; it stays off until you leave the web. */
+    private boolean sprintLockedOff;
 
     /** Ticks spent in a web in the current stretch, used by burst-ticks. */
     private int ticksInWeb;
@@ -323,6 +355,9 @@ public class CobwebBypass extends Module {
         lagbacks = 0;
         loggedFailure = false;
         webTicks = 0;
+        webLagbacks = 0;
+        lagbackReacted = false;
+        sprintLockedOff = false;
         websNow.clear();
         entryWebs.clear();
         wasInWeb = false;
@@ -347,6 +382,12 @@ public class CobwebBypass extends Module {
             timer, webTimer.get(), resetOnNewWeb.get() ? "yes" : "no");
         narrate("Sprint: off %d ticks before a web, back on %d ticks inside one. Lagbacks: %s.",
             stopSprintBefore.get(), startSprintAfter.get(), onLagback.get());
+        narrate("Lagback rule: %s", lagbackLimit.get() <= 0
+            ? "off"
+            : String.format("after more than %d in one web: %s", lagbackLimit.get(),
+                (lagbackResetTimer.get() && lagbackStopSprint.get()) ? "restart the timer and drop sprint"
+                    : lagbackResetTimer.get() ? "restart the timer"
+                    : lagbackStopSprint.get() ? "drop sprint" : "nothing"));
     }
 
     @Override
@@ -355,6 +396,9 @@ public class CobwebBypass extends Module {
         softenedThisTick = false;
         pauseLeft = 0;
         webTicks = 0;
+        webLagbacks = 0;
+        lagbackReacted = false;
+        sprintLockedOff = false;
         websNow.clear();
         entryWebs.clear();
         stopTuning(false);
@@ -489,14 +533,21 @@ public class CobwebBypass extends Module {
 
         if (!inWeb) {
             webTicks = 0;
+            webLagbacks = 0;
+            lagbackReacted = false;
+            sprintLockedOff = false;
             entryWebs.clear();
         } else {
             if (entryWebs.isEmpty()) {
                 entryWebs.addAll(websNow);
+                webLagbacks = 0;
+                lagbackReacted = false;
             } else if (resetOnNewWeb.get() && Collections.disjoint(websNow, entryWebs)) {
                 newWeb = true;
                 webTicks = 0;
                 ticksInWeb = 0;
+                webLagbacks = 0;
+                lagbackReacted = false;
                 entryWebs.clear();
                 entryWebs.addAll(websNow);
             }
@@ -551,6 +602,12 @@ public class CobwebBypass extends Module {
      */
     private void applySprintTweaks() {
         if (mc.player == null) return;
+
+        // Sprint was taken away by the lagback rule: it stays off until you are out of the web.
+        if (sprintLockedOff) {
+            if (mc.player.isSprinting()) mc.player.setSprinting(false);
+            return;
+        }
 
         // Inside a web: sprint stays off for the first ticks, then comes back on by itself.
         if (insideWeb()) {
@@ -720,12 +777,62 @@ public class CobwebBypass extends Module {
 
         if (onLagback.get() == LagbackAction.Pause) pauseLeft = Math.max(pauseLeft, pauseTicks.get());
 
+        applyLagbackRule(insideWeb());
+
         if (notifier.get()) {
             if (lagbacks == 1) {
                 Msg.warning("Lagback of %.1f block(s) right after the web trick - the server predicted it.", distance);
             } else if (lagbacks % 5 == 0) {
                 Msg.warning("%d lagbacks while the web trick was active.", lagbacks);
             }
+        }
+    }
+
+    /**
+     * Counts lagbacks per cobweb and reacts once when the server has pulled you back more times than
+     * {@code lagback-limit} allows in this web: restart the web clock (the graph timer then climbs
+     * from 1x again) and/or take sprint away for the rest of the web.
+     *
+     * <p>Only fires once per web, so repeatedly getting pulled back does not keep resetting the clock
+     * to a standstill - the counting starts over when you enter a different web ("different" follows
+     * {@code reset-on-new-web}, so two touching webs count separately when that is on).
+     */
+    private void applyLagbackRule(boolean inWeb) {
+        int limit = lagbackLimit.get();
+        if (limit <= 0) return;
+        if (!inWeb) return;
+
+        webLagbacks++;
+        if (lagbackReacted || webLagbacks <= limit) return;
+
+        lagbackReacted = true;
+
+        List<String> did = new ArrayList<>(2);
+
+        if (lagbackResetTimer.get()) {
+            webTicks = 0;
+            reportedSpeed = 1.0;
+
+            if (!websNow.isEmpty()) {
+                entryWebs.clear();
+                entryWebs.addAll(websNow);
+            }
+
+            did.add("timer restarted");
+        }
+
+        if (lagbackStopSprint.get()) {
+            sprintLockedOff = true;
+            if (mc.player != null) mc.player.setSprinting(false);
+            did.add("sprint off");
+        }
+
+        if (did.isEmpty()) return;
+
+        if (notifier.get()) {
+            Msg.warning("%d lagbacks in this web - %s.", webLagbacks, String.join(" and ", did));
+        } else if (verbose.get()) {
+            narrate("%d lagbacks in this web - %s.", webLagbacks, String.join(" and ", did));
         }
     }
 
