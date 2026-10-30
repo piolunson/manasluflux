@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **53 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **55 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
@@ -14,7 +14,7 @@ ManasluFlux adds **53 modules**, **29 commands** and **7 HUD elements** on top o
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
 - **Manaslu Flux Client Side** (10) — purely client-side/visual modules
 - **Manaslu Flux Utility** (15) — chat, logs and tools
-- **Manaslu Flux Bypasses** (7) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, jump pearl, VClip PhaseFill, flight, wool replace
+- **Manaslu Flux Bypasses** (8) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, jump pearl, VClip PhaseFill, flight, wool replace
 
 Highlights:
 
@@ -24,6 +24,7 @@ Highlights:
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
 - **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap, a lagback watcher with a `lagback-limit` rule that restarts the web clock and/or drops sprint once the server has pulled you back more than that many times in the same web, sprint tweaks that release sprint before a web and put it back on after a set time inside one, and a web-only Timer with a constant mode or a graph mode that follows your own formula of the time spent in the web (default: fast at first, then a gentle plateau), the web clock restarts when you walk into a different web — even a touching one — and an optional `verbose` mode narrates what it enabled and what it is doing.
+- **Totem Pop Pearl Phase** — after your own totem pops it throws one pearl: aimed around a frame/painting if one is inside you, plain own-block aim if not. Delay, stable-cam and chat feedback; repeats on every pop.
 - **Wool Replace** — an obsidian placement is sent as a wool placement with no wool and no hotbar swap: the server's view of your hand is spoofed to wool for that one interaction and put back immediately after, while your client keeps predicting obsidian (glitch block). No checks, no settings.
 - **Packet Filter** — a packets-per-second budget that drops the least useful packet first: crystal places, totem swaps and swings are never dropped, movement only goes once the budget is stretched, and chat/sprint noise goes first. `.mfpacketlimit test` measures the server's own limit by flooding it until it kicks you, `.mfpacketlimit check` reports the numbers.
 - **British Chat** — tidies what you send: a capital at the start, a full stop at the end, and optional grammar fixes for the words everyone mistypes in a fight.
@@ -36,7 +37,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (53)</summary>
+<summary>Full module list (55)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
@@ -50,7 +51,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux Utility (15):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `packet-stealer`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 
-**Manaslu Flux Bypasses (7):** `universal-jump-pearl`, `universal-wool-replace`, `universal-click-tp`, `universal-cobweb-bypass`, `universal-flight`, `universal-pearl-phase`, `universal-vclip-phasefill`
+**Manaslu Flux Bypasses (8):** `totempoppearlphase`, `universal-jump-pearl`, `universal-wool-replace`, `universal-click-tp`, `universal-cobweb-bypass`, `universal-flight`, `universal-pearl-phase`, `universal-vclip-phasefill`
 
 </details>
 

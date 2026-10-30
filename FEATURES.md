@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.11.5 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.11.6 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (54)
+## Modules (55)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -91,7 +91,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Waypoint | `waypoint` | Stores waypoints added with `.mfwaypoint` and renders beacon-like beams to them. |
 | World Origin | `world-origin` | Example module that highlights the center of the world. |
 
-### Category: Manaslu Flux Bypasses (7)
+### Category: Manaslu Flux Bypasses (8)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -101,6 +101,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Universal VClip PhaseFill | `universal-vclip-phasefill` | The phase-fill trick as one one-shot module: **vclips** you `distance` blocks (default 3) straight **Down** or **Up**, **fills the blocks your body stood in before the clip** (feet + head, from the `fill-blocks` whitelist in your hotbar, `blocks-per-tick` each tick until they land) and then **waits for the server's rubberband** — the position-sync teleport an anticheat sends when it disagrees with where you are. `hold-position` (default on) keeps re-applying the clipped spot while waiting, because the client itself pushes an entity out of a solid block. If no rubberband arrives within `timeout` ticks (default 20 = 1 s, `0` = immediately), it **vclips back** to where you started. `rotate` for the fills, chat messages on start/rubberband/return, and it switches itself off when the sequence ends. |
 | Universal Wool Replace | `universal-wool-replace` | **Packet-only: an obsidian placement goes out as a wool placement, and your client doesn't change at all.** No wool in your inventory, no hotbar swap, no position / distance / target / "around your feet" test, no mode setting - if the placement packet you are about to send is an obsidian placement, the server is told your hand holds wool for that one interaction and then told it holds obsidian again. The hook is `ClientConnection#send`: the wool `CreativeInventoryActionC2SPacket` is written immediately before the placement packet and the original stack immediately after it, so the only thing that ever changes is what the server believes about the interaction. Your local inventory is never written, so vanilla still predicts and renders **obsidian** while the server actually stores **wool** - the block you see and the block the server has disagree, which is the glitch block this is for. That is also why the placement packet can't be edited directly: `PlayerInteractBlockC2SPacket` carries the hand, hit result, sequence and screen-handler revision but **not the item**, so the surrounding inventory packet is the only lever. `CreativeInventoryActionC2SPacket` is a creative-only packet - a survival server ignores it, so on survival this does nothing rather than swapping anything. |
 | Universal Jump Pearl | `universal-jump-pearl` | **Sneak, jump, throw the pearl partway up the jump - that is the whole module.** `jump-percent` (default **55**) is measured against the real vanilla jump arc (0.42 blocks/tick upward, 0.08 gravity, 0.98 drag, peak **1.2522 blocks**), so 55% means the pearl leaves your hand when your feet are about 0.69 blocks up instead of on some arbitrary tick, and 0 throws on the takeoff tick. If the jump never gets that high - a ceiling, a slab, low gravity - it says so and **spends no pearl**, because a throw from the floor is not a phase. Aim is BlackOut's Auto Pearl one (your own block's centre turned 180 degrees, `pitch` 85), the rotation goes out as a look packet, and `stable-cam` (default **on**) puts your view straight back in the same tick so the screen never snaps - with it off the camera stays turned at the throw. Takes a pearl from your hand or the first one in your hotbar (silently selected, switched back after), `sneak` holds the crouch until the throw, plus `swing` and `chat-feedback`. |
+| Totem Pop Pearl Phase | `totempoppearlphase` | **After your own totem pops, it pearls you back in - and picks the right throw for what is inside you.** The pop is read from the server (`USE_TOTEM_OF_UNDYING` for your own entity, the same signal the client uses for the animation), and `delay` (default **2** ticks, 0 = same tick) later one pearl goes out. If a **frame or painting is inside you** (its box intersects yours, expanded by 0.3) and `frame-bypass` is on, the throw is aimed at the **clear band around it** - a corner or edge of the face it hangs on, outside its 12/16-wide box, with `offset` (default **0.46**) and `pitch` 85 - and that point is only used when it is outside every decoration box (expanded by the pearl's 0.125 radius) and within 4 blocks, so a fully covered face falls back to the plain throw instead of tossing a pearl into a frame. Nothing inside you means BlackOut's own-block aim, exactly like a normal pearl phase. The rotation goes out as a look packet, `stable-cam` (default **on**) restores your view in the same tick so a pop does not also spin the screen, the pearl comes from your hand or silently from your hotbar and is switched back, plus `swing` and `chat-feedback`. It stays enabled and repeats on the next pop. |
 | Universal Flight | `universal-flight` | Enables flight — vanilla creative flight with an adjustable speed. **always-fly** ON forces flight permanently; OFF only grants the flight permission so you can toggle flying with a double-jump exactly like creative mode. |
 
 
