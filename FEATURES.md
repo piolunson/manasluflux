@@ -3,9 +3,9 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.15.4 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.15.5 (Minecraft 1.21.11)**.
 
-> Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
+> Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog — and **`manaslu/update.json`**, the `version` + `download` pair the addon's update detector polls. Forget that file and every installed copy keeps offering the old release.
 
 Current version: see [`gradle/libs.versions.toml`](gradle/libs.versions.toml) (`mod-version`).
 Build output: `build/libs/manasluflux-<version>.jar`.
@@ -135,7 +135,7 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
 ---
 
-## Commands (29)
+## Commands (30)
 
 All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
 
@@ -168,6 +168,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 | `.mfsm` | Situation module switcher: `.mfsm <module> [on\|off\|toggle]` — tab suggestions included. |
 | `.mfstat` | Shows a few of your tracked stats (level, XP progress, play time, deaths). |
 | `.mftrash` | Confirms dropping your entire inventory. Run `mftrash confirm` to actually drop. |
+| `.mfupdate` | Opens the **update window** and checks right away (the detector already checks every 30 s on its own). The window shows installed vs latest version and one **Update & restart** button: it downloads the new jar, accepts it only if its `fabric.mod.json` is ManasluFlux at exactly that version, renames every old `manasluflux-*.jar` in the mods folder to `.disabled`, moves the new jar in and restarts the game with the same command line. The window counts down the 10-minute force timer. |
 | `.mfuuid` | Shows your in-game UUID. |
 | `.mfwaypoint` | Adds, lists or clears waypoints for the Waypoint module (tracers/render). |
 
@@ -218,6 +219,7 @@ Currently vendored: `modules/AutoPearl.java` (ported as `universal-pearl-phase`)
 
 | Version | Changes |
 |---|---|
+| 1.15.5 | **Update detector: check every 30 s, one Update & restart button, forced after 10 minutes.** `UpdateChecker` reads `update.json` from the website repository every 30 seconds (`version` + `download`), compares it numerically with the version Fabric reports for this jar, and on a newer one opens the update window (also `.mfupdate`). The button downloads the jar to a temp folder and verifies it before touching anything: it must be a zip whose `fabric.mod.json` has `id` `manasluflux` and the exact version from the manifest, so an HTML error page or a wrong build is rejected with the reason shown. Installing hands the swap to a generated relaunch script (batch on Windows, `sh` elsewhere): it polls this JVM's PID until the game has exited, renames every enabled `manasluflux-*.jar` in the mods folder to `.jar.disabled`, moves the new jar in and starts the game again with the same java command line - on Windows the line is read back from WMI so quoted paths with spaces survive, and if it cannot be read at all the update is still installed and the player is told to start the game. Unanswered, the update is **forced 10 minutes** after the version was first seen (the window shows the countdown; `Later` only closes the window). A failed re-check never hides an update that is already offered, and a failed install stops the force timer so it cannot restart-loop - the button becomes `Retry update`. New command `.mfupdate`. Counts: 65 modules, 30 commands. |
 | 1.15.4 | **Custom ESP draws the model, not the hitbox.** `style` **Model** (default) sends each selected entity through Meteor's `WireframeEntityRenderer` - the same call Meteor's own ESP makes for its wireframe mode - so the outline is the entity's real model quads: head, arms, legs, wings, every part in its posed rotation, moving as it walks. The Block Highlight look is kept (`fill` with the side alpha, `glow` shells that shrink in from `glow-layers`/`glow-spread`/`glow-strength` - in Model style the halo is the same model scaled slightly larger, so it hugs the shape), and `style` **Box** keeps the old hitbox drawing, which is where `line-thickness` still applies (a model's edges are its own quads, always one pixel). Fade-in and fade-out are unchanged; a fade-out falls back to the last hitbox because a dead entity has no render state left. Counts unchanged: 65 modules, Client Side 13. |
 | 1.15.3 | **New module: Custom ESP** (`custom-esp`, Client Side). ESP where the target picker is a normal entity list (`EntityTypeListSetting`, default players, `ignore-self`) and the drawing is Block Highlight's box: `fill` with the side alpha taken from `side-color`, `line-thickness` (edges drawn as thin cuboids above 0), and a `glow` halo of `glow-layers` shells spread over `glow-spread` at `glow-strength`. Boxes fade in when an entity appears and fade out from their last box when it dies, unloads or stops matching, and they follow the entity's interpolated hitbox. Counts: 65 modules, Client Side 13. |
 | 1.15.2 | **New module: XCarry** (`xcarry`, Player). Four extra storage slots in your 2x2 crafting grid: the `CloseHandledScreenC2SPacket` for your own player handler is held back while the grid (slots 1-4) holds anything, so the server never returns those items and the slots stay live - press E again and they are still there. Other containers close normally (different sync id), an empty grid closes like vanilla, and disabling the module sends the real close so the items are returned to the inventory. `chat-feedback` reports both directions. Counts: 64 modules, Player 9. |

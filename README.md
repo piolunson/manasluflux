@@ -6,7 +6,7 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **65 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **65 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (9) — crystal aura, silent aura, bed aura, surround, kill say, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
@@ -36,6 +36,7 @@ Highlights:
 - **Block Highlight** — port of Homovore's Block Highlight: the box on the block you look at morphs between blocks over 60 ms and fades in and out, with a filled side colour whose alpha is the side alpha, real edge thickness (`line-thickness`, drawn as thin boxes since Meteor's lines are one pixel) and a layered glow halo.
 - **Wool Replace** — an obsidian placement is sent as a wool placement with no wool and no hotbar swap: the server's view of your hand is spoofed to wool for that one interaction and put back immediately after, while your client keeps predicting obsidian (glitch block). No checks, no settings.
 - **Packet Filter** — a packets-per-second budget that drops the least useful packet first: crystal places, totem swaps and swings are never dropped, movement only goes once the budget is stretched, and chat/sprint noise goes first. `.mfpacketlimit test` measures the server's own limit by flooding it until it kicks you, `.mfpacketlimit check` reports the numbers.
+- **Update detector** — every 30 seconds it asks the site whether a newer ManasluFlux exists. When one does, a window opens with the installed and latest version and a single **Update & restart** button (also `.mfupdate`): it downloads the new jar, refuses anything whose `fabric.mod.json` is not this addon at that version, disables the old jar as `.disabled`, swaps the new one in and restarts the game with the same command line. If you never press it, the update is forced 10 minutes after the version was first seen, with the countdown in the window.
 - **British Chat** — tidies what you send: a capital at the start, a full stop at the end, and optional grammar fixes for the words everyone mistypes in a fight.
 - **Auto Login** — sends `/login <password>` automatically after joining.
 - **Image / GIF HUD** — display images and animated GIFs directly on your HUD.

@@ -17,6 +17,7 @@ import com.manasluflux.addon.commands.JavaScriptCommand;
 import com.manasluflux.addon.commands.KillCommand;
 import com.manasluflux.addon.commands.MfFakePlayerCommand;
 import com.manasluflux.addon.commands.MfHelpCommand;
+import com.manasluflux.addon.commands.MfUpdateCommand;
 import com.manasluflux.addon.commands.MfWebSpeedCommand;
 import com.manasluflux.addon.commands.VisualizeWebBypassGraphCommand;
 import com.manasluflux.addon.commands.MuteCommand;
@@ -103,6 +104,7 @@ import com.manasluflux.addon.modules.UniversalFlight;
 import com.manasluflux.addon.modules.VClipPhaseFill;
 import com.manasluflux.addon.modules.Waypoint;
 import com.manasluflux.addon.modules.DeathCommands;
+import com.manasluflux.addon.update.UpdateChecker;
 import com.mojang.logging.LogUtils;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
@@ -134,6 +136,10 @@ public class AddonTemplate extends MeteorAddon {
     @Override
     public void onInitialize() {
         LOG.info("Initializing ManasluFlux by piolunson & various ai providers");
+
+        // Update detector: every 30 s it compares this jar with the site's update.json and offers
+        // an Update & restart button (forced 10 minutes after a version is first seen).
+        UpdateChecker.INSTANCE.init();
 
         // GuiNotes backing the Notepad / To Do top-bar tabs (loaded from disk on first screen open)
         meteordevelopment.meteorclient.gui.tabs.Tabs.add(new NotepadTab());
@@ -251,6 +257,7 @@ public class AddonTemplate extends MeteorAddon {
         Commands.add(new MfWebSpeedCommand());
         Commands.add(new VisualizeWebBypassGraphCommand());
         Commands.add(new MfPacketLimitCommand());
+        Commands.add(new MfUpdateCommand());
     }
 
     @Override
