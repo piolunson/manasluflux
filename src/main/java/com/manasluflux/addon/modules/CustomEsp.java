@@ -7,10 +7,12 @@ import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.ColorSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EntityTypeListSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.render.WireframeEntityRenderer;
 import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
@@ -55,6 +57,13 @@ public class CustomEsp extends Module {
         .build()
     );
 
+    private final Setting<Style> style = sgGeneral.add(new EnumSetting.Builder<Style>()
+        .name("style")
+        .description("Model draws the entity's own model quads, so the shape is the mob itself - head, arms, legs, wings, all posed. Box draws its hitbox like Block Highlight.")
+        .defaultValue(Style.Model)
+        .build()
+    );
+
     private final Setting<SettingColor> color = sgRender.add(new ColorSetting.Builder()
         .name("color")
         .description("Colour of the box edges and of the glow.")
@@ -79,10 +88,11 @@ public class CustomEsp extends Module {
 
     private final Setting<Double> lineThickness = sgRender.add(new DoubleSetting.Builder()
         .name("line-thickness")
-        .description("Thickness of the box edges in blocks. Meteor's line renderer is always one pixel, so above 0 the edges are drawn as thin boxes instead.")
+        .description("Thickness of the box edges in blocks. Meteor's line renderer is always one pixel, so above 0 the edges are drawn as thin boxes instead. Box style only - a model is drawn from its own quads, which are always one-pixel lines.")
         .defaultValue(0.02)
         .range(0.0, 0.10)
         .sliderRange(0.0, 0.06)
+        .visible(() -> style.get() == Style.Box)
         .build()
     );
 
@@ -105,7 +115,7 @@ public class CustomEsp extends Module {
 
     private final Setting<Double> glowSpread = sgRender.add(new DoubleSetting.Builder()
         .name("glow-spread")
-        .description("How far the outermost shell sits outside the box, in blocks.")
+        .description("How far the outermost shell sits outside the model (as a fraction of its size) or the box (in blocks).")
         .defaultValue(0.12)
         .range(0.02, 0.40)
         .sliderRange(0.02, 0.30)
@@ -123,8 +133,15 @@ public class CustomEsp extends Module {
         .build()
     );
 
+    /** Draws the entity's model quads instead of its hitbox. */
+    public enum Style {
+        Model,
+        Box
+    }
+
     /** One entity's fade state: where its box was last drawn and how visible it is right now. */
     private static final class Tracked {
+        private Entity entity;
         private Box box;
         private float alpha;
         private boolean seen;
@@ -170,6 +187,7 @@ public class CustomEsp extends Module {
             Tracked t = tracked.computeIfAbsent(entity.getId(), id -> new Tracked());
 
             t.seen = true;
+            t.entity = entity;
             t.box = entity.getBoundingBox();
             t.alpha = Math.min(1f, t.alpha + step);
         }
@@ -189,10 +207,48 @@ public class CustomEsp extends Module {
                 }
             }
 
-            if (t.box == null || t.alpha <= 0f) continue;
+            if (t.alpha <= 0f) continue;
 
-            draw(event, t.box, t.alpha);
+            // The model needs a live entity to read its render state from; a fade-out falls back to
+            // the box it was last seen with, which is all that is left of it.
+            if (style.get() == Style.Model && t.entity != null && t.entity.isAlive() && !t.entity.isRemoved()) {
+                drawModel(event, t.entity, t.alpha);
+            } else if (t.box != null) {
+                draw(event, t.box, t.alpha);
+            }
         }
+    }
+
+    /**
+     * The entity's own model, quad by quad, through Meteor's wireframe renderer: the same call
+     * Meteor's ESP uses for its wireframe mode, so the pose and the rotations of every part come
+     * from the entity itself rather than from a box around it. The glow is the same model drawn a
+     * little larger and weaker, so the halo hugs the shape instead of box-bloating around it.
+     */
+    private void drawModel(Render3DEvent event, Entity entity, float alpha) {
+        Color base = color.get();
+
+        if (glow.get()) {
+            int layers = glowLayers.get();
+            double spread = glowSpread.get();
+            double strength = glowStrength.get();
+
+            for (int i = layers; i >= 1; i--) {
+                double t = (double) i / layers;
+                float shellAlpha = (float) (alpha * strength * (1.0 - 0.75 * t));
+                if (shellAlpha <= 0.002f) continue;
+
+                Color shellFill = withAlpha(base, Math.round(base.a * shellAlpha * 0.6f));
+                Color shellLine = withAlpha(base, Math.round(base.a * shellAlpha));
+
+                WireframeEntityRenderer.render(event, entity, 1.0 + spread * t, shellFill, shellLine, ShapeMode.Sides);
+            }
+        }
+
+        Color line = withAlpha(base, Math.round(base.a * alpha));
+        Color side = withAlpha(sideColor.get(), Math.round(sideColor.get().a * alpha));
+
+        WireframeEntityRenderer.render(event, entity, 1.0, side, line, fill.get() ? ShapeMode.Both : ShapeMode.Lines);
     }
 
     private void draw(Render3DEvent event, Box box, float alpha) {
