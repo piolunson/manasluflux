@@ -6,14 +6,14 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **51 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **52 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
 - **Manaslu Flux Client Side** (10) — purely client-side/visual modules
-- **Manaslu Flux Utility** (14) — chat, logs and tools
+- **Manaslu Flux Utility** (15) — chat, logs and tools
 - **Manaslu Flux Bypasses** (5) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, VClip PhaseFill, flight
 
 Highlights:
@@ -35,7 +35,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (51)</summary>
+<summary>Full module list (52)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
@@ -47,7 +47,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux Client Side (10):** `anti-drop-lagback`, `break-reminder`, `client-block-entities`, `client-side-night-vision`, `packet-filter`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
 
-**Manaslu Flux Utility (14):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
+**Manaslu Flux Utility (15):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `packet-stealer`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 
 **Manaslu Flux Bypasses (5):** `universal-click-tp`, `universal-cobweb-bypass`, `universal-flight`, `universal-pearl-phase`, `universal-vclip-phasefill`
 

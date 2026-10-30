@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.10.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.10.1 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (51)
+## Modules (52)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -71,7 +71,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
 
-### Category: Manaslu Flux Utility (14)
+### Category: Manaslu Flux Utility (15)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -83,6 +83,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Death Commands | `death-commands` | Sends a random message/command from a list when you die, with delay range and chance settings. |
 | Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
 | Discord RPC | `discord-rpc` | Fully customizable Discord Rich Presence via Meteor's bundled discord-ipc — **presets** (Crystals, PvP, Mining, Exploring, Building, AFK) one-click fill everything, and **Custom** lets you edit each field yourself: **Line 1** and **Line 2** with placeholders `{player}` `{server}` `{ping}` `{pos}` `{dimension}` `{cps}` `{version}` `{health}`, large **image name & text**, optional small image (name & text), **show timer**, **update interval**, and a **crystals-per-second counter** (counts crystals blown up, appends " | <n> CPS" to line 1 and feeds `{cps}`). Application ID setting: use your own Discord app (discord.com/developers) to change the NAME shown by Discord and upload your own images; default points at Meteor's app. Runs in the main menu too. |
+| Packet Stealer | `packet-stealer` | **Records everything the server sends your client about one player**, with ISO-8601 UTC timestamps, into `.minecraft/manasluflux/packetstealer/<their name>.json` (one JSON object per line, so the file survives a crash mid-session). A vanilla client never receives another player's packets, so what is captured is the other half of the picture: the effects the server broadcasts about them - movement deltas and teleports, velocity, swings/criticals, **totem pops** and death, **damage** with its source id, **equipment changes** (what they are holding), and optionally raw data-tracker updates. `target` is a player name, or empty to pick the nearest player within `range` when the module is switched on; `chat-feedback` prints the file path. `movement` is off by default (about 20 lines a second), `equipment` on, `data-tracker` off. |
 | Path | `path` | Draws a line from you to a target set with `.mfpath`. (Doesn't work yet.) |
 | Tab Complete Privacy | `tab-complete-privacy` | Cancels tab-complete suggestion packets that would leak private commands: block-all, blocked prefixes, blocked words or symbols. |
 | Tab Logger | `tab-logger` | Keeps a per-server history file of every tab-list player (uuid, name, ping history), written on a background thread. |
