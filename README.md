@@ -6,9 +6,9 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **66 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **67 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
-- **Manaslu Flux Combat** (9) — crystal aura, silent aura, bed aura, surround, kill say, auto totem, instant TNT, clicker, TNT placer
+- **Manaslu Flux Combat** (10) — crystal aura, silent aura, trigger bot, bed aura, surround, kill say, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (9) — eating, fishing, login/logout, respawn, inventory keeper, xcarry, fast use
 - **Manaslu Flux World** (5) — placer, block replacer, wither builder, map art, speed mine
@@ -23,6 +23,7 @@ Highlights:
 - **Kill Say** — port of Sydney's KillSay: a message when you kill someone (random line, brand-swapped), optional `2 pops Bob!` announcements, `delay` so a streak does not spam chat, `clientside`, `green-text`, `kill-streak`, `suicide-ignore` and your own message lists in `Custom` mode.
 - **FOV Modifier** — port of Sydney's FOVModifier: force the FOV you want (default 120) instead of the vanilla slider, with Sydney's 70° guard so held items keep their fixed FOV unless you opt in.
 - **Surround** — port of Sydney's Surround: wraps your feet (the block you stand in, its four sides, optional floor and entity extension) with the hardest block in your hotbar, `limit` per group with `delay` between groups, strict-direction clicking, support-then-retry placement, crystal destruction, and a `Sequential` timing that rebuilds a spot the moment a crystal spawns into it.
+- **Trigger Bot** — the aura only while you aim: `entities` picks the entity types (players by default), `aura` is a module list (Silent Aura by default, or Meteor's Kill Aura), and `range` sets how far its own crosshair ray reaches. Looking away switches off only what it switched on, an aura you enabled yourself is left alone, and switching the trigger off releases everything it started.
 - **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
 - **Bed Aura** — one module for both explosion blocks: beds in the Nether and End, charged respawn anchors in the Overworld and End, picked automatically per dimension with a fallback to whichever item you actually carry, silent switching, glowstone charging and anti-suicide gating.
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
@@ -47,9 +48,9 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (66)</summary>
+<summary>Full module list (67)</summary>
 
-**Manaslu Flux Combat (9):** `auto-crystal`, `kill-say`, `mf-auto-totem`, `clicker`, `instant-tnt`, `mf-bed-aura`, `mf-surround`, `silent-aura`, `tnt-placer`
+**Manaslu Flux Combat (10):** `auto-crystal`, `kill-say`, `mf-auto-totem`, `clicker`, `instant-tnt`, `mf-bed-aura`, `mf-surround`, `mf-trigger-bot`, `silent-aura`, `tnt-placer`
 
 **Manaslu Flux Movement (4):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `place-travel`
 

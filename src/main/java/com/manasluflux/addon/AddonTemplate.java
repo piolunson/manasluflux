@@ -99,6 +99,7 @@ import com.manasluflux.addon.modules.SilentAura;
 import com.manasluflux.addon.modules.SilentTimerSwitch;
 import com.manasluflux.addon.modules.TntPlacer;
 import com.manasluflux.addon.modules.ToggleTab;
+import com.manasluflux.addon.modules.TriggerBot;
 import com.manasluflux.addon.modules.UniversalColoredChat;
 import com.manasluflux.addon.modules.UniversalFlight;
 import com.manasluflux.addon.modules.VClipPhaseFill;
@@ -210,6 +211,8 @@ public class AddonTemplate extends MeteorAddon {
         // Combat modules (own ClickGUI category)
         Modules.get().add(new TntPlacer());
         Modules.get().add(new SilentAura());
+        // Registered after Silent Aura: the trigger bot's default aura setting resolves it by class.
+        Modules.get().add(new TriggerBot());
         Modules.get().add(new AutoCrystal());
         Modules.get().add(new Surround());
         Modules.get().add(new BlockHighlight());
