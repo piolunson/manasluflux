@@ -233,6 +233,13 @@ public class CobwebBypass extends Module {
         .build()
     );
 
+    private final Setting<Boolean> verbose = sgGeneral.add(new BoolSetting.Builder()
+        .name("verbose")
+        .description("Narrates what the module is doing: the settings it switched on, entering and leaving a web, a new web restarting the clock, timer changes and what the sprint tweaks did.")
+        .defaultValue(false)
+        .build()
+    );
+
     /** Ticks spent in a web in the current stretch, used by burst-ticks. */
     private int ticksInWeb;
     /** Set by the mixin whenever it asked for a multiplier this tick. */
@@ -295,6 +302,13 @@ public class CobwebBypass extends Module {
     /** Last formula we warned about, so a broken one prints once instead of every tick. */
     private String graphWarnedFor;
 
+    // ---- verbose narration -----------------------------------------------------------------
+
+    /** Whether the player was in a web on the previous tick. */
+    private boolean wasInWeb;
+    /** Last timer speed that was reported, so the narration follows the curve instead of spamming. */
+    private double reportedSpeed = 1.0;
+
     public CobwebBypass() {
         super(AddonTemplate.BYPASS_CATEGORY, "universal-cobweb-bypass",
             "Removes the cobweb slow client-side (fully or by percent), with profiles for vanilla/NCP/Themis/Grim servers and a lagback watcher.");
@@ -311,6 +325,28 @@ public class CobwebBypass extends Module {
         webTicks = 0;
         websNow.clear();
         entryWebs.clear();
+        wasInWeb = false;
+        reportedSpeed = 1.0;
+
+        if (verbose.get()) narrateSettings();
+    }
+
+    /** The one-shot summary of what is actually enabled. */
+    private void narrateSettings() {
+        String timer = timerMode.get() == TimerMode.Graph
+            ? String.format("graph %s x%.3f, capped at %s", graphFormula.get(), graphScale.get(),
+                graphMax.get() <= 0 ? "nothing" : String.format("%.2f", graphMax.get()))
+            : String.format("constant x%.2f", timerMultiplier.get());
+
+        narrate("Enabled: %s %s", profile.get(), allStuckBlocks.get() ? "(all stuck blocks)" : "(cobwebs only)");
+        narrate("Slow removed: horizontal %.0f%%, vertical %.0f%%, cap %s, burst %s.",
+            horizontal.get(), vertical.get(),
+            maxSpeed.get() <= 0 ? "off" : String.format("%.3f", maxSpeed.get()),
+            burstTicks.get() <= 0 ? "every tick" : burstTicks.get() + " ticks");
+        narrate("Timer: %s; web-timer %.2fx; clock reset on a new web: %s.",
+            timer, webTimer.get(), resetOnNewWeb.get() ? "yes" : "no");
+        narrate("Sprint: off %d ticks before a web, back on %d ticks inside one. Lagbacks: %s.",
+            stopSprintBefore.get(), startSprintAfter.get(), onLagback.get());
     }
 
     @Override
@@ -323,6 +359,9 @@ public class CobwebBypass extends Module {
         entryWebs.clear();
         stopTuning(false);
         releaseTimer();
+
+        if (verbose.get()) narrate("Disabled - vanilla cobweb slow is back and the timer is handed back to Meteor.");
+        wasInWeb = false;
     }
 
     @Override
@@ -445,14 +484,17 @@ public class CobwebBypass extends Module {
         // there when you entered, and it only counts as a new web once none of those blocks are
         // left under you.
         websNow.clear();
+        boolean inWeb = collectWebs(websNow);
+        boolean newWeb = false;
 
-        if (!collectWebs(websNow)) {
+        if (!inWeb) {
             webTicks = 0;
             entryWebs.clear();
         } else {
             if (entryWebs.isEmpty()) {
                 entryWebs.addAll(websNow);
             } else if (resetOnNewWeb.get() && Collections.disjoint(websNow, entryWebs)) {
+                newWeb = true;
                 webTicks = 0;
                 ticksInWeb = 0;
                 entryWebs.clear();
@@ -462,11 +504,45 @@ public class CobwebBypass extends Module {
             webTicks++;
         }
 
+        if (verbose.get()) {
+            if (inWeb && !wasInWeb) {
+                narrate("Entered a web - softening to %.0f%%/%.0f%%.", horizontal.get(), vertical.get());
+            } else if (!inWeb && wasInWeb) {
+                narrate("Left the web - vanilla slow and the normal timer are back.");
+            }
+
+            if (newWeb) narrate("New web - timer clock and web clock restarted (different cobweb, even though they touch).");
+        }
+
+        wasInWeb = inWeb;
+
         updateWebTimer();
+
+        if (verbose.get()) narrateTimer();
 
         // Second pass: the client re-evaluates sprint during its own tick, so the tweak also has
         // to be applied after it, or a held sprint key would switch it straight back on.
         applySprintTweaks();
+    }
+
+    /** Prints one line of the verbose narration. */
+    private void narrate(String format, Object... args) {
+        info(format, args);
+    }
+
+    /** Reports the timer only when it has really moved, so the narration follows the curve. */
+    private void narrateTimer() {
+        // Leaving the web is already announced, and the timer is back to 1x with it.
+        if (!insideWeb()) {
+            reportedSpeed = 1.0;
+            return;
+        }
+
+        double speed = timerSpeed();
+        if (Math.abs(speed - reportedSpeed) < 0.5) return;
+
+        reportedSpeed = speed;
+        narrate("Timer now %.2fx (%.1fs in this web).", speed, webTicks / 20.0);
     }
 
     /**
@@ -482,9 +558,13 @@ public class CobwebBypass extends Module {
             if (delay <= 0) return;
 
             if (ticksInWeb < delay) {
-                if (mc.player.isSprinting()) mc.player.setSprinting(false);
+                if (mc.player.isSprinting()) {
+                    mc.player.setSprinting(false);
+                    if (verbose.get()) narrate("Sprint held off - %d/%d ticks into the web.", ticksInWeb, delay);
+                }
             } else if (!mc.player.isSprinting() && wantsToWalk()) {
                 mc.player.setSprinting(true);
+                if (verbose.get()) narrate("Sprint back on after %d ticks in the web.", ticksInWeb);
             }
             return;
         }
@@ -493,6 +573,7 @@ public class CobwebBypass extends Module {
         int lead = stopSprintBefore.get();
         if (lead > 0 && mc.player.isSprinting() && webAhead(lead)) {
             mc.player.setSprinting(false);
+            if (verbose.get()) narrate("Sprint dropped - a web is %d ticks ahead.", lead);
         }
     }
 
@@ -677,6 +758,12 @@ public class CobwebBypass extends Module {
             case Custom -> {
                 // Nothing: the sliders are the configuration here.
             }
+        }
+
+        if (verbose.get()) {
+            narrate("Profile %s applied: horizontal %.0f%%, vertical %.0f%%, cap %s, burst %d.",
+                selected, horizontal.get(), vertical.get(),
+                maxSpeed.get() <= 0 ? "off" : String.format("%.2f", maxSpeed.get()), burstTicks.get());
         }
     }
 
