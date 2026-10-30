@@ -25,12 +25,15 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * Rocket-fed elytra flight with no rotations. The module never writes your yaw or pitch and never
- * sends a look packet - your camera stays exactly where you left it, and nothing turns on the
- * server - so the whole flight is a velocity controller: the keys set a direction relative to where
- * you are looking, jump climbs straight up, sneak descends straight down, and releasing everything
- * stops the glide and holds your position. Firework rockets are still consumed as the thrust while
- * you are short of the speed you set.
+ * Rocket-fed elytra flight with server-side-only rotations. Each tick the rotation the flight
+ * needs - the way you steer with W/A/S/D, straight up for jump, straight down for sneak - is
+ * written to the player for the tick that sends movement packets, so the server (and the rocket
+ * boost it applies) sees exactly that, and then the camera is put back. First person stays a free
+ * look: your view never turns, only the server's copy of your rotation does.
+ *
+ * <p>The movement itself is a velocity controller, so the keys stay relative to where you are
+ * looking and the sideways keys cannot spin you, and releasing everything stops the glide and
+ * holds your position. Rockets are consumed as the thrust while you are short of the speed set.
  *
  * <p>Fake fly does the same with a chestplate: the hotbar elytra is shown to the server for one
  * start-gliding packet and swapped straight back, so the elytra is never worn and costs no
@@ -124,9 +127,13 @@ public class FireworkElytraFly extends Module {
     private boolean sprintBefore;
     private Vec3d hoverPos;
 
+    private float cameraYaw;
+    private float cameraPitch;
+    private boolean aimed;
+
     public FireworkElytraFly() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "firework-elytra-fly",
-            "Rocket-fed elytra flight with no rotations: jump climbs straight up, sneak descends straight down, WASD moves, letting go hovers. Your camera is never turned.");
+            "Rocket-fed elytra flight: jump climbs straight up, sneak descends straight down, WASD steers, letting go hovers. The rotation goes to the server only, your first-person view never turns.");
     }
 
     @Override
@@ -139,6 +146,7 @@ public class FireworkElytraFly extends Module {
         spoofCooldown = 0;
         warnedRocket = false;
         warnedElytra = false;
+        aimed = false;
 
         if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) chestSwap();
     }
@@ -147,44 +155,71 @@ public class FireworkElytraFly extends Module {
     public void onDeactivate() {
         if (mc.player == null) return;
 
+        restoreCamera();
         hoverPos = null;
         mc.player.setSprinting(sprintBefore);
 
         if (toggleElytra.get() && !fakeFly.get() && isElytraEquipped()) chestSwap();
     }
 
+    /**
+     * Writes the flight rotation before the player tick, so the movement packets the client sends
+     * during that tick carry it. {@link #restoreCamera()} puts your view back afterwards.
+     */
     @EventHandler
-    private void onTick(TickEvent.Post event) {
+    private void onPreTick(TickEvent.Pre event) {
+        aimed = false;
+
         if (mc.player == null || mc.world == null || !Utils.canUpdate()) return;
-        if (mc.player.getAbilities().flying) return;
-
-        if (cooldown > 0) cooldown--;
-        if (spoofCooldown > 0) spoofCooldown--;
-
+        if (!mc.player.isGliding() || mc.player.getAbilities().flying) return;
         if (stopInWater.get() && mc.player.isTouchingWater()) return;
 
-        if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) {
-            chestSwap();
-            return;
+        cameraYaw = mc.player.getYaw();
+        cameraPitch = mc.player.getPitch();
+
+        Vec3d direction = inputDirection(cameraYaw);
+        if (direction.lengthSquared() < 1.0E-4) return;
+
+        aim(direction);
+        aimed = true;
+    }
+
+    @EventHandler
+    private void onTick(TickEvent.Post event) {
+        try {
+            if (mc.player == null || mc.world == null || !Utils.canUpdate()) return;
+            if (mc.player.getAbilities().flying) return;
+
+            if (cooldown > 0) cooldown--;
+            if (spoofCooldown > 0) spoofCooldown--;
+
+            if (stopInWater.get() && mc.player.isTouchingWater()) return;
+
+            if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) {
+                chestSwap();
+                return;
+            }
+
+            if (!mc.player.isGliding()) {
+                if (!autoTakeoff.get()) return;
+
+                // On the ground, only leave it when you ask with jump - no bunny-hopping while idle.
+                if (mc.player.isOnGround()) {
+                    if (mc.options.jumpKey.isPressed()) mc.player.jump();
+                } else if (fakeFly.get()) spoofStartGliding();
+                else startGliding();
+
+                return;
+            }
+
+            fly();
+        } finally {
+            restoreCamera();
         }
-
-        if (!mc.player.isGliding()) {
-            if (!autoTakeoff.get()) return;
-
-            // On the ground, only leave it when you ask with jump - no bunny-hopping while idle.
-            if (mc.player.isOnGround()) {
-                if (mc.options.jumpKey.isPressed()) mc.player.jump();
-            } else if (fakeFly.get()) spoofStartGliding();
-            else startGliding();
-
-            return;
-        }
-
-        fly();
     }
 
     private void fly() {
-        Vec3d direction = inputDirection();
+        Vec3d direction = inputDirection(aimed ? cameraYaw : mc.player.getYaw());
 
         // No key held: park in the air. Zeroing the velocity alone lets gravity sink you a little
         // every tick, so the position is held as well.
@@ -207,8 +242,8 @@ public class FireworkElytraFly extends Module {
 
         Vec3d velocity = mc.player.getVelocity();
 
-        // Rockets are the thrust: light one while the speed is still short of the setting. They do
-        // not turn anything - the direction comes from the velocity below.
+        // Rockets are the thrust: light one while the speed is still short of the setting. This
+        // runs while the aimed rotation is still in place, so the boost goes where you steer.
         if (cooldown == 0) {
             boolean horizontalSlow = Math.hypot(velocity.x, velocity.z) < maxHorizontal * 0.9;
             boolean verticalSlow = Math.abs(velocity.y) < maxVertical * 0.9;
@@ -252,13 +287,13 @@ public class FireworkElytraFly extends Module {
         mc.player.setVelocity(new Vec3d(x, y, z));
     }
 
-    /** WASD + jump/sneak as a world-space direction, horizontal part normalised. Yaw is only read. */
-    private Vec3d inputDirection() {
+    /** WASD + jump/sneak as a world-space direction, horizontal part normalised, from a given yaw. */
+    private Vec3d inputDirection(float baseYaw) {
         double forward = (mc.options.forwardKey.isPressed() ? 1 : 0) - (mc.options.backKey.isPressed() ? 1 : 0);
         double strafe = (mc.options.rightKey.isPressed() ? 1 : 0) - (mc.options.leftKey.isPressed() ? 1 : 0);
         double up = (mc.options.jumpKey.isPressed() ? 1 : 0) - (mc.options.sneakKey.isPressed() ? 1 : 0);
 
-        double yaw = Math.toRadians(mc.player.getYaw());
+        double yaw = Math.toRadians(baseYaw);
         Vec3d look = new Vec3d(-Math.sin(yaw), 0, Math.cos(yaw));
         Vec3d right = new Vec3d(-Math.cos(yaw), 0, -Math.sin(yaw));
 
@@ -277,6 +312,31 @@ public class FireworkElytraFly extends Module {
         if (x == 0 && z == 0 && up == 0) return Vec3d.ZERO;
 
         return new Vec3d(x, up, z);
+    }
+
+    /** The rotation the server is meant to see: your steering direction, 90 degrees up or down for vertical. */
+    private void aim(Vec3d direction) {
+        double horizontal = Math.hypot(direction.x, direction.z);
+
+        if (horizontal > 1.0E-4) mc.player.setYaw((float) Math.toDegrees(Math.atan2(-direction.x, direction.z)));
+
+        if (direction.y != 0) {
+            double pitch = horizontal > 1.0E-4
+                ? -Math.toDegrees(Math.atan2(direction.y, horizontal))
+                : Math.copySign(90.0, -direction.y);
+            mc.player.setPitch((float) pitch);
+        } else if (horizontal > 1.0E-4) {
+            mc.player.setPitch(0.0f);
+        }
+    }
+
+    /** Puts your own view back; the server keeps the aimed rotation it was sent this tick. */
+    private void restoreCamera() {
+        if (!aimed) return;
+
+        aimed = false;
+        mc.player.setYaw(cameraYaw);
+        mc.player.setPitch(cameraPitch);
     }
 
     private boolean fireRocket() {
