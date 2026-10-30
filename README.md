@@ -6,12 +6,12 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **55 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **56 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
-- **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
+- **Manaslu Flux World** (5) — placer, block replacer, wither builder, map art, speed mine
 - **Manaslu Flux Client Side** (10) — purely client-side/visual modules
 - **Manaslu Flux Utility** (15) — chat, logs and tools
 - **Manaslu Flux Bypasses** (8) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, jump pearl, VClip PhaseFill, flight, wool replace
@@ -37,7 +37,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (55)</summary>
+<summary>Full module list (56)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
@@ -45,7 +45,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux Player (7):** `auto-eat`, `auto-fish`, `auto-log`, `auto-login`, `mf-auto-respawn`, `inventory-keeper`, `whitelist-fast-use`
 
-**Manaslu Flux World (4):** `auto-map-part`, `auto-wither`, `block-replacer`, `placer`
+**Manaslu Flux World (5):** `auto-map-part`, `auto-wither`, `block-replacer`, `placer`, `mf-speed-mine`
 
 **Manaslu Flux Client Side (11):** `anti-drop-lagback`, `break-reminder`, `client-block-entities`, `client-side-night-vision`, `packet-filter`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
 
@@ -92,7 +92,7 @@ See [FEATURES.md](FEATURES.md) for the complete changelog — the addon version 
 
 This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE), consistent with Meteor Client's licensing.
 
-Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare). Where a module is a port rather than a rewrite, the upstream file is vendored unmodified in [`blackout/`](blackout/README.md) (currently BlackOut's `AutoPearl.java`, GPL-3.0, for `universal-pearl-phase`), and the port's javadoc names the original author. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
+Some modules are rewritten takes on ideas from other open-source clients (Meteor Client, BlackOut, RyanWare). Where a module is a port rather than a rewrite, the upstream file is vendored unmodified in [`blackout/`](blackout/README.md) (currently BlackOut's `AutoPearl.java` and `AutoCrystalPlus.java`, GPL-3.0, for `universal-pearl-phase` and `crystal-aura`, plus Homovore's `SpeedMineModule.java`, AGPL-3.0, for `mf-speed-mine`), and the port's javadoc names the original author. The bundled Baritone jar is the unmodified official release and remains under its LGPL-3.0 license.
 
 ## Disclaimer
 

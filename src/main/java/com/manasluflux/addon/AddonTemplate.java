@@ -62,6 +62,7 @@ import com.manasluflux.addon.modules.PacketStealer;
 import com.manasluflux.addon.modules.WoolReplace;
 import com.manasluflux.addon.modules.JumpPearlPhase;
 import com.manasluflux.addon.modules.TotemPopPearlPhase;
+import com.manasluflux.addon.modules.SpeedMine;
 import com.manasluflux.addon.modules.Clicker;
 import com.manasluflux.addon.modules.ClickTp;
 import com.manasluflux.addon.modules.ClientBlockEntities;
@@ -165,6 +166,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new WoolReplace());
         Modules.get().add(new JumpPearlPhase());
         Modules.get().add(new TotemPopPearlPhase());
+        Modules.get().add(new SpeedMine());
         Modules.get().add(new TabLogger());
         Modules.get().add(new TabCompletePrivacy());
         Modules.get().add(new ClickTp());

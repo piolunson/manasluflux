@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.11.6 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.11.7 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (55)
+## Modules (56)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -47,13 +47,14 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Inventory Keeper | `inventory-keeper` | Keeps your inventory in the layout you saved. Press the **Save layout** button on the module screen and the occupied slots become the reference; every `refresh-rate` ms the module re-reads the inventory and swaps anything that drifted back into place — the item that was sitting in a saved slot is swapped out to where the wanted item came from, so nothing is dropped and nothing leaves the inventory. `only-hotbar` restricts the kept slots to the nine hotbar slots. Items that were used up, dropped or left in a container are skipped. Checks only run with no screen open and an empty cursor, so it never fights a drag, and at most 8 swaps happen per check (a badly scrambled inventory settles over a few refreshes). The layout is saved in the Meteor config and survives restarts. |
 | Whitelist Fast Use | `whitelist-fast-use` | Toggles Meteor's FastUse automatically based on the item you are holding. |
 
-### Category: Manaslu Flux World (4)
+### Category: Manaslu Flux World (5)
 
 | Module | ID | What it does |
 |---|---|---|
 | Auto Map Part | `auto-map-part` | When you place an item frame, it automatically fills it with a randomly chosen filled map from your hotbar — map-art building made instant. **Instant** by default: the map goes in the same tick the frame spawns; a configurable **Delay** (0–20 ticks, slider) slows it down if wanted (vanilla click-feel is 3). **Silent** (default on): the map is taken with a server-side hotbar swap, so your visible hotbar slot never changes. Remembers already-filled frames so nothing is placed twice, and shows how many frames it has filled in the HUD. |
 | Auto Wither | `auto-wither` | Aim anywhere and **right-click to build a full wither** at the aimed spot — 2 soul sand columns plus the middle block, 3 wither skulls on top (center skull optional), placed via silent hotbar swaps. **Range** (default 4.5, up to 20): how far away the aimed build spot is allowed to be. **Air place** supported, **rotation lock** to a cardinal direction, live ghost preview with shrunk skull boxes and custom colors, **delay** (ticks between blocks, 0 = all in one tick). Optionally **nametags** the spawned wither right after it appears: creative mode writes your configured name onto the tag client-side, survival uses an already-renamed tag; **nametag-delay** is configurable (0 = instant). Ported from Trouser-Streak (which skidded it from Germanminer). |
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
+| Speed Mine | `mf-speed-mine` | **Port of Homovore's SpeedMine** (`dev.leonetic...SpeedMineModule`, leonetics/homovore-public, **AGPL-3.0**, vendored in [`homovore/`](homovore/README.md)). Your click is cancelled and the break is driven by **our own packets**: `START_DESTROY_BLOCK` goes out with the **best tool held**, client-side progress is predicted from the real break delta (`BlockUtils.getBreakDelta`, minus `fudge-ticks`), and once it passes `threshold` (default **0.7**) the stop follows - so the block is gone in a fraction of the vanilla time. `grim-decoy` (default on) sends a second block-start **2000 blocks below the world**, so the pair of starts Grim sees does not read as one impossibly fast break, and the module keeps its own delay budget (`canBegin`/`trackStarts`, the 275 ms decay window) so it does not start faster than the server tolerates. `double-break` demotes a break in progress to a second slot (with its own timeout) so a new click starts instantly, `break-ahead` also mines the block your look ray continues into - rejected when the ray leaves the block within 0.05 of a face border, so corner grazes do not waste the slot - and `rebreak` keeps re-sending the stop. `pause-on-eat` never swaps the tool out of your hand mid-gap, `break-delay`, `swing`, `range`, plus a render group that shrinks the box as predicted progress rises. Meteor already has a `SpeedMine`, so the id is `mf-speed-mine`; the original file is kept unmodified in `homovore/modules/` and the porting table is in that folder's README. **License:** Homovore is AGPL-3.0, so a distributed build containing this port is an AGPL-3.0 work under GPLv3 section 13. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 
 ### Category: Manaslu Flux Client Side (10)
@@ -171,7 +172,7 @@ Modules are grouped by what they do, so nothing shares a grab-bag category any m
 - **Manaslu Flux Combat** (6) — fighting: auras, totem, TNT, clicker (end crystal icon)
 - **Manaslu Flux Movement** (4) — getting around: the three flights and auto walk (feather icon)
 - **Manaslu Flux Player** (7) — keeping you alive and stocked: eat, fish, log, respawn, login, fast use, inventory keeper (golden apple icon)
-- **Manaslu Flux World** (4) — changing blocks around you: placer, auto wither, map part, block replacer (grass block icon)
+- **Manaslu Flux World** (5) — changing blocks around you: placer, auto wither, map part, block replacer, speed mine (grass block icon)
 - **Manaslu Flux Client Side** (8) — what you see and what the server sees: block entities, night vision, sound muter, colored chat, toggle tab, anti drop lagback, ping spoofer, packet limiter (oak sign icon)
 - **Manaslu Flux Utility** (12) — chat, logs and tools: waypoint, path, death coords, chat/tab loggers, tab privacy, RPC, and the rewritten chat modules (compass icon)
 - **Manaslu Flux Bypasses** (5) — beating a server check instead of changing what you do: cobweb bypass, click TP, pearl phase, vclip phasefill, universal flight (ender pearl icon)
