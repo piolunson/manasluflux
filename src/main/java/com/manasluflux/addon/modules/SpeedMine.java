@@ -580,8 +580,32 @@ public class SpeedMine extends Module {
         return mc.player.getEyePos().distanceTo(Vec3d.ofCenter(target)) <= range.get();
     }
 
-    private boolean isMining(BlockPos target) {
+    public boolean isMining(BlockPos target) {
         return target.equals(pos) || target.equals(secondaryPos);
+    }
+
+    /**
+     * Asks the miner to break a block without a click, the way Homovore's {@code MineApi} does, so
+     * other modules (Self Mine Out) can clear a block silently.
+     *
+     * @return true when the block is now being mined, or already was
+     */
+    public boolean requestBreak(BlockPos target) {
+        if (!isActive() || mc.player == null || mc.world == null) return false;
+        if (mc.player.isCreative() || mc.player.isSpectator()) return false;
+        if (isMining(target)) return true;
+        if (!inMineRange(target)) return false;
+
+        BlockState state = mc.world.getBlockState(target);
+        if (state.isAir() || !BlockUtils.canBreak(target, state)) return false;
+
+        if (pos != null && !finished) {
+            if (!started) return false;
+            if (!doubleBreak.get() || secondaryPos != null) return false;
+        }
+
+        startMine(target, validFace(target));
+        return true;
     }
 
     private void sendAction(PlayerActionC2SPacket.Action action, BlockPos target, Direction face) {
