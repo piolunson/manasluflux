@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.15.7 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.15.8 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog — and **`manaslu/update.json`**, the `version` + `download` pair the addon's update detector polls. Forget that file and every installed copy keeps offering the old release.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (67)
+## Modules (68)
 
 ### Category: Manaslu Flux Combat (10)
 
@@ -28,13 +28,14 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | TNT Placer | `tnt-placer` | Traps the nearest player in (crying) obsidian, buries them in TNT and ignites it — non-stop. |
 | Trigger Bot | `mf-trigger-bot` | **Aura only while you are aiming.** `entities` is a normal entity-type list (players by default), `aura` is a module list (Silent Aura by default, add Meteor's Kill Aura or anything else you want driven), and `range` is how far the crosshair ray reaches (default 3, up to 8 - its own ray rather than `mc.crosshairTarget`, which stops at the vanilla attack reach, so a longer-reach aura still triggers). While the ray hits a selected entity the chosen auras are switched on; looking away switches them off. Only modules **it** switched on are turned off again, so an aura you enabled yourself is left running, and turning the trigger off releases everything it started. A module you turn off mid-look is not forced back on. |
 
-### Category: Manaslu Flux Movement (4)
+### Category: Manaslu Flux Movement (5)
 
 | Module | ID | What it does |
 |---|---|---|
 | Auto Walk Hold | `auto-walk-hold` | Holds a configurable key (default **2**) down while enabled — keeps it pressed even after screens open or window focus changes. |
 | Boat Flight | `boat-flight` | Fly while riding a boat — horizontal and vertical speed settings, jump = up, sneak = down. |
 | Place Travel | `place-travel` | Sprint-and-jump travel for the nether roof: holds forward and sprint, and jumps on the very first tick you touch the ground — the 10 tick vanilla jump cooldown is bypassed by calling the jump directly, so the hops never stall. While running it lays a straight line of blocks ahead of you on a fixed level (the block level you last stood on, tracked so the line stays flat through the jump arc). Settings: `distance` (blocks ahead, default 2; beyond block reach is skipped), `height` (**Floor** by default = keeps the level you are running on solid, so a hole can't drop you; `Feet` / `Head` / `Above head` build the line over you instead), `blocks-per-tick`, `blocks` whitelist (netherrack / cobblestone / dirt by default — only blocks you carry are used), `sprint`, `jump`, `rotate`. |
+| Elytra Bounce | `mf-elytra-bounce` | **Bounce along a highway, then walk the distance you set when it stops.** The jump key is held whenever you are not gliding (`canBounce` skips water, vehicles and creative flight), so vanilla jumps on the ground and recasts the elytra in the air - bounce after bounce; forward is held through the landings so the hop keeps its speed, and with `keep-heading` the yaw is locked to the highway axis so a bounce cannot drift off the road. When the horizontal speed stays under 0.1 for `stall-ticks` (default 40), or when there is no elytra to bounce with, it walks `walk-blocks` (default 50) forward **along that axis**: `walk-mode: Baritone` sends Meteor's path manager to the exact block (not just the XZ column, so the walk keeps its height instead of diving for a lower route) and `walk-mode: Self` is the module's own walker - yaw at the target, forward held, sprint, jump only when actually blocked, stopping when the distance is covered or it stops making progress. The walk releases only what it pressed, a walk that covers no ground three times switches the module off, and finishing the walk hands control back to the bounce. `axis` is Auto (the way you face at activation) or a fixed X/Z direction. |
 | Elytra Flight | `elytra-flight` | Controlled elytra flight without fireworks — horizontal and vertical speed settings. **Auto-forward** toggle (default off): on = constant thrust in your look direction, off = you thrust only while holding the forward key. Jump = up, sneak = down work anytime. |
 
 ### Category: Manaslu Flux Player (9)
@@ -221,6 +222,7 @@ Currently vendored: `modules/AutoPearl.java` (ported as `universal-pearl-phase`)
 
 | Version | Changes |
 |---|---|
+| 1.15.8 | **New module: Elytra Bounce** (`mf-elytra-bounce`, Movement). Held jump does the bouncing - vanilla jumps on the ground and recasts in the air - with forward held through landings and the yaw locked to the highway axis (`keep-heading`, `axis`: Auto / +X / -X / +Z / -Z). When the bounce stops (speed under 0.1 for `stall-ticks`, default 40) or there is no elytra, it walks `walk-blocks` (default 50) forward along the same axis: `walk-mode: Baritone` uses Meteor's path manager with an exact block goal so the walk stays at its height, `walk-mode: Self` is a built-in walker (face the target, hold forward, sprint, jump only when blocked) that ends when the distance is covered or progress stops. Three walks without progress switch the module off; finishing a walk returns to bouncing. Counts: 68 modules, Movement 5. |
 | 1.15.7 | **New module: Trigger Bot** (`mf-trigger-bot`, Combat). Switches the aura on only while you aim at someone: `entities` picks the entity types (players by default), `aura` is a module list (Silent Aura by default - add Meteor's Kill Aura or any other module), and `range` (default 3, 1-8) is the length of its own crosshair ray (not `mc.crosshairTarget`, which stops at vanilla attack reach). Looking away releases only what it started, an aura you enabled yourself is never touched, turning the module off releases everything, and a module you switch off while still looking stays off. Counts: 67 modules, Combat 10. |
 | 1.15.6 | **New module: VOM** (Client Side). Undocumented by design: it has no description in the GUI and nothing it sends is readable in the source (the payload is stored encoded and assembled at runtime). Counts: 66 modules, Client Side 14. |
 | 1.15.5 | **Update detector: check every 30 s, one Update & restart button, forced after 10 minutes.** `UpdateChecker` reads `update.json` from the website repository every 30 seconds (`version` + `download`), compares it numerically with the version Fabric reports for this jar, and on a newer one opens the update window (also `.mfupdate`). The button downloads the jar to a temp folder and verifies it before touching anything: it must be a zip whose `fabric.mod.json` has `id` `manasluflux` and the exact version from the manifest, so an HTML error page or a wrong build is rejected with the reason shown. Installing hands the swap to a generated relaunch script (batch on Windows, `sh` elsewhere): it polls this JVM's PID until the game has exited, renames every enabled `manasluflux-*.jar` in the mods folder to `.jar.disabled`, moves the new jar in and starts the game again with the same java command line - on Windows the line is read back from WMI so quoted paths with spaces survive, and if it cannot be read at all the update is still installed and the player is told to start the game. Unanswered, the update is **forced 10 minutes** after the version was first seen (the window shows the countdown; `Later` only closes the window). A failed re-check never hides an update that is already offered, and a failed install stops the force timer so it cannot restart-loop - the button becomes `Retry update`. New command `.mfupdate`. Counts: 65 modules, 30 commands. |

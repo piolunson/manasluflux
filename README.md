@@ -6,10 +6,10 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **67 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **68 modules**, **30 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (10) — crystal aura, silent aura, trigger bot, bed aura, surround, kill say, auto totem, instant TNT, clicker, TNT placer
-- **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
+- **Manaslu Flux Movement** (5) — universal/elytra/boat flight, elytra bounce, auto walk
 - **Manaslu Flux Player** (9) — eating, fishing, login/logout, respawn, inventory keeper, xcarry, fast use
 - **Manaslu Flux World** (5) — placer, block replacer, wither builder, map art, speed mine
 - **Manaslu Flux Client Side** (14) — purely client-side/visual modules, including an FOV modifier and a custom ESP
@@ -26,6 +26,7 @@ Highlights:
 - **Trigger Bot** — the aura only while you aim: `entities` picks the entity types (players by default), `aura` is a module list (Silent Aura by default, or Meteor's Kill Aura), and `range` sets how far its own crosshair ray reaches. Looking away switches off only what it switched on, an aura you enabled yourself is left alone, and switching the trigger off releases everything it started.
 - **Silent Aura** — attacks the nearest player with server-side-only aim (your camera never moves) and a silent weapon switch.- **Instant TNT** — ignites TNT by looking at it, including behind walls (click-through-walls); falls back to placing a redstone block when you have no igniter (and mines that block straight back during the fuse), and last of all shoots the TNT with a Flame bow.
 - **Bed Aura** — one module for both explosion blocks: beds in the Nether and End, charged respawn anchors in the Overworld and End, picked automatically per dimension with a fallback to whichever item you actually carry, silent switching, glowstone charging and anti-suicide gating.
+- **Elytra Bounce** — bounce along a highway: the jump key is held whenever you are not gliding, so vanilla jumps on the ground and recasts the elytra in the air, with forward held through landings and the yaw locked to the road axis. When the bounce stops it walks a set distance forward along the same axis — `walk-mode: Baritone` (an exact block goal, so the walk keeps its height) or `Self`, a built-in walker that faces the target, holds forward, sprints and jumps only when blocked — then hands control back to the bounce.
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
 - **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap, a lagback watcher with a `lagback-limit` rule that restarts the web clock and/or drops sprint once the server has pulled you back more than that many times in the same web, sprint tweaks that release sprint before a web and put it back on after a set time inside one, and a web-only Timer with a constant mode or a graph mode that follows your own formula of the time spent in the web (default: fast at first, then a gentle plateau), the web clock restarts when you walk into a different web — even a touching one — and an optional `verbose` mode narrates what it enabled and what it is doing.
@@ -48,11 +49,11 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (67)</summary>
+<summary>Full module list (68)</summary>
 
 **Manaslu Flux Combat (10):** `auto-crystal`, `kill-say`, `mf-auto-totem`, `clicker`, `instant-tnt`, `mf-bed-aura`, `mf-surround`, `mf-trigger-bot`, `silent-aura`, `tnt-placer`
 
-**Manaslu Flux Movement (4):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `place-travel`
+**Manaslu Flux Movement (5):** `auto-walk-hold`, `boat-flight`, `elytra-flight`, `mf-elytra-bounce`, `place-travel`
 
 **Manaslu Flux Player (9):** `mf-auto-eat`, `mf-auto-fish`, `mf-auto-log`, `auto-login`, `mf-auto-respawn`, `inventory-keeper`, `xcarry`, `no-force-rotation`, `whitelist-fast-use`
 

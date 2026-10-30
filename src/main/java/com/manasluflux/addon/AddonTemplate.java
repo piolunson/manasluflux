@@ -77,6 +77,7 @@ import com.manasluflux.addon.modules.CustomEsp;
 import com.manasluflux.addon.modules.AutoCrystal;
 import com.manasluflux.addon.modules.DeathCoords;
 import com.manasluflux.addon.modules.DiscordRpc;
+import com.manasluflux.addon.modules.ElytraBounce;
 import com.manasluflux.addon.modules.ElytraFlight;
 import com.manasluflux.addon.modules.InstantTnt;
 import com.manasluflux.addon.modules.InventoryKeeper;
@@ -159,6 +160,7 @@ public class AddonTemplate extends MeteorAddon {
         Modules.get().add(new UniversalFlight());
         Modules.get().add(new BoatFlight());
         Modules.get().add(new ElytraFlight());
+        Modules.get().add(new ElytraBounce());
         Modules.get().add(new BlockReplacer());
         Modules.get().add(new AutoMapPart());
         Modules.get().add(new AutoWither());
