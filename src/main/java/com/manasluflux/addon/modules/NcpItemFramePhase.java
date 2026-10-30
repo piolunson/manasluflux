@@ -1,20 +1,18 @@
 package com.manasluflux.addon.modules;
 
 /**
- * Item-frame phase paced for <b>NoCheatPlus</b>.
+ * Frame-aware pearl phase paced for <b>NoCheatPlus</b>.
  *
- * <p>NCP's movement validation is a passability/SurvivalFly style check: it re-simulates where you
- * could have got to, so the attempt is fed in small increments (0.05 blocks) one packet per tick,
- * which keeps each step inside what a real movement tick could produce. It also gives the server a
- * chance to answer with a setback between steps, which is what the retry logic watches for.
- *
- * <p>Not verified against a live NCP server: this is the pacing that matches the check's shape, not
- * a proven bypass.
+ * <p>NCP validates rotation and movement together, so this variant gives the server <b>two ticks of
+ * its own rotation</b> before the throw instead of snapping the look and interacting in the same
+ * tick, and gives a throw <b>8 ticks</b> to produce a position correction before calling it dead.
+ * The frame bypass itself is not NCP specific - it is the aim point, which is the same code for
+ * both modules.
  */
 public class NcpItemFramePhase extends ItemFramePhase {
     public NcpItemFramePhase() {
         super("ncp-itemframe",
-            "Phases into the block you face (or behind an item frame) with small one-packet-per-tick pushes, paced for NCP.",
-            0.05, 2);
+            "Pearl phase that throws at the uncovered edge of a face when an item frame is in the way, with its rotation sent ahead of the throw (NCP pacing).",
+            2, 8);
     }
 }

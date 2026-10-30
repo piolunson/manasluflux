@@ -1,21 +1,21 @@
 package com.manasluflux.addon.modules;
 
 /**
- * Item-frame phase paced for <b>Themis</b>.
+ * Frame-aware pearl phase paced for <b>Themis</b>.
  *
- * <p>Themis advertises Fly, Step, Speed, Blink and Timer checks. Blink is the one that matters
- * here: it looks for large jumps across several packets, so this variant pushes fewer, larger
- * increments (0.25 blocks) and finishes the distance in one tick, which reads as a single step
- * rather than a series of teleports. The verification window is longer, because a Step check
- * usually answers a tick or so later than NCP does.
+ * <p>Themis advertises Fly, Step, Speed, <b>Blink</b> and Timer checks. Blink is about large jumps
+ * across packets, so this variant <b>does not spend a tick on a bare rotation packet</b>: the look
+ * and the throw go out together, so there is no rotation-only packet for a check to pair with a
+ * position change. It also waits longer (<b>14 ticks</b>) for a correction before moving to the next
+ * point on the face, because a Step-style check tends to answer later than NCP does.
  *
- * <p>Not verified against a live Themis server: this is the pacing that matches the advertised
- * checks, not a proven bypass.
+ * <p>Not verified against a live Themis server: the aim points are geometry, the pacing is an
+ * inference from the advertised checks.
  */
 public class ThItemFramePhase extends ItemFramePhase {
     public ThItemFramePhase() {
         super("th-itemframe",
-            "Phases into the block you face (or behind an item frame) in a few larger steps, paced for Themis' Blink/Step checks.",
-            0.25, 3);
+            "Pearl phase that throws at the uncovered edge of a face when an item frame is in the way, rotation and throw on one tick (Themis pacing).",
+            0, 14);
     }
 }
