@@ -6,13 +6,13 @@ A [Meteor Client](https://meteorclient.com) addon for **Minecraft 1.21.11 (Fabri
 
 ## About
 
-ManasluFlux adds **50 modules**, **28 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
+ManasluFlux adds **51 modules**, **29 commands** and **7 HUD elements** on top of Meteor Client, organized in seven ClickGUI categories:
 
 - **Manaslu Flux Combat** (7) — crystal aura, silent aura, bed aura, auto totem, instant TNT, clicker, TNT placer
 - **Manaslu Flux Movement** (4) — universal/elytra/boat flight, auto walk
 - **Manaslu Flux Player** (7) — eating, fishing, login/logout, respawn, inventory keeper, fast use
 - **Manaslu Flux World** (4) — placer, block replacer, wither builder, map art
-- **Manaslu Flux Client Side** (9) — purely client-side/visual modules
+- **Manaslu Flux Client Side** (10) — purely client-side/visual modules
 - **Manaslu Flux Utility** (14) — chat, logs and tools
 - **Manaslu Flux Bypasses** (5) — modules that beat a server/anticheat check instead of changing what you do, all named **Universal** because none of them target one anticheat: cobweb bypass, click TP, pearl phase, VClip PhaseFill, flight
 
@@ -24,6 +24,7 @@ Highlights:
 - **Pearl Phase** — full port of BlackOut's Auto Pearl: pearl at your own block to phase into walls, with their CC bypass, four switch modes and instant rotation.
 - **VClip PhaseFill** — vclip a few blocks, seal the space you left behind and let the server rubberband you; if it doesn't, you are vclipped back.
 - **Cobweb Bypass** — no-slow in webs: the cobweb movement multiplier is replaced client-side, with per-anticheat profiles (vanilla, NCP, Themis, Grim), a per-axis speed cap, a lagback watcher, sprint tweaks that release sprint before a web and put it back on after a set time inside one, and a web-only Timer with a constant mode or a graph mode that follows your own formula of the time spent in the web (default: fast at first, then a gentle plateau), and the web clock restarts when you walk into a different web — even a touching one.
+- **Packet Filter** — a packets-per-second budget that drops the least useful packet first: crystal places, totem swaps and swings are never dropped, movement only goes once the budget is stretched, and chat/sprint noise goes first. `.mfpacketlimit test` measures the server's own limit by flooding it until it kicks you, `.mfpacketlimit check` reports the numbers.
 - **British Chat** — tidies what you send: a capital at the start, a full stop at the end, and optional grammar fixes for the words everyone mistypes in a fight.
 - **Auto Login** — sends `/login <password>` automatically after joining.
 - **Image / GIF HUD** — display images and animated GIFs directly on your HUD.
@@ -34,7 +35,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 ## Modules
 
 <details>
-<summary>Full module list (50)</summary>
+<summary>Full module list (51)</summary>
 
 **Manaslu Flux Combat (7):** `auto-totem`, `clicker`, `crystal-aura`, `instant-tnt`, `mf-bed-aura`, `silent-aura`, `tnt-placer`
 
@@ -44,7 +45,7 @@ The full, always up-to-date feature list lives in [FEATURES.md](FEATURES.md).
 
 **Manaslu Flux World (4):** `auto-map-part`, `auto-wither`, `block-replacer`, `placer`
 
-**Manaslu Flux Client Side (9):** `anti-drop-lagback`, `break-reminder`, `client-block-entities`, `client-side-night-vision`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
+**Manaslu Flux Client Side (10):** `anti-drop-lagback`, `break-reminder`, `client-block-entities`, `client-side-night-vision`, `packet-filter`, `packet-limiter`, `ping-spoofer`, `sound-muter`, `toggle-tab`, `universal-colored-chat`
 
 **Manaslu Flux Utility (14):** `auto-chat-clear`, `auto-responder`, `british-chat`, `chat-logger`, `death-commands`, `death-coords`, `discord-rpc`, `world-origin`, `mute`, `path`, `screenshot`, `tab-complete-privacy`, `tab-logger`, `waypoint`
 

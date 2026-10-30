@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.9.4 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.10.0 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (50)
+## Modules (51)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -56,7 +56,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Block Replacer | `block-replacer` | Places back the same block when one of your placed blocks gets mined or removed. |
 | Placer | `placer` | Places whitelisted blocks everywhere around you — fills nearby air with the selected blocks straight from your inventory (nearest first). Settings: block whitelist, radius (1–6), blocks-per-tick, silent rotation, check-entities. |
 
-### Category: Manaslu Flux Client Side (9)
+### Category: Manaslu Flux Client Side (10)
 
 | Module | ID | What it does |
 |---|---|---|
@@ -65,6 +65,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Client Block Entities | `client-block-entities` | Pick any block entity types by id (chests, signs, beacons, spawners, shulker boxes…) and their block-entity rendering is done client-side only — **Simple** replaces the block-entity part with a single static box, **Hide** removes it entirely (the block itself still renders normally). Purely client-side renderer for any block entity: Purely client-side (mixin into the block-entity dispatcher), big FPS boost near many heavy block entities. |
 | Client-Side Night Vision | `client-side-night-vision` | Night vision potion effect client-side only — the server never sees the effect. |
 | Packet Limiter | `packet-limiter` | Caps outgoing packets per tick (keep-alive/pong always allowed) so laggy modules can't get you kicked for flooding, with a debug counter. |
+| Packet Filter | `packet-filter` | Keeps you under a **packets-per-second budget** by dropping the **least important** packet first instead of whatever happens to arrive next. Every outgoing packet is sorted into three classes: **Critical** is never dropped (keep-alive and pong, because the connection dies without them, plus block/item use, entity interaction, inventory clicks - moving totems and crystals - hotbar switches, swings, player actions, respawn and chat commands); **Normal** is movement, input and mining, dropped only once the budget is stretched a quarter past its limit, so walking is never sacrificed while something cheaper is still going out; **Low** is chat, sprint/sneak state, custom payloads, boat paddles and the rest, the first to go. `preset` picks the ranking: **CPvP** (default) makes placing obsidian/crystals, breaking crystals, totem swaps and swings critical; **Generic** keeps only inventory clicks, block/item use and respawn critical. `max-per-second` is the budget (0 = counting only, nothing dropped), `notifier` reports once a second when packets were filtered. Its HUD shows `sent/budget` per second. Paired with `.mfpacketlimit`, which measures the server's own limit. |
 | Ping Spoofer | `ping-spoofer` | Changes your ping with three modes: **Real** (no change), **More** (genuinely adds latency by delaying keep-alive/pong replies, so the server sees real extra ms) or **Spoof** (replies sent instantly, only the tab-list ping is patched). Amount, jitter and a debug readout are configurable. |
 | Sound Muter | `sound-muter` | Mutes specific sounds picked from a sound list, client-side. |
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
@@ -120,7 +121,7 @@ All registered in the **"Manaslu Flux"** HUD group (HUD editor → add element).
 
 ---
 
-## Commands (28)
+## Commands (29)
 
 All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfcoords` etc.).
 
@@ -129,6 +130,7 @@ All prefixed with `mf` (no slash needed inside Meteor's `.command` system: `.mfc
 | `.mffakeplayer` | Spawns a **fake player the client treats as a real player** — own player-list entry (so tab list, skins and name lookups work) and registered in `world.getPlayers()` like a joining player, so auras, player counts and anything else that only reacts to real players targets it. Subcommands: `add [name]` (spawns where you look), `remove <name>`, `clear`, `list`, `tp` (move to your crosshair), `health <hp>`. `add` also copies your inventory so the damage simulation sees real armor. |
 | `.mfwebspeed` | **Autoconfig for Cobweb Bypass.** Takes over your keys, walks you into the nearest cobweb (within 6 blocks) and then tries every horizontal × vertical pair from `0` up to `<max>`, in `<step>` gaps. For each pair it times how many ticks you need to leave the web while holding forward and jump, and any pair where the server sends a correction teleport (a lagback) is marked failed. The fastest pair with zero lagbacks is applied as `Custom`. Usage: `.mfwebspeed <max> [step] [negative] [verbose]` (`step` defaults to 20; `negative` also tries `-5..-1`, off by default; `verbose` narrates the sweep), `.mfwebspeed stop` restores the previous settings, and bare `.mfwebspeed` shows the usage and current sweep progress. With `verbose` every combo prints `[3/36] testing horizontal 40% / vertical 60%` and then its verdict: `-> OK - out in 3 tick(s)`, `-> FAILED - the server pulled you back`, or `-> stuck - never left the web`. Sweeps above 400 combinations are refused - raise the step or lower the max. |
 | `.mfvisualizewebbypassgraph` | **Draws the Cobweb Bypass timer curve in your browser.** Writes `meteor-client/webbypass-graph.html` and opens it: the curve sampled from `CobwebBypass.timerSpeedAt()` (the exact call the running timer makes, so the page matches the module as configured), 0-20 s of time spent in a web, with the timer multiplier on one axis, a dashed 1x baseline, the mode / formula / scale / `web-timer` / peak / `max-timer` in chips (the cap is drawn as a green dashed ceiling when it is in view), a slider and pointer hover that scrub along the curve, and a table explaining what 1x and the plateau mean. If `graph-formula` does not parse the page says so instead of drawing a fake curve, and the module keeps the timer at 1x. No arguments. |
+| `.mfpacketlimit` | **Packet budget, measured and enforced.** `test [packets-per-tick]` floods the server with look packets (default 20/tick) until it kicks you and reports how many went out and how fast - it WILL disconnect you, that is the measurement, and it stops itself after 60 s if the server never minds. `check` prints the Packet Filter state - budget, preset, packets sent/filtered/peak per second - plus the last test's result (`kicked after N packets in X s (Y/s)`), which survives the kick because it is kept in the module, so you can rejoin and read it. |
 | `.mfhelp` | Built-in tutorial for Discord RPC: prints every `{}` placeholder with a live value, example Line 1 / Line 2 you can paste into the module, and where the Discord name / logo / images come from. |
 | `.mfaddtext` | Local chat: `mfaddtext <text>` shows text only for you, nothing is sent to the server. |
 | `.mfautoeat` | Configures the AutoEat module: `mfautoeat <food threshold>` \| `mfautoeat off`. |
