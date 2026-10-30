@@ -3,7 +3,7 @@
 A Meteor Client addon for Minecraft 1.21.11 (Fabric) by piolunson.
 
 > **This document is the single source of truth for everything the addon adds.**
-> It is updated every time the addon is rebuilt. Last updated: **v1.9.0 (Minecraft 1.21.11)**.
+> It is updated every time the addon is rebuilt. Last updated: **v1.9.1 (Minecraft 1.21.11)**.
 
 > Also updated on every build: the website in [`../manaslu/`](../manaslu/index.html) — hero version chip, download button/jar link (fresh jar copied into `manaslu/downloads/`), command list and changelog.
 
@@ -12,7 +12,7 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 
 ---
 
-## Modules (47)
+## Modules (48)
 
 ### Category: Manaslu Flux Combat (7)
 
@@ -69,13 +69,14 @@ Build output: `build/libs/manasluflux-<version>.jar`.
 | Toggle Tab | `toggle-tab` | Keeps the player list (tab) open by making the game think you are holding Tab. |
 | Universal Colored Chat | `universal-colored-chat` | Replaces every `&` in chat with the color code sign. |
 
-### Category: Manaslu Flux Utility (12)
+### Category: Manaslu Flux Utility (13)
 
 | Module | ID | What it does |
 |---|---|---|
 | Mute | `mute` | Module backing `.mfmute`: client-side chat filter by player name and/or phrase. |
 | Auto Chat Clear | `auto-chat-clear` | Automatically does the vanilla **F3+D chat clear** after every N received messages (default 20, 1–100). By default the visible backlog is emptied but scrollback history is preserved; an optional `clear-recent-history` toggle wipes that too. Own messages can be excluded from the count, and an optional chat line confirms each clear. Purely client-side. |
 | Auto Responder | `auto-responder` | Replies to chat automatically via trigger=response pairs (random pick on multiple matches), with an anti-loop cooldown. |
+| British Chat | `british-chat` | Tidies every chat message you send: a capital at the start (and after each sentence), a full stop at the end, and — with `grammar-correct` on — fixes for the words people mistype mid-fight (missing apostrophes: `dont`, `cant`, `wont`, `im`, `ive`; swapped letters: `teh`, `adn`, `thier`, `recieve`; chat shorthand: `u`, `ur`, `pls`, `idk`, `ty`, `rn`), doubled or missing spaces and spaces before punctuation. Options: `capitalise`, `full-stops`, `grammar-correct`, `capitalise-i`. It rewrites the message before it is signed, so the tidied text is what the server receives — nothing is sent twice. Commands are never touched, and a dot glued to lowercase (a hostname like `mc.hypixel.net`, or `3.5`) is never treated as a sentence break. It is a fixed rule list, not a language model: unknown words pass through untouched. |
 | Chat Logger | `chat-logger` | Logs incoming and outgoing chat (including commands) to a file, new log per game join, path with %date%/%time%/%player%/%server% placeholders. |
 | Death Commands | `death-commands` | Sends a random message/command from a list when you die, with delay range and chance settings. |
 | Death Coords | `death-coords` | Prints (and optionally copies) your coordinates the moment you die. |
