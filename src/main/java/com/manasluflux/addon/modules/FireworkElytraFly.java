@@ -2,6 +2,7 @@ package com.manasluflux.addon.modules;
 
 import com.manasluflux.addon.AddonTemplate;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
@@ -14,7 +15,9 @@ import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
@@ -25,11 +28,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * Rocket-fed elytra flight with server-side-only rotations. Each tick the rotation the flight
- * needs - the way you steer with W/A/S/D, straight up for jump, straight down for sneak - is
- * written to the player for the tick that sends movement packets, so the server (and the rocket
- * boost it applies) sees exactly that, and then the camera is put back. First person stays a free
- * look: your view never turns, only the server's copy of your rotation does.
+ * Rocket-fed elytra flight with packet-only rotations. The rotation the flight needs - the way you
+ * steer with W/A/S/D, straight up for jump, straight down for sneak - is written to the player only
+ * for the moment the movement packets are built, so it goes out on those packets and on nothing
+ * else, and it is put back before the packet send returns. The client is therefore untouched: no
+ * frame ever renders the aimed rotation and your view never turns, only the server's copy of your
+ * rotation does.
  *
  * <p>The movement itself is a velocity controller, so the keys stay relative to where you are
  * looking and the sideways keys cannot spin you, and releasing everything stops the glide and
@@ -103,6 +107,13 @@ public class FireworkElytraFly extends Module {
         .build()
     );
 
+    private final Setting<Boolean> pauseOnEat = sgGeneral.add(new BoolSetting.Builder()
+        .name("pause-on-eat")
+        .description("Lets go while you are eating or drinking: no rotation, no rockets and no speed control, so you can eat mid-flight.")
+        .defaultValue(true)
+        .build()
+    );
+
     private final Setting<Boolean> fakeFly = sgFakeFly.add(new BoolSetting.Builder()
         .name("fake-fly")
         .description("Fly with a chestplate: the hotbar elytra is shown to the server only for the start-gliding packet, so the elytra takes no durability.")
@@ -163,14 +174,16 @@ public class FireworkElytraFly extends Module {
     }
 
     /**
-     * Writes the flight rotation before the player tick, so the movement packets the client sends
-     * during that tick carry it. {@link #restoreCamera()} puts your view back afterwards.
+     * Writes the flight rotation for the movement packets only: everything sent inside
+     * {@code sendPosition} carries it, and {@link #restoreCamera()} puts your view back at the tail
+     * of that send, before a single frame is rendered.
      */
     @EventHandler
-    private void onPreTick(TickEvent.Pre event) {
+    private void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
         aimed = false;
 
         if (mc.player == null || mc.world == null || !Utils.canUpdate()) return;
+        if (pauseOnEat.get() && isEating()) return;
         if (!mc.player.isGliding() || mc.player.getAbilities().flying) return;
         if (stopInWater.get() && mc.player.isTouchingWater()) return;
 
@@ -182,6 +195,15 @@ public class FireworkElytraFly extends Module {
 
         aim(direction);
         aimed = true;
+
+        // Rockets go out inside the aimed window too, so the server spawns the boost along the
+        // rotation you are steering with rather than wherever your camera happens to point.
+        if (cooldown == 0) fireThrust(direction);
+    }
+
+    @EventHandler
+    private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event) {
+        restoreCamera();
     }
 
     @EventHandler
@@ -192,6 +214,9 @@ public class FireworkElytraFly extends Module {
 
             if (cooldown > 0) cooldown--;
             if (spoofCooldown > 0) spoofCooldown--;
+
+            // Eating takes priority: no speed control and no hover while the item is in use.
+            if (pauseOnEat.get() && isEating()) return;
 
             if (stopInWater.get() && mc.player.isTouchingWater()) return;
 
@@ -242,19 +267,6 @@ public class FireworkElytraFly extends Module {
 
         Vec3d velocity = mc.player.getVelocity();
 
-        // Rockets are the thrust: light one while the speed is still short of the setting. This
-        // runs while the aimed rotation is still in place, so the boost goes where you steer.
-        if (cooldown == 0) {
-            boolean horizontalSlow = Math.hypot(velocity.x, velocity.z) < maxHorizontal * 0.9;
-            boolean verticalSlow = Math.abs(velocity.y) < maxVertical * 0.9;
-
-            if ((!straightVertical && horizontalSlow) || (direction.y != 0 && verticalSlow)) {
-                if (fireRocket()) cooldown = (int) Math.max(1, Math.round(fireworkDelay.get() * TICKS_PER_SECOND));
-            }
-        }
-
-        velocity = mc.player.getVelocity();
-
         double targetX = direction.x * maxHorizontal;
         double targetY = direction.y * maxVertical;
         double targetZ = direction.z * maxHorizontal;
@@ -285,6 +297,29 @@ public class FireworkElytraFly extends Module {
         if (Math.abs(y) > maxVertical) y = Math.signum(y) * maxVertical;
 
         mc.player.setVelocity(new Vec3d(x, y, z));
+    }
+
+    /** Rockets are the thrust: light one while the speed is still short of the setting. */
+    private void fireThrust(Vec3d direction) {
+        double maxHorizontal = horizontalSpeed.get() / TICKS_PER_SECOND;
+        double maxVertical = verticalSpeed.get() / TICKS_PER_SECOND;
+        boolean straightVertical = Math.hypot(direction.x, direction.z) < 1.0E-4;
+
+        Vec3d velocity = mc.player.getVelocity();
+        boolean horizontalSlow = Math.hypot(velocity.x, velocity.z) < maxHorizontal * 0.9;
+        boolean verticalSlow = Math.abs(velocity.y) < maxVertical * 0.9;
+
+        if ((!straightVertical && horizontalSlow) || (direction.y != 0 && verticalSlow)) {
+            if (fireRocket()) cooldown = (int) Math.max(1, Math.round(fireworkDelay.get() * TICKS_PER_SECOND));
+        }
+    }
+
+    /** Food or a potion actively being used - the cases where the module has to get out of the way. */
+    private boolean isEating() {
+        if (!mc.player.isUsingItem()) return false;
+
+        ItemStack active = mc.player.getActiveItem();
+        return active.contains(DataComponentTypes.FOOD) || active.contains(DataComponentTypes.POTION_CONTENTS);
     }
 
     /** WASD + jump/sneak as a world-space direction, horizontal part normalised, from a given yaw. */
