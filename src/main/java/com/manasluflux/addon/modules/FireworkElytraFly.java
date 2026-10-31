@@ -2,7 +2,7 @@ package com.manasluflux.addon.modules;
 
 import com.manasluflux.addon.AddonTemplate;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
-import meteordevelopment.meteorclient.events.entity.player.SendMovementPacketsEvent;
+import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.DoubleSetting;
@@ -21,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.screen.sync.ItemStackHash;
@@ -28,12 +29,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * Rocket-fed elytra flight with packet-only rotations. The rotation the flight needs - the way you
- * steer with W/A/S/D, straight up for jump, straight down for sneak - is written to the player only
- * for the moment the movement packets are built, so it goes out on those packets and on nothing
- * else, and it is put back before the packet send returns. The client is therefore untouched: no
- * frame ever renders the aimed rotation and your view never turns, only the server's copy of your
- * rotation does.
+ * Rocket-fed elytra flight whose rotation exists only on the wire. The rotation the flight needs -
+ * the way you steer with W/A/S/D, straight up for jump, straight down for sneak - is never written
+ * to the player: outbound movement packets are rewritten with it as they leave, so the server gets
+ * exactly that rotation on every movement packet while your own entity is untouched for every
+ * single frame. Your view is a plain, ordinary first-person camera - nothing to snap back, nothing
+ * to interpolate across, no look packets of our own.
  *
  * <p>The movement itself is a velocity controller, so the keys stay relative to where you are
  * looking and the sideways keys cannot spin you, and releasing everything stops the glide and
@@ -138,10 +139,6 @@ public class FireworkElytraFly extends Module {
     private boolean sprintBefore;
     private Vec3d hoverPos;
 
-    private float cameraYaw;
-    private float cameraPitch;
-    private boolean aimed;
-
     public FireworkElytraFly() {
         super(AddonTemplate.MOVEMENT_CATEGORY, "firework-elytra-fly",
             "Rocket-fed elytra flight: jump climbs straight up, sneak descends straight down, WASD steers, letting go hovers. The rotation goes to the server only, your first-person view never turns.");
@@ -157,7 +154,6 @@ public class FireworkElytraFly extends Module {
         spoofCooldown = 0;
         warnedRocket = false;
         warnedElytra = false;
-        aimed = false;
 
         if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) chestSwap();
     }
@@ -166,7 +162,6 @@ public class FireworkElytraFly extends Module {
     public void onDeactivate() {
         if (mc.player == null) return;
 
-        restoreCamera();
         hoverPos = null;
         mc.player.setSprinting(sprintBefore);
 
@@ -174,77 +169,63 @@ public class FireworkElytraFly extends Module {
     }
 
     /**
-     * Writes the flight rotation for the movement packets only: everything sent inside
-     * {@code sendPosition} carries it, and {@link #restoreCamera()} puts your view back at the tail
-     * of that send, before a single frame is rendered.
+     * The aim goes on the movement packets themselves: the packet vanilla built is dropped and an
+     * identical one carrying the flight rotation is sent in its place. The player entity is never
+     * written, so the client is exactly as it would be with the module off.
      */
     @EventHandler
-    private void onSendMovementPacketsPre(SendMovementPacketsEvent.Pre event) {
-        aimed = false;
-
-        if (mc.player == null || mc.world == null || !Utils.canUpdate()) return;
+    private void onSend(PacketEvent.Send event) {
+        if (!(event.packet instanceof PlayerMoveC2SPacket packet)) return;
+        if (mc.player == null || mc.world == null || !Utils.canUpdate() || mc.getNetworkHandler() == null) return;
         if (pauseOnEat.get() && isEating()) return;
         if (!mc.player.isGliding() || mc.player.getAbilities().flying) return;
         if (stopInWater.get() && mc.player.isTouchingWater()) return;
 
-        cameraYaw = mc.player.getYaw();
-        cameraPitch = mc.player.getPitch();
-
-        Vec3d direction = inputDirection(cameraYaw);
+        Vec3d direction = inputDirection(mc.player.getYaw());
         if (direction.lengthSquared() < 1.0E-4) return;
 
-        aim(direction);
-        aimed = true;
+        PlayerMoveC2SPacket aimed = aim(packet, direction);
+        if (aimed == null) return;
 
-        // Rockets go out inside the aimed window too, so the server spawns the boost along the
-        // rotation you are steering with rather than wherever your camera happens to point.
-        if (cooldown == 0) fireThrust(direction);
-    }
-
-    @EventHandler
-    private void onSendMovementPacketsPost(SendMovementPacketsEvent.Post event) {
-        restoreCamera();
+        event.cancel();
+        event.sendSilently(aimed);
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        try {
-            if (mc.player == null || mc.world == null || !Utils.canUpdate()) return;
-            if (mc.player.getAbilities().flying) return;
+        if (mc.player == null || mc.world == null || !Utils.canUpdate()) return;
+        if (mc.player.getAbilities().flying) return;
 
-            if (cooldown > 0) cooldown--;
-            if (spoofCooldown > 0) spoofCooldown--;
+        if (cooldown > 0) cooldown--;
+        if (spoofCooldown > 0) spoofCooldown--;
 
-            // Eating takes priority: no speed control and no hover while the item is in use.
-            if (pauseOnEat.get() && isEating()) return;
+        // Eating takes priority: no speed control and no hover while the item is in use.
+        if (pauseOnEat.get() && isEating()) return;
 
-            if (stopInWater.get() && mc.player.isTouchingWater()) return;
+        if (stopInWater.get() && mc.player.isTouchingWater()) return;
 
-            if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) {
-                chestSwap();
-                return;
-            }
-
-            if (!mc.player.isGliding()) {
-                if (!autoTakeoff.get()) return;
-
-                // On the ground, only leave it when you ask with jump - no bunny-hopping while idle.
-                if (mc.player.isOnGround()) {
-                    if (mc.options.jumpKey.isPressed()) mc.player.jump();
-                } else if (fakeFly.get()) spoofStartGliding();
-                else startGliding();
-
-                return;
-            }
-
-            fly();
-        } finally {
-            restoreCamera();
+        if (toggleElytra.get() && !fakeFly.get() && !isElytraEquipped()) {
+            chestSwap();
+            return;
         }
+
+        if (!mc.player.isGliding()) {
+            if (!autoTakeoff.get()) return;
+
+            // On the ground, only leave it when you ask with jump - no bunny-hopping while idle.
+            if (mc.player.isOnGround()) {
+                if (mc.options.jumpKey.isPressed()) mc.player.jump();
+            } else if (fakeFly.get()) spoofStartGliding();
+            else startGliding();
+
+            return;
+        }
+
+        fly();
     }
 
     private void fly() {
-        Vec3d direction = inputDirection(aimed ? cameraYaw : mc.player.getYaw());
+        Vec3d direction = inputDirection(mc.player.getYaw());
 
         // No key held: park in the air. Zeroing the velocity alone lets gravity sink you a little
         // every tick, so the position is held as well.
@@ -266,6 +247,12 @@ public class FireworkElytraFly extends Module {
         boolean straightVertical = Math.hypot(direction.x, direction.z) < 1.0E-4;
 
         Vec3d velocity = mc.player.getVelocity();
+
+        // Rockets are the thrust: light one while the speed is still short of the setting. The
+        // server's copy of your rotation is the flight aim, so the boost follows your steering.
+        if (cooldown == 0) fireThrust(direction);
+
+        velocity = mc.player.getVelocity();
 
         double targetX = direction.x * maxHorizontal;
         double targetY = direction.y * maxVertical;
@@ -349,29 +336,46 @@ public class FireworkElytraFly extends Module {
         return new Vec3d(x, up, z);
     }
 
-    /** The rotation the server is meant to see: your steering direction, 90 degrees up or down for vertical. */
-    private void aim(Vec3d direction) {
+    /**
+     * The same movement packet, carrying the flight rotation: your steering direction and, when you
+     * climb or dive, 90 degrees up or down. Position, on-ground and collision flags are copied as
+     * they were, so nothing about where you are changes.
+     *
+     * @return the replacement packet, or null when the packet carries no rotation to re-aim.
+     */
+    private PlayerMoveC2SPacket aim(PlayerMoveC2SPacket packet, Vec3d direction) {
         double horizontal = Math.hypot(direction.x, direction.z);
 
-        if (horizontal > 1.0E-4) mc.player.setYaw((float) Math.toDegrees(Math.atan2(-direction.x, direction.z)));
+        float yaw = horizontal > 1.0E-4
+            ? (float) Math.toDegrees(Math.atan2(-direction.x, direction.z))
+            : mc.player.getYaw();
 
+        float pitch;
         if (direction.y != 0) {
-            double pitch = horizontal > 1.0E-4
-                ? -Math.toDegrees(Math.atan2(direction.y, horizontal))
-                : Math.copySign(90.0, -direction.y);
-            mc.player.setPitch((float) pitch);
-        } else if (horizontal > 1.0E-4) {
-            mc.player.setPitch(0.0f);
+            pitch = horizontal > 1.0E-4
+                ? (float) -Math.toDegrees(Math.atan2(direction.y, horizontal))
+                : (float) Math.copySign(90.0, -direction.y);
+        } else {
+            pitch = 0.0f;
         }
-    }
 
-    /** Puts your own view back; the server keeps the aimed rotation it was sent this tick. */
-    private void restoreCamera() {
-        if (!aimed) return;
+        if (packet instanceof PlayerMoveC2SPacket.LookAndOnGround look) {
+            return new PlayerMoveC2SPacket.LookAndOnGround(yaw, pitch, look.isOnGround(), look.horizontalCollision());
+        }
 
-        aimed = false;
-        mc.player.setYaw(cameraYaw);
-        mc.player.setPitch(cameraPitch);
+        if (packet instanceof PlayerMoveC2SPacket.Full full) {
+            return new PlayerMoveC2SPacket.Full(
+                full.getX(mc.player.getX()), full.getY(mc.player.getY()), full.getZ(mc.player.getZ()),
+                yaw, pitch, full.isOnGround(), full.horizontalCollision());
+        }
+
+        if (packet instanceof PlayerMoveC2SPacket.PositionAndOnGround position) {
+            return new PlayerMoveC2SPacket.Full(
+                position.getX(mc.player.getX()), position.getY(mc.player.getY()), position.getZ(mc.player.getZ()),
+                yaw, pitch, position.isOnGround(), position.horizontalCollision());
+        }
+
+        return null;
     }
 
     private boolean fireRocket() {
