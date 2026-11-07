@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homovore+</title>
+<style>
+  :root {
+    --bg: #0b0909;
+    --panel: #161112;
+    --line: #332224;
+    --text: #f2ebeb;
+    --muted: #a29193;
+    --accent: #e01b2e;
+    --accent-hover: #ff2d42;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Inter, system-ui, -apple-system, Roboto, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+  }
+
+  .wrap { width: 100%; max-width: 920px; }
+
+  header { position: relative; text-align: center; margin-bottom: 40px; }
+
+  .langs {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+  }
+
+  .lang {
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-left: none;
+    background: var(--panel);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+
+  .lang:first-child { border-left: 1px solid var(--line); }
+
+  .lang:hover { color: var(--text); }
+
+  .lang.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+  }
+
+  .logo {
+    display: inline-block;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #ffffff;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    margin: 14px auto 0;
+    max-width: 520px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .download {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 26px;
+    padding: 14px 30px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s ease, border-color .15s ease;
+  }
+
+  .download:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .version {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .4px;
+  }
+
+  .boxes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  .box {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--accent);
+    padding: 22px 20px;
+  }
+
+  .box h2 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .box p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  .box strong { color: var(--text); font-weight: 600; }
+
+  ol {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--muted);
+  }
+
+  @media (max-width: 720px) {
+    .boxes { grid-template-columns: 1fr; }
+    .logo { font-size: 36px; }
+    .langs { position: static; justify-content: center; margin-bottom: 18px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="langs">
+        <button class="lang" data-lang="en" type="button">EN</button>
+        <button class="lang" data-lang="pl" type="button">PL</button>
+        <button class="lang" data-lang="ru" type="button">RU</button>
+      </div>
+      <div class="logo">Homovore<span>+</span></div>
+      <p class="tagline" data-i18n="tagline">A Fabric client for Minecraft. Simple, fast, with its own modules.</p>
+      <a class="download" href="download/homovoreplus-0.4.8.jar" download>
+        <span data-i18n="download">↓ Download</span>
+      </a>
+      <span class="version" data-i18n="version">version  · Fabric 1.21.11</span>
+    </header>
+
+    <section class="boxes">
+      <div class="box">
+        <h2 data-i18n="reqTitle">Requirements</h2>
+        <p data-i18n="reqText">Minecraft <strong>1.21.11</strong> with Fabric Loader and Fabric API. Java 21.</p>
+      </div>
+      <div class="box">
+        <h2 data-i18n="installTitle">Installation</h2>
+        <ol>
+          <li data-i18n="step1">Install Fabric Loader</li>
+          <li data-i18n="step2">Drop the jar into <strong>mods/</strong></li>
+          <li data-i18n="step3">Launch the game</li>
+        </ol>
+      </div>
+      <div class="box">
+        <h2 data-i18n="readyTitle">Ready</h2>
+        <p data-i18n="readyText">No setup needed — settings save themselves. Open the menu with the key from the Client tab.</p>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const I18N = {
+    en: {
+      tagline: "A Fabric client for Minecraft. Simple, fast, with its own modules.",
+      download: "↓ Download",
+      version: "0.4.8 · Fabric 1.21.11",
+      reqTitle: "Requirements",
+      reqText: "Minecraft <strong>1.21.11</strong> with Fabric Loader and Fabric API. Java 21.",
+      installTitle: "Installation",
+      step1: "Install Fabric Loader",
+      step2: "Drop the jar into <strong>mods/</strong>",
+      step3: "Launch the game",
+      readyTitle: "Ready",
+      readyText: "No setup needed — settings save themselves. Open the menu with the key from the Client tab."
+    },
+    pl: {
+      tagline: "Klient do Minecrafta na Fabric. Prosty, szybki, z własnymi modułami.",
+      download: "↓ Pobierz",
+      version: "0.4.8 · Fabric 1.21.11",
+      reqTitle: "Wymagania",
+      reqText: "Minecraft <strong>1.21.11</strong> z Fabric Loaderem i Fabric API. Java 21.",
+      installTitle: "Instalacja",
+      step1: "Zainstaluj Fabric Loader",
+      step2: "Wrzuć jar do <strong>mods/</strong>",
+      step3: "Uruchom grę",
+      readyTitle: "Gotowe",
+      readyText: "Bez konfiguracji — ustawienia zapisują się same. Menu otwierasz klawiszem z zakładki Client."
+    },
+    ru: {
+      tagline: "Клиент для Minecraft на Fabric. Простой, быстрый, со своими модулями.",
+      download: "↓ Скачать",
+      version: "0.4.8 · Fabric 1.21.11",
+      reqTitle: "Требования",
+      reqText: "Minecraft <strong>1.21.11</strong> с Fabric Loader и Fabric API. Java 21.",
+      installTitle: "Установка",
+      step1: "Установите Fabric Loader",
+      step2: "Положите jar в <strong>mods/</strong>",
+      step3: "Запустите игру",
+      readyTitle: "Готово",
+      readyText: "Настройка не нужна — параметры сохраняются сами. Меню открывается клавишей из вкладки Client."
+    }
+  };
+
+  const STORAGE_KEY = "homovore-lang";
+  const DEFAULT_LANG = "en";
+
+  function applyLanguage(lang) {
+    const dict = I18N[lang] || I18N[DEFAULT_LANG];
+    document.documentElement.lang = I18N[lang] ? lang : DEFAULT_LANG;
+
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      const value = dict[el.getAttribute("data-i18n")];
+      if (value !== undefined) el.innerHTML = value;
+    });
+
+    document.querySelectorAll(".lang").forEach(function (btn) {
+      btn.classList.toggle("active", btn.getAttribute("data-lang") === document.documentElement.lang);
+    });
+
+    try { localStorage.setItem(STORAGE_KEY, document.documentElement.lang); } catch (e) {}
+  }
+
+  function initLanguage() {
+    let saved = null;
+    try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    applyLanguage(I18N[saved] ? saved : DEFAULT_LANG);
+
+    document.querySelectorAll(".lang").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        applyLanguage(btn.getAttribute("data-lang"));
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initLanguage);
+  } else {
+    initLanguage();
+  }
+</script>
+</body>
+</html>
